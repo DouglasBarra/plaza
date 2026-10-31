@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { toon, deep } from './ink.js';
 import { tex } from './textures.js';
+import { swapModel } from './models.js';
 
 export const STAMPS = {
   todo: '#ff6a13',
@@ -244,7 +245,7 @@ function bench(p, x, z, rotY) {
   box(g, 1.5, 0.4, 0.06, M.planks, 0, 0.75, -0.22);
   for (const lx of [-0.6, 0.6]) box(g, 0.08, 0.45, 0.4, M.white, lx, 0.22, 0);
   g.position.set(x, 0, z); g.rotation.y = rotY;
-  p.add(g);
+  p.add(swapModel(g, 'bench'));
 }
 
 function lamp(p, x, z) {
@@ -254,7 +255,7 @@ function lamp(p, x, z) {
   box(g, 0.32, 0.4, 0.32, M.white, 0, 2.6, 0);
   mesh(new THREE.ConeGeometry(0.3, 0.25, 4), M.white, 0, 2.92, 0, g).rotation.y = Math.PI / 4;
   g.position.set(x, 0, z);
-  p.add(g);
+  p.add(swapModel(g, 'lamp'));
 }
 
 function fountain(p) {
@@ -316,7 +317,7 @@ function planter(p, x, z, flowers = 'white') {
     mesh(new THREE.SphereGeometry(0.11, 6, 5), flowers === 'white' ? M.white : stamp[flowers], fx, 0.95, fz, g);
   }
   g.position.set(x, 0, z);
-  p.add(g);
+  p.add(swapModel(g, 'planter'));
 }
 
 function cafe(p, x, z) {
@@ -487,4 +488,4 @@ export function animateFolks(time) {
   }
 }
 
-export { M, boxGeo, prismGeo, mesh, folk };
+export { M, stamp, boxGeo, prismGeo, mesh, box, cyl, windowAt, folk, roundTree };

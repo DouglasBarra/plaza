@@ -10,7 +10,8 @@ const RADIUS = 0.4;
 export class Avatar {
   constructor(scene, colliders, half) {
     this.colliders = colliders;
-    this.limit = half - 1.2; // inside the bollards
+    const l = half - 1.2; // inside the bollards
+    this.bounds = { minX: -l, maxX: l, minZ: -l, maxZ: l };
     this.keys = new Set();
     this.goal = null;      // a point to walk to (click)
     this.onArrive = null;  // called when the goal is reached
@@ -42,6 +43,17 @@ export class Avatar {
   }
 
   get position() { return this.body.position; }
+
+  // Move to another place (the plaza or a room), standing at `pos` facing `rotY`.
+  setWorld(scene, colliders, bounds, pos, rotY) {
+    scene.add(this.body);
+    this.colliders = colliders;
+    this.bounds = bounds;
+    this.body.position.copy(pos);
+    this.body.rotation.set(0, rotY, 0);
+    this.goal = null;
+    this.onArrive = null;
+  }
 
   walkTo(point, onArrive = null) {
     this.goal = new THREE.Vector3(point.x, 0, point.z);
@@ -102,7 +114,7 @@ export class Avatar {
       const d = Math.hypot(dx, dz), min = c.r + RADIUS;
       if (d < min && d > 1e-4) { p.x = c.x + (dx / d) * min; p.z = c.z + (dz / d) * min; }
     }
-    p.x = THREE.MathUtils.clamp(p.x, -this.limit, this.limit);
-    p.z = THREE.MathUtils.clamp(p.z, -this.limit, this.limit);
+    p.x = THREE.MathUtils.clamp(p.x, this.bounds.minX, this.bounds.maxX);
+    p.z = THREE.MathUtils.clamp(p.z, this.bounds.minZ, this.bounds.maxZ);
   }
 }
