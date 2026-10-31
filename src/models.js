@@ -57,11 +57,14 @@ async function load(name) {
 
 // Keep the code-built children for now; if a model named `name` exists,
 // replace them with it (same position, rotation and scale as the group).
-export function swapModel(group, name) {
+// Children marked userData.keep (smoke, steam, light pools, swinging signs)
+// stay, so the model keeps its life. `onModel(model)` runs after a swap.
+export function swapModel(group, name, onModel) {
   load(name).then((model) => {
     if (!model) return;
-    group.clear();
+    for (const c of [...group.children]) if (!c.userData.keep) group.remove(c);
     group.add(model);
+    onModel?.(model);
   });
   return group;
 }

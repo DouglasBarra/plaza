@@ -175,14 +175,21 @@ function emptyPlot(district, big) {
   if (big) crane(g, 1.4, T, -1.4, 9, 6);
   const name = district[0].toUpperCase() + district.slice(1);
   billboard(g, 0.9, T, 1.6, `${name}: coming soon`, district);
-  box(g, 0.6, 0.6, 0.6, M.planks, -1.4, T + 0.3, 1.0);
-  box(g, 0.5, 0.5, 0.5, M.planks, -0.9, T + 0.25, 1.4).rotation.y = 0.4;
+  crate(g, -1.4, T, 1.0, 0, 0.6);
+  crate(g, -0.9, T, 1.4, 0.4, 0.5);
   cyl(g, 0.06, 0.06, 1.6, M.white, -1.6, T + 0.08, 0.3, 6).rotation.z = Math.PI / 2;
   g.userData = { district, labelY: big ? 3.4 : 2.8, plot: true };
   return g;
 }
 
 // ---------- props ----------
+function crate(p, x, y, z, rotY = 0, size = 0.6) {
+  const g = new THREE.Group();
+  box(g, size, size, size, M.planks, 0, size / 2, 0);
+  g.position.set(x, y, z); g.rotation.y = rotY;
+  p.add(swapModel(g, 'crate'));
+}
+
 function pine(p, x, z, s = 1) {
   const g = new THREE.Group();
   cyl(g, 0.1, 0.14, 0.6, M.white, 0, 0.3, 0, 6);
@@ -191,7 +198,7 @@ function pine(p, x, z, s = 1) {
     c.material = M.white;
   }
   g.position.set(x, 0, z); g.scale.setScalar(s); g.rotation.y = x * 3.1;
-  p.add(g);
+  p.add(swapModel(g, 'tree-pine'));
   sway(g);
   return g;
 }
@@ -202,7 +209,7 @@ function roundTree(p, x, z, s = 1) {
   const crown = mesh(new THREE.IcosahedronGeometry(0.9, 0), M.white, 0, 1.6, 0, g);
   crown.rotation.set(x, z, 0);
   g.position.set(x, 0, z); g.scale.setScalar(s);
-  p.add(g);
+  p.add(swapModel(g, 'tree-round'));
   sway(g, 0.03);
   return g;
 }
@@ -223,9 +230,13 @@ function lamp(p, x, z) {
   cyl(g, 0.05, 0.05, 2.4, M.white, 0, 1.3, 0, 6);
   const head = box(g, 0.32, 0.4, 0.32, M.white, 0, 2.6, 0);
   mesh(new THREE.ConeGeometry(0.3, 0.25, 4), M.white, 0, 2.92, 0, g).rotation.y = Math.PI / 4;
-  lampLight(g, head);
+  const light = lampLight(g, head);
   g.position.set(x, 0, z);
-  p.add(swapModel(g, 'lamp'));
+  // in a lamp model, the part named "glow" is the one that lights up
+  p.add(swapModel(g, 'lamp', (model) => {
+    light.head = model.getObjectByName('glow') || null;
+    if (light.head) light.day = light.head.material;
+  }));
 }
 
 function fountain(p) {
@@ -252,7 +263,7 @@ function cat(p, x, z, rotY, follows = false) {
   g.add(tail);
   for (const lx of [-0.18, 0.18]) for (const lz of [-0.06, 0.06]) box(g, 0.05, 0.1, 0.05, M.white, lx, 0.05, lz);
   g.position.set(x, 0, z); g.rotation.y = rotY;
-  p.add(g);
+  p.add(swapModel(g, 'cat'));
   cats.push({ g, tail, home: new THREE.Vector3(x, 0, z), follows });
 }
 
@@ -274,18 +285,18 @@ function planter(p, x, z, flowers = 'white') {
 }
 
 function cafe(p, x, z) {
-  const g = new THREE.Group();
   for (const [tx, tz] of [[-1.3, -0.8], [1.3, 0.6]]) {
-    cyl(g, 0.5, 0.5, 0.06, M.white, tx, 0.75, tz, 14);
-    cyl(g, 0.05, 0.05, 0.72, M.white, tx, 0.37, tz, 6);
-    cyl(g, 0.03, 0.03, 1.6, M.white, tx, 1.5, tz, 4);
-    mesh(new THREE.ConeGeometry(1.1, 0.5, 8), M.stripes, tx, 2.35, tz, g);
-    for (const a of [0, Math.PI]) box(g, 0.4, 0.45, 0.4, M.planks, tx + Math.cos(a) * 0.85, 0.22, tz + Math.sin(a) * 0.85);
-    mesh(new THREE.CylinderGeometry(0.07, 0.06, 0.12, 8), M.white, tx + 0.15, 0.84, tz, g);
-    steam(g, tx + 0.15, 0.93, tz);
+    const g = new THREE.Group();
+    cyl(g, 0.5, 0.5, 0.06, M.white, 0, 0.75, 0, 14);
+    cyl(g, 0.05, 0.05, 0.72, M.white, 0, 0.37, 0, 6);
+    cyl(g, 0.03, 0.03, 1.6, M.white, 0, 1.5, 0, 4);
+    mesh(new THREE.ConeGeometry(1.1, 0.5, 8), M.stripes, 0, 2.35, 0, g);
+    for (const a of [0, Math.PI]) box(g, 0.4, 0.45, 0.4, M.planks, Math.cos(a) * 0.85, 0.22, Math.sin(a) * 0.85);
+    mesh(new THREE.CylinderGeometry(0.07, 0.06, 0.12, 8), M.white, 0.15, 0.84, 0, g);
+    steam(g, 0.15, 0.93, 0);
+    g.position.set(x + tx, 0, z + tz);
+    p.add(swapModel(g, 'cafe-table'));
   }
-  g.position.set(x, 0, z);
-  p.add(g);
 }
 
 function stall(p, x, z, rotY) {
@@ -301,10 +312,11 @@ function stall(p, x, z, rotY) {
   pivot.position.set(0, 2.05, 0.95);
   for (const s of [-0.45, 0.45]) cyl(pivot, 0.012, 0.012, 0.3, M.white, s, -0.15, 0, 3);
   signBoard(pivot, 0, -0.45, 0, 1.3, 0.34, 'Fresh fruit');
+  pivot.userData.keep = true;
   g.add(pivot);
   swingSign(pivot);
   g.position.set(x, 0, z); g.rotation.y = rotY;
-  p.add(g);
+  p.add(swapModel(g, 'stall'));
 }
 
 function bike(p, x, z, rotY) {
@@ -318,7 +330,7 @@ function bike(p, x, z, rotY) {
   bar(-0.5, 0.35, 0, 0.75); bar(0, 0.75, 0.5, 0.35); bar(0, 0.75, -0.1, 0.35); bar(-0.1, 0.35, -0.5, 0.35);
   bar(0.45, 0.6, 0.5, 0.95); box(g, 0.25, 0.05, 0.12, M.white, -0.05, 0.82, 0);
   g.position.set(x, 0, z); g.rotation.y = rotY;
-  p.add(g);
+  p.add(swapModel(g, 'bike'));
 }
 
 function noticeboard(p, x, z, rotY) {
@@ -327,7 +339,7 @@ function noticeboard(p, x, z, rotY) {
   box(g, 2, 1.1, 0.08, M.planks, 0, 1.3, 0);
   for (const [nx, ny, w, h] of [[-0.5, 1.45, 0.5, 0.6], [0.15, 1.2, 0.45, 0.5], [0.6, 1.5, 0.35, 0.4]]) box(g, w, h, 0.03, M.white, nx, ny, 0.06);
   g.position.set(x, 0, z); g.rotation.y = rotY;
-  p.add(g);
+  p.add(swapModel(g, 'noticeboard'));
 }
 
 function mailbox(p, x, z, rotY) {
@@ -335,7 +347,7 @@ function mailbox(p, x, z, rotY) {
   box(g, 0.1, 1.0, 0.1, M.white, 0, 0.5, 0);
   box(g, 0.45, 0.35, 0.6, M.white, 0, 1.15, 0);
   g.position.set(x, 0, z); g.rotation.y = rotY;
-  p.add(g);
+  p.add(swapModel(g, 'mailbox'));
 }
 
 // Pigeons hop about on the 2-frame clock, and fly off when you come close.

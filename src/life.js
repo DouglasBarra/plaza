@@ -24,6 +24,7 @@ export function smoke(p, x, y, z, { n = 4, rise = 1.8, size = 0.2, speed = 0.22,
   for (let i = 0; i < n; i++) {
     const m = mesh(puffGeo, M.white, x, y, z, p);
     m.castShadow = false;
+    m.userData.keep = true;
     puffs.push({ m, base: new THREE.Vector3(x, y, z), i, n, rise, size, speed, drift, spin: Math.random() * 6 });
   }
 }
@@ -85,10 +86,13 @@ export function lampLight(lampGroup, head) {
   pool.rotation.x = -Math.PI / 2;
   pool.position.y = 0.03;
   pool.visible = false;
+  pool.userData.keep = true;
   lampGroup.add(pool);
   skipND.push(pool);
   nightOnly.push(pool);
-  lamps.push(head);
+  const lamp = { head };
+  lamps.push(lamp);
+  return lamp;
 }
 
 // Some windows light up at night (not all: somebody is always out).
@@ -98,9 +102,13 @@ export function registerPane(pane) {
   panes.push(pane);
 }
 
+let night = false;
+export const isNight = () => night;
+
 export function setNight(on) {
   for (const o of nightOnly) o.visible = on;
-  for (const h of lamps) h.material = on ? lampGlow : M.white;
+  night = on;
+  for (const l of lamps) if (l.head) l.head.material = on ? lampGlow : l.day ?? M.white;
   for (const p of panes) p.material = on && p.userData.lightsOn ? litPane : p.userData.dark;
 }
 
