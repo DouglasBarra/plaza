@@ -109,3 +109,38 @@ body { background: var(--ground); color: var(--ink); font-family: var(--font-bod
 @media (prefers-reduced-motion: reduce) {
   .pz-btn, .pz-panel, .reward div { transition: none; animation: none; }
 }
+
+/* ---------- ToDos district ---------- */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.td-add { display: flex; gap: var(--space-2); margin-bottom: var(--space-4); }
+.td-input { flex: 1; min-width: 0; height: 44px; box-sizing: border-box; padding: 0 var(--space-3); font: 16px/1 var(--font-body); color: var(--ink); background: var(--surface); border: var(--stroke-ink) solid var(--ink); border-radius: var(--radius-m); }
+.td-input::placeholder { color: var(--ink-muted); font-family: var(--font-hand); font-size: 18px; }
+.td-input:focus-visible, .td-date:focus-visible { outline: 3px dashed var(--ink); outline-offset: 3px; }
+.td-date { width: 128px; height: 44px; box-sizing: border-box; padding: 0 var(--space-2); font: 14px var(--font-mono); color: var(--ink); background: var(--surface); border: var(--stroke-ink) solid var(--ink); border-radius: var(--radius-m); }
+.td-add .pz-btn { height: 44px; }
+
+.td-tabs { display: flex; gap: var(--space-2); margin-bottom: var(--space-2); }
+.td-tabs button { display: flex; align-items: center; gap: var(--space-2); height: 36px; padding: 0 var(--space-3); font-family: var(--font-display); font-size: 17px; letter-spacing: 0.03em; color: var(--ink); background: var(--surface); border: var(--stroke-ink) solid var(--ink); border-radius: var(--radius-pill); cursor: pointer; }
+.td-tabs button span { font: 12px var(--font-mono); color: var(--ink-muted); }
+.td-tabs button[aria-selected="true"] { background: var(--ink); color: var(--paper); }
+.td-tabs button[aria-selected="true"] span { color: var(--paper); }
+
+.td-section { margin: var(--space-4) 0 0; font-family: var(--font-display); font-weight: 400; font-size: 16px; letter-spacing: 0.05em; color: var(--ink-muted); }
+.td-section.late { color: var(--alert); }
+.td-row .t { cursor: text; overflow-wrap: anywhere; }
+.td-row.is-done .t { color: var(--ink-muted); text-decoration: line-through; }
+.td-edit { height: 34px; font-size: 16px; }
+.td-due-wrap { position: relative; flex: none; }
+.td-chip { height: 28px; padding: 0 var(--space-2); font: 13px var(--font-mono); color: var(--ink-muted); background: none; border: 2px solid transparent; border-radius: var(--radius-pill); cursor: pointer; }
+.td-chip:hover { border-color: var(--ink); color: var(--ink); }
+.td-chip.late { color: var(--alert); font-weight: 500; }
+.td-chip.empty { opacity: 0; }
+.td-row:hover .td-chip.empty, .td-chip.empty:focus-visible { opacity: 1; }
+.td-date-hidden { position: absolute; right: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.td-del { width: 28px; height: 28px; flex: none; display: grid; place-items: center; font-size: 18px; color: var(--ink-muted); background: none; border: 2px solid transparent; border-radius: var(--radius-s); cursor: pointer; opacity: 0; }
+.td-row:hover .td-del, .td-del:focus-visible { opacity: 1; }
+.td-del:hover { border-color: var(--ink); color: var(--ink); }
+.td-chip:focus-visible, .td-del:focus-visible, .td-tabs button:focus-visible, .row .box:focus-visible { outline: 3px dashed var(--ink); outline-offset: 2px; }
+@media (hover: none) { .td-del, .td-chip.empty { opacity: 1; } }
+.td-empty { margin: var(--space-6) 0 var(--space-2); text-align: center; font-family: var(--font-hand); font-size: 20px; color: var(--ink-muted); }
+.td-clear { margin-top: var(--space-4); }

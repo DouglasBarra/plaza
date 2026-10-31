@@ -4,22 +4,7 @@ import { InkRenderer, applyTheme, THEMES } from './ink.js';
 import { buildPlaza, animateFolks, PLAZA_HALF } from './world.js';
 import { buildTown } from './town.js';
 import { Avatar } from './avatar.js';
-
-// Sample data until each district has its real app.
-const DISTRICTS = {
-  todo: { name: 'ToDos', key: '1', status: '3 due today', count: 3, title: 'Today',
-    items: [['Pay the electricity bill', 'Overdue', 'late'], ['Call the dentist', '14:00'], ['Review chapter 4 notes', '18:30'], ['Water the plants', 'Done', 'done']] },
-  finance: { name: 'Finance', key: '2', status: 'Rent due Nov 3', count: 1, title: 'This month',
-    items: [['Rent', '−2.100,00'], ['Groceries', '−486,20'], ['Salary', '+7.900,00'], ['Internet', 'Paid', 'done']] },
-  study: { name: 'Study', key: '3', status: 'Chapter 4 · 40%', title: 'Reading list',
-    items: [['Cloud Computing, ch. 4', '40%'], ['TCC draft: methodology', 'Fri'], ['Japanese flashcards', '20 left']] },
-  ideas: { name: 'Ideas', key: '4', status: '12 ideas', title: 'Idea box',
-    items: [['A plaza where my life lives', 'Today'], ['Postcard club with friends', 'Oct 28'], ['Learn to draw like Hidden Folks', 'Oct 12']] },
-  projects: { name: 'Projects', key: '5', status: 'Coming soon', title: 'Projects',
-    items: [], note: 'This lot is waiting. The Projects building goes up here later.' },
-  people: { name: 'People', key: '6', status: 'Coming soon', title: 'People',
-    items: [], note: 'This lot is waiting. The People building goes up here later.' },
-};
+import { DISTRICTS } from './districts/index.js';
 
 // ---------- renderer, scene, camera ----------
 const canvas = document.getElementById('scene');
@@ -69,13 +54,31 @@ camera.position.copy(controls.target).add(followOffset);
 const labelsEl = document.getElementById('labels');
 const labels = new Map();
 for (const b of buildings) {
-  const d = DISTRICTS[b.userData.district];
   const el = document.createElement('div');
   el.className = `label pz-d-${b.userData.district}`;
-  el.innerHTML = `<span class="tag"><span class="stampdot"></span>${d.name}${d.count ? `<span class="count">${d.count}</span>` : ''}</span><small>${d.status}</small>`;
   labelsEl.appendChild(el);
   labels.set(b, el);
 }
+
+// Signs, greeting and the town hall flag follow each district's live summary.
+const townHall = buildings.find((b) => b.userData.district === 'todo');
+function refreshSigns() {
+  for (const [b, el] of labels) {
+    const d = DISTRICTS[b.userData.district];
+    const s = d.summary();
+    el.innerHTML = `<span class="tag"><span class="stampdot"></span>${d.name}${s.count ? `<span class="count">${s.count}</span>` : ''}</span><small>${s.status}</small>`;
+  }
+  const todo = DISTRICTS.todo.summary();
+  const hour = new Date().getHours();
+  const hello = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('greeting-line').textContent = todo.overdue
+    ? `${hello}. ${todo.overdue} ${todo.overdue === 1 ? 'task is' : 'tasks are'} overdue.`
+    : todo.count ? `${hello}. ${todo.count} ${todo.count === 1 ? 'thing needs' : 'things need'} you today.`
+    : `${hello}. Nothing due today.`;
+  // the flag flies at the top of the tower when nothing is due
+  townHall.userData.flagUp = todo.allClear;
+}
+for (const d of Object.values(DISTRICTS)) d.subscribe(refreshSigns);
 const prompt = document.createElement('div');
 prompt.className = 'prompt';
 labelsEl.appendChild(prompt);
@@ -153,31 +156,26 @@ function enter(id) {
   setTimeout(() => focused === b && openPanel(id), 520);
 }
 
+let unmount = null;
 function openPanel(id) {
   const d = DISTRICTS[id];
+  unmount?.();
   panel.className = `pz-panel pz-d-${id}`;
-  const rows = d.items.map(([t, when, state]) => `
-    <div class="row">
-      <button class="box${state === 'done' ? ' done' : ''}" aria-label="Mark “${t}” done"></button>
-      <span class="t">${t}</span>
-      <span class="when${state === 'late' ? ' late' : ''}">${when}</span>
-    </div>`).join('');
   panel.innerHTML = `
     <header class="pz-panel-head">
       <span class="pz-panel-tag">${d.name}</span>
       <h2 class="pz-panel-title">${d.title}</h2>
       <button class="pz-panel-close" aria-label="Back to plaza">×</button>
     </header>
-    <div class="pz-panel-body">${rows}<p class="pz-panel-note">${d.note || 'Sample data. The real ' + d.name + ' app moves in here next.'}</p></div>`;
+    <div class="pz-panel-body"></div>`;
   overlay.hidden = false;
   panel.querySelector('.pz-panel-close').addEventListener('click', leave);
-  panel.querySelectorAll('.box').forEach((box) => box.addEventListener('click', () => {
-    box.classList.toggle('done');
-    if (box.classList.contains('done')) reward('Task done!');
-  }));
+  unmount = d.mount(panel.querySelector('.pz-panel-body'), { reward });
 }
 
 function leave() {
+  unmount?.();
+  unmount = null;
   overlay.hidden = true;
   focused = null;
   document.body.classList.remove('in-district');
@@ -241,6 +239,8 @@ const MOVE_KEYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowlef
 window.addEventListener('keydown', (e) => {
   const k = e.key.toLowerCase();
   if (k === 'escape' && focused) return leave();
+  // typing in a district's app must not walk you around
+  if (e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
   if (MOVE_KEYS.has(k)) { if (!focused) me.keys.add(k); e.preventDefault(); return; }
   if ((k === 'e' || k === 'enter') && nearDoor && !focused) return enter(nearDoor.userData.district);
   const id = Object.keys(DISTRICTS).find((key) => DISTRICTS[key].key === e.key);
@@ -266,9 +266,9 @@ wobbleBtn.addEventListener('click', () => {
   wobbleBtn.setAttribute('aria-pressed', String(ink.wobbleOn));
 });
 
-const hour = new Date().getHours();
-document.getElementById('greeting-line').textContent =
-  `${hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'}. 4 things need you today.`;
+refreshSigns();
+// dates roll over at midnight; refresh the signs every minute
+setInterval(refreshSigns, 60_000);
 
 // ---------- loop ----------
 function resize() {
@@ -304,6 +304,10 @@ renderer.setAnimationLoop((now) => {
   scene.fog.near = camDist + 30;
   scene.fog.far = camDist + 150;
   ink.setFog(scene.fog.near, scene.fog.far);
+
+  const hall = townHall.userData;
+  const flagY = hall.flagUp ? hall.flagHigh : hall.flagLow;
+  hall.flag.position.y += (flagY - hall.flag.position.y) * Math.min(1, dt * 2);
 
   animateFolks(t);
   town.animate(t);

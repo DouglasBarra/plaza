@@ -111,7 +111,7 @@ function townHall() {
   clock.rotation.x = Math.PI / 2;
   // flag on the tower: the ToDos stamp
   cyl(g, 0.04, 0.04, 1.3, M.white, 0, T + 7.9 + 0.5, -0.6);
-  box(g, 0.7, 0.4, 0.04, stamp.todo, 0.37, T + 8.8, -0.6);
+  const flag = box(g, 0.7, 0.4, 0.04, stamp.todo, 0.37, T + 8.1, -0.6);
   // door + awning (stamp)
   box(g, 0.95, 1.55, 0.08, M.deep, 0, T + 0.78, 1.82);
   const awning = box(g, 1.7, 0.08, 0.8, stamp.todo, 0, T + 1.85, 2.15);
@@ -120,7 +120,8 @@ function townHall() {
   for (const x of [-1.7, 1.7]) windowAt(g, x, T + 2.0, 1.82, 0.6, 0.85);
   for (const x of [-1.7, -0.6, 0.6, 1.7]) windowAt(g, x, T + 2.0, -1.82, 0.5, 0.8);
   for (const z of [-0.8, 0.8]) { windowAt(g, 2.52, T + 1.9, z, 0.5, 0.8, Math.PI / 2); windowAt(g, -2.52, T + 1.9, z, 0.5, 0.8, Math.PI / 2); }
-  g.userData = { district: 'todo', labelY: 9.6 };
+  // the flag rises to the top when nothing is due (driven from main.js)
+  g.userData = { district: 'todo', labelY: 9.6, flag, flagLow: T + 8.1, flagHigh: T + 8.8, flagUp: false };
   return g;
 }
 
