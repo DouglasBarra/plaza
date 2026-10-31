@@ -171,11 +171,11 @@ const compositeMaterial = new THREE.ShaderMaterial({
 });
 
 export class InkRenderer {
-  constructor(renderer) {
+  constructor(renderer, { samples = 4 } = {}) {
     this.renderer = renderer;
     const opts = { type: THREE.HalfFloatType };
     this.ndRT = new THREE.WebGLRenderTarget(1, 1, opts);
-    this.colorRT = new THREE.WebGLRenderTarget(1, 1, { samples: 4 });
+    this.colorRT = new THREE.WebGLRenderTarget(1, 1, { samples });
     this.quadScene = new THREE.Scene();
     this.quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     this.quadScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), compositeMaterial));

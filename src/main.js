@@ -7,12 +7,15 @@ import { Avatar } from './avatar.js';
 import { DISTRICTS } from './districts/index.js';
 
 // ---------- renderer, scene, camera ----------
+// ?lowpower trades sharpness for speed: for weak GPUs and software
+// rendering (the end-to-end tests run headless with no GPU).
+const lowPower = new URLSearchParams(location.search).has('lowpower');
 const canvas = document.getElementById('scene');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(lowPower ? 1 : Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
-const ink = new InkRenderer(renderer);
+const ink = new InkRenderer(renderer, { samples: lowPower ? 0 : 4 });
 
 const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(THEMES.day.paper, 70, 180);
@@ -31,7 +34,7 @@ const ambient = new THREE.AmbientLight(0xffffff, 1);
 const sun = new THREE.DirectionalLight(0xffffff, Math.PI);
 sun.position.set(-14, 26, 12);
 sun.castShadow = true;
-sun.shadow.mapSize.set(4096, 4096);
+sun.shadow.mapSize.setScalar(lowPower ? 1024 : 4096);
 Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 1, far: 120 });
 sun.shadow.bias = -0.0005;
 sun.shadow.normalBias = 0.03;
