@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { InkRenderer, applyTheme, THEMES } from './ink.js';
-import { buildPlaza, animateFolks, PLAZA_HALF, beams, nightOnly } from './world.js';
+import { buildPlaza, animateFolks, PLAZA_HALF } from './world.js';
+import { skipND, setNight } from './life.js';
 import { buildTown } from './town.js';
 import { Avatar } from './avatar.js';
 import { DISTRICTS } from './districts/index.js';
@@ -39,7 +40,7 @@ const { buildings, colliders } = buildPlaza(plazaScene);
 const town = buildTown(plazaScene);
 const me = new Avatar(plazaScene, colliders, PLAZA_HALF);
 const plazaBounds = { ...me.bounds };
-ink.skipND.push(...beams);
+ink.skipND.push(...skipND);
 
 let theme = 'day';
 applyTheme(theme, plazaLights);
@@ -428,7 +429,7 @@ themeBtn.addEventListener('click', () => {
   ink.setTheme(theme);
   plazaScene.fog.color.set(THEMES[theme].paper);
   me.setInkColor(THEMES[theme].ink);
-  for (const o of nightOnly) o.visible = theme === 'night';
+  setNight(theme === 'night');
 });
 const wobbleBtn = document.getElementById('toggle-wobble');
 wobbleBtn.addEventListener('click', () => {
@@ -505,7 +506,7 @@ renderer.setAnimationLoop((now) => {
     town.animate(t);
   }
 
-  animateFolks(t);
+  animateFolks(t, room ? null : me.position, dt);
   ink.render(current(), camera, t);
   placeLabels();
 });

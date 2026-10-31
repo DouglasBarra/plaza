@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { M, stamp, glow, boxGeo, prismGeo, mesh, box, cyl, slab, windowAt, gable } from './kit.js';
 import { swapModel } from './models.js';
+import { fountainWater, steam, sway, swingSign, leaves, lampLight, skipND, nightOnly, animateLife } from './life.js';
 import { addFolk, folk, animateFigures } from './folks.js';
 import { fancyWindow, door, signBoard, clockHands, updateClocks, ridge, chimney, statue, scaffold, crane, animateCranes, billboard } from './details.js';
 
@@ -15,7 +16,6 @@ function groundTile(p, size, top) {
 
 // ---------- buildings ----------
 // Night-only things (the lighthouse beam); main.js toggles them with the theme.
-export const nightOnly = [];
 
 function townHall() {
   const g = new THREE.Group();
@@ -146,6 +146,7 @@ function lighthouse() {
   beam.visible = false;
   g.add(beam);
   nightOnly.push(beam);
+  skipND.push(beam);
   beams.push(beam);
   // the keeper's hut, now the workshop
   box(g, 2.2, 1.6, 2.0, M.planks, 1.6, T + 0.8, 1.0);
@@ -191,6 +192,7 @@ function pine(p, x, z, s = 1) {
   }
   g.position.set(x, 0, z); g.scale.setScalar(s); g.rotation.y = x * 3.1;
   p.add(g);
+  sway(g);
   return g;
 }
 
@@ -201,6 +203,7 @@ function roundTree(p, x, z, s = 1) {
   crown.rotation.set(x, z, 0);
   g.position.set(x, 0, z); g.scale.setScalar(s);
   p.add(g);
+  sway(g, 0.03);
   return g;
 }
 
@@ -218,8 +221,9 @@ function lamp(p, x, z) {
   const g = new THREE.Group();
   cyl(g, 0.12, 0.16, 0.2, M.white, 0, 0.1, 0, 8);
   cyl(g, 0.05, 0.05, 2.4, M.white, 0, 1.3, 0, 6);
-  box(g, 0.32, 0.4, 0.32, M.white, 0, 2.6, 0);
+  const head = box(g, 0.32, 0.4, 0.32, M.white, 0, 2.6, 0);
   mesh(new THREE.ConeGeometry(0.3, 0.25, 4), M.white, 0, 2.92, 0, g).rotation.y = Math.PI / 4;
+  lampLight(g, head);
   g.position.set(x, 0, z);
   p.add(swapModel(g, 'lamp'));
 }
@@ -231,19 +235,25 @@ function fountain(p) {
   cyl(g, 0.3, 0.4, 1.5, M.stone, 0, 1.2, 0, 10);
   cyl(g, 0.9, 0.45, 0.3, M.white, 0, 2.0, 0, 16);
   mesh(new THREE.SphereGeometry(0.22, 10, 8), M.white, 0, 2.35, 0, g);
+  fountainWater(g);
   p.add(g);
 }
 
-function cat(p, x, z, rotY) {
+const cats = [];
+function cat(p, x, z, rotY, follows = false) {
   const g = new THREE.Group();
   box(g, 0.5, 0.22, 0.2, M.white, 0, 0.2, 0);
   box(g, 0.2, 0.2, 0.2, M.white, 0.3, 0.34, 0);
   for (const ez of [-0.06, 0.06]) mesh(new THREE.ConeGeometry(0.05, 0.1, 4), M.white, 0.3, 0.48, ez, g);
-  const tail = cyl(g, 0.025, 0.025, 0.35, M.white, -0.3, 0.38, 0, 5);
+  const tail = new THREE.Group();
+  tail.position.set(-0.25, 0.28, 0);
+  cyl(tail, 0.025, 0.025, 0.35, M.white, 0, 0.17, 0, 5);
   tail.rotation.z = 0.5;
+  g.add(tail);
   for (const lx of [-0.18, 0.18]) for (const lz of [-0.06, 0.06]) box(g, 0.05, 0.1, 0.05, M.white, lx, 0.05, lz);
   g.position.set(x, 0, z); g.rotation.y = rotY;
   p.add(g);
+  cats.push({ g, tail, home: new THREE.Vector3(x, 0, z), follows });
 }
 
 function bollard(p, x, z) {
@@ -272,6 +282,7 @@ function cafe(p, x, z) {
     mesh(new THREE.ConeGeometry(1.1, 0.5, 8), M.stripes, tx, 2.35, tz, g);
     for (const a of [0, Math.PI]) box(g, 0.4, 0.45, 0.4, M.planks, tx + Math.cos(a) * 0.85, 0.22, tz + Math.sin(a) * 0.85);
     mesh(new THREE.CylinderGeometry(0.07, 0.06, 0.12, 8), M.white, tx + 0.15, 0.84, tz, g);
+    steam(g, tx + 0.15, 0.93, tz);
   }
   g.position.set(x, 0, z);
   p.add(g);
@@ -285,6 +296,13 @@ function stall(p, x, z, rotY) {
   roof.rotation.x = 0.18;
   for (let i = 0; i < 5; i++) box(g, 0.45, 0.3, 0.45, M.planks, -1.1 + i * 0.55, 1.05, 0.2);
   for (let i = 0; i < 9; i++) mesh(new THREE.SphereGeometry(0.1, 6, 5), M.white, -1.2 + (i % 5) * 0.55, 1.28, 0.1 + (i > 4 ? 0.18 : 0), g);
+  // a sign swinging from the front of the awning
+  const pivot = new THREE.Group();
+  pivot.position.set(0, 2.05, 0.95);
+  for (const s of [-0.45, 0.45]) cyl(pivot, 0.012, 0.012, 0.3, M.white, s, -0.15, 0, 3);
+  signBoard(pivot, 0, -0.45, 0, 1.3, 0.34, 'Fresh fruit');
+  g.add(pivot);
+  swingSign(pivot);
   g.position.set(x, 0, z); g.rotation.y = rotY;
   p.add(g);
 }
@@ -320,15 +338,22 @@ function mailbox(p, x, z, rotY) {
   p.add(g);
 }
 
-// Pigeons hop between two spots on the 2-frame clock.
+// Pigeons hop about on the 2-frame clock, and fly off when you come close.
 const pigeons = [];
 function pigeon(p, x, z) {
   const g = new THREE.Group();
   box(g, 0.24, 0.14, 0.12, M.white, 0, 0.12, 0);
   box(g, 0.09, 0.09, 0.09, M.white, 0.13, 0.22, 0);
   box(g, 0.05, 0.02, 0.03, M.deep, 0.2, 0.21, 0);
+  const wings = [-1, 1].map((s) => {
+    const w = new THREE.Group();
+    w.position.set(0, 0.17, s * 0.06);
+    box(w, 0.16, 0.02, 0.14, M.white, 0, 0, s * 0.07);
+    g.add(w);
+    return w;
+  });
   g.position.set(x, 0, z); g.rotation.y = Math.random() * 6;
-  g.userData = { home: new THREE.Vector3(x, 0, z), phase: Math.random() * 4 };
+  g.userData = { home: new THREE.Vector3(x, 0, z), phase: Math.random() * 4, wings, flight: -1, wary: false, dir: new THREE.Vector3() };
   p.add(g);
   pigeons.push(g);
 }
@@ -416,22 +441,65 @@ export function buildPlaza(scene) {
   addFolk(world, { x: 6.95, z: -12.0, rot: -Math.PI / 2, seat: 0.45, pose: 'read', look: { glasses: true, item: 'paper' } });
   addFolk(world, { x: -4.8, z: 12.2, rot: 0, pose: 'look', look: { hat: 'top' } });
   addFolk(world, { x: -10.2, z: 7.6, rot: 2.2, pose: 'wave', look: { item: 'balloon', balloon: 'people', height: 0.75 } });
-  cat(world, 2.1, 3.9, 0.7);
+  addFolk(world, { walk: { path: [[3.6, -12.2], [6.0, -13.1]], speed: 0.7 }, look: { item: 'tray', hair: 'bun' } });
+  leaves(world, 14, H - 2);
+  cat(world, 2.1, 3.9, 0.7, true);
   cat(world, -12.2, 2.0, 2.4);
 
   return { world, buildings, colliders };
 }
 
-export function animateFolks(time) {
+// `player` is your position on the plaza (null when you're indoors).
+export function animateFolks(time, player = null, dt = 1 / 60) {
   animateFigures(time);
+  animateLife(time);
   updateClocks();
   animateCranes(time);
   for (const b of beams) b.rotation.y = time * 0.6;
+
   for (const p of pigeons) {
-    const k = Math.floor(time * 1.5 + p.userData.phase);
-    const hop = k % 5 === 0;
-    p.position.y = hop ? 0.12 : 0;
-    if (hop) { p.position.x = p.userData.home.x + Math.sin(k) * 0.4; p.position.z = p.userData.home.z + Math.cos(k * 1.3) * 0.4; p.rotation.y = k; }
+    const u = p.userData;
+    const near = player && Math.hypot(player.x - u.home.x, player.z - u.home.z) < 2.4;
+    if (u.flight < 0 && near && !u.wary) {
+      u.flight = time;
+      u.wary = true;
+      u.dir.set(u.home.x - player.x, 0, u.home.z - player.z).normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), (Math.random() - 0.5) * 1.2);
+    }
+    if (!near && u.flight < 0) u.wary = false;
+    if (u.flight >= 0) {
+      const s = (time - u.flight) / 4.5;
+      if (s >= 1) { u.flight = -1; p.position.copy(u.home); continue; }
+      const arc = Math.sin(Math.PI * s);
+      p.position.set(u.home.x + u.dir.x * arc * 6, arc * 4.5, u.home.z + u.dir.z * arc * 6);
+      p.rotation.y = Math.atan2(-u.dir.z, u.dir.x) + (s > 0.5 ? Math.PI : 0);
+      const flap = Math.floor(time * 12) % 2 ? 0.9 : -0.5;
+      u.wings[0].rotation.x = -flap; u.wings[1].rotation.x = flap;
+    } else {
+      u.wings[0].rotation.x = u.wings[1].rotation.x = 0;
+      const k = Math.floor(time * 1.5 + u.phase);
+      const hop = k % 5 === 0;
+      p.position.y = hop ? 0.12 : 0;
+      if (hop) { p.position.x = u.home.x + Math.sin(k) * 0.4; p.position.z = u.home.z + Math.cos(k * 1.3) * 0.4; p.rotation.y = k; }
+    }
+  }
+
+  // the friendly cat trots after you for a bit, then goes home
+  for (const c of cats) {
+    const frame = Math.floor(time * 6) % 2;
+    let target = c.home;
+    if (c.follows && player && player.distanceTo(c.home) < 7) {
+      const away = new THREE.Vector3().subVectors(c.g.position, player).setY(0);
+      if (away.lengthSq() < 1e-4) away.set(1, 0, 0);
+      target = player.clone().setY(0).addScaledVector(away.normalize(), 1.3);
+    }
+    const d = new THREE.Vector3().subVectors(target, c.g.position).setY(0);
+    const moving = d.length() > 0.25;
+    if (moving) {
+      c.g.position.addScaledVector(d.normalize(), Math.min(d.length(), 2.4 * dt));
+      c.g.rotation.y = Math.atan2(-d.z, d.x);
+    }
+    c.g.position.y = moving && frame ? 0.04 : 0;
+    c.tail.rotation.x = (frame ? 0.35 : -0.35) * (moving ? 1.4 : 0.6);
   }
 }
 

@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { toon } from './ink.js';
 import { M, stamp, mesh, box, cyl } from './kit.js';
 import { makeFigure, poseFigure } from './folks.js';
+import { registerPane, smoke } from './life.js';
 
 const dark = toon('#3a3a3a');
 
@@ -15,7 +16,9 @@ export function fancyWindow(p, x, y, z, w, h, rotY = 0, o = {}) {
   g.position.set(x, y, z);
   g.rotation.y = rotY;
   p.add(g);
-  box(g, w, h, 0.06, M.deep, 0, 0, 0).castShadow = false;
+  const pane = box(g, w, h, 0.06, M.deep, 0, 0, 0);
+  pane.castShadow = false;
+  registerPane(pane);
   const t = 0.07, d = 0.12;
   box(g, w + t * 2, t, d, M.white, 0, h / 2 + t / 2, 0.03);
   box(g, w + t * 2, t, d, M.white, 0, -h / 2 - t / 2, 0.03);
@@ -153,6 +156,7 @@ export function chimney(p, x, y, z, w = 0.5, h = 1.3) {
   box(p, w, h, w, M.bricks, x, y, z);
   box(p, w + 0.14, 0.1, w + 0.14, M.white, x, y + h / 2 + 0.05, z);
   cyl(p, w * 0.22, w * 0.22, 0.2, M.white, x, y + h / 2 + 0.2, z, 8);
+  smoke(p, x, y + h / 2 + 0.35, z);
 }
 
 // ---------- statue: a folk in white stone ----------

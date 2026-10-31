@@ -91,6 +91,12 @@ export function makeFigure(look = {}) {
     item.position.set(0.05, 0.78, 0.26);
     item.rotation.z = 0.9;
     body.add(item);
+  } else if (look.item === 'tray') {
+    item = new THREE.Group();
+    mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.03, 16), M.white, 0, 0, 0, item);
+    for (const cx of [-0.09, 0.09]) mesh(new THREE.CylinderGeometry(0.05, 0.045, 0.1, 8), M.white, cx, 0.065, 0, item);
+    item.position.set(0, -0.4, 0);
+    arms[1].add(item);
   } else if (look.item === 'balloon') {
     // held in the left hand, so the right one is free to wave
     mesh(new THREE.CylinderGeometry(0.008, 0.008, 1.2, 3), M.white, 0, 0.2, 0, arms[0]);
@@ -274,7 +280,22 @@ export function animateFigures(time) {
   for (const a of cast) {
     const frame = Math.floor(time * a.fps + a.phase) % 2;
     const w = a.walk;
-    if (w) {
+    if (w?.path) {
+      // back and forth between two points, slowing at each end
+      const [[x1, z1], [x2, z2]] = w.path;
+      const len = Math.hypot(x2 - x1, z2 - z1);
+      const s = ((time * w.speed) / len + (w.offset || 0)) % 2;
+      const k = s < 1 ? s : 2 - s;
+      const e = k * k * (3 - 2 * k);
+      a.fig.position.set(x1 + (x2 - x1) * e, 0, z1 + (z2 - z1) * e);
+      a.fig.rotation.y = Math.atan2(x2 - x1, z2 - z1) + (s < 1 ? 0 : Math.PI);
+      const still = k < 0.04 || k > 0.96;
+      poseFigure(a.fig, still ? 'idle' : 'walk', frame, a.seat);
+      if (a.fig.userData.parts.item?.parent === a.fig.userData.parts.arms[1]) {
+        a.fig.userData.parts.arms[1].rotation.set(-1.5, 0, 0);
+        a.fig.userData.parts.item.rotation.x = 1.5;
+      }
+    } else if (w) {
       const ang = time * w.speed + (w.offset || 0);
       const cx = w.cx || 0, cz = w.cz || 0;
       a.fig.position.set(cx + Math.cos(ang) * w.r, 0, cz + Math.sin(ang) * w.r);
