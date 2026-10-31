@@ -13,6 +13,18 @@ npm run dev
 
 Then open http://localhost:5173.
 
+## Test it
+
+End-to-end tests drive the real app in Chromium with [Playwright](https://playwright.dev). They build the app, serve it with `vite preview` and click through the plaza and the ToDos district.
+
+```bash
+npx playwright install chromium   # once
+npm run test:e2e                  # headless
+npm run test:e2e:ui               # watch and debug in Playwright's UI
+```
+
+Tests live in `e2e/`. Each one starts from an empty browser (no saved tasks) and fails on any page error. Headless Chromium has no GPU, so the scene is software-rendered: tests open the app with `?lowpower` (smaller shadow map, no MSAA) and run one at a time. CI runs them on every pull request (`.github/workflows/e2e.yml`) and keeps the HTML report as an artifact.
+
 ## Controls
 
 - **WASD / arrow keys** or **click the ground** to walk
