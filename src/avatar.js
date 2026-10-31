@@ -15,6 +15,8 @@ export class Avatar {
     this.goal = null;      // a point to walk to (click)
     this.onArrive = null;  // called when the goal is reached
     this.moving = false;
+    this.level = 0;        // which floor you're on (rooms with stairs)
+    this.heightAt = null;  // (x, z, level) -> { y, level } in rooms with stairs
 
     const g = new THREE.Group();
     this.figure = makeFigure({ hat: 'beanie', scarf: true, backpack: true, height: 1.05 });
@@ -34,10 +36,12 @@ export class Avatar {
   get position() { return this.body.position; }
 
   // Move to another place (the plaza or a room), standing at `pos` facing `rotY`.
-  setWorld(scene, colliders, bounds, pos, rotY) {
+  setWorld(scene, colliders, bounds, pos, rotY, heightAt = null) {
     scene.add(this.body);
     this.colliders = colliders;
     this.bounds = bounds;
+    this.heightAt = heightAt;
+    this.level = 0;
     this.body.position.copy(pos);
     this.body.rotation.set(0, rotY, 0);
     this.goal = null;
@@ -82,6 +86,12 @@ export class Avatar {
       const prev = p.clone();
       p.addScaledVector(dir, SPEED * dt);
       this.collide();
+      if (this.heightAt) {
+        // stairs: follow the floor, but a step taller than 0.6 m is a wall or a railing
+        const g = this.heightAt(p.x, p.z, this.level);
+        if (Math.abs(g.y - prev.y) > 0.6) { p.x = prev.x; p.z = prev.z; }
+        else { p.y = g.y; this.level = g.level; }
+      }
       // stuck against something while walking to a goal: give up
       if (this.goal && p.distanceTo(prev) < SPEED * dt * 0.15) { this.goal = null; this.onArrive = null; }
       const target = Math.atan2(dir.x, dir.z);
@@ -93,12 +103,13 @@ export class Avatar {
     // hand-drawn 2-frame animation: quick steps when walking, slow sway when idle
     const frame = Math.floor(time * (this.moving ? 7 : 2)) % 2;
     poseFigure(this.figure, this.moving ? 'walk' : 'idle', frame);
-    p.y = 0;
+    if (!this.heightAt) p.y = 0;
   }
 
   collide() {
     const p = this.position;
     for (const c of this.colliders) {
+      if ((c.level ?? 0) !== this.level) continue;
       const dx = p.x - c.x, dz = p.z - c.z;
       const d = Math.hypot(dx, dz), min = c.r + RADIUS;
       if (d < min && d > 1e-4) { p.x = c.x + (dx / d) * min; p.z = c.z + (dz / d) * min; }

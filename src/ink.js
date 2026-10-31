@@ -192,46 +192,62 @@ const compositeMaterial = new THREE.ShaderMaterial({
   depthWrite: false,
 });
 
+// Several InkRenderers can share the one composite shader (the main view,
+// and the plaza seen through the town hall's windows): each keeps its own
+// settings and applies them when it renders.
 export class InkRenderer {
-  constructor(renderer) {
+  constructor(renderer, { samples = 4, scale = 1 } = {}) {
     this.renderer = renderer;
+    this.scale = scale;
     const opts = { type: THREE.HalfFloatType };
     this.ndRT = new THREE.WebGLRenderTarget(1, 1, opts);
-    this.colorRT = new THREE.WebGLRenderTarget(1, 1, { samples: 4 });
+    this.colorRT = new THREE.WebGLRenderTarget(1, 1, { samples });
     this.quadScene = new THREE.Scene();
     this.quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     this.quadScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), compositeMaterial));
     this.uniforms = compositeMaterial.uniforms;
     this.paper = new THREE.Color(THEMES.day.paper);
+    this.ink = new THREE.Color(THEMES.day.ink);
+    this.resolution = new THREE.Vector2(1, 1);
+    this.thickness = 1.5;
+    this.fog = [70, 180];
     this.wobbleOn = true;
     this.skipND = [];
     this.lastStep = -1;
+    this.seed = 0;
   }
 
   setSize(w, h) {
-    const dpr = this.renderer.getPixelRatio();
+    const dpr = this.renderer.getPixelRatio() * this.scale;
     this.ndRT.setSize(w * dpr, h * dpr);
     this.colorRT.setSize(w * dpr, h * dpr);
-    this.uniforms.resolution.value.set(w * dpr, h * dpr);
-    this.uniforms.thickness.value = 1.5 * dpr;
+    this.resolution.set(w * dpr, h * dpr);
+    this.thickness = 1.5 * dpr;
   }
 
   setTheme(theme) {
     this.paper.set(THEMES[theme].paper);
-    this.uniforms.ink.value.set(THEMES[theme].ink);
+    this.ink.set(THEMES[theme].ink);
   }
 
   setFog(near, far) {
-    this.uniforms.fogNear.value = near;
-    this.uniforms.fogFar.value = far;
+    this.fog = [near, far];
   }
 
-  render(scene, camera, time) {
+  // Renders to the screen, or into `target` when one is given.
+  render(scene, camera, time, target = null) {
     const r = this.renderer;
     // boil the lines ~4 times a second, like hand-drawn animation
     const stepIndex = Math.floor(time * 4);
-    if (stepIndex !== this.lastStep) { this.lastStep = stepIndex; this.uniforms.seed.value = (stepIndex % 3) * 17.3; }
-    this.uniforms.wobble.value = this.wobbleOn ? 1 : 0;
+    if (stepIndex !== this.lastStep) { this.lastStep = stepIndex; this.seed = (stepIndex % 3) * 17.3; }
+    const u = this.uniforms;
+    u.seed.value = this.seed;
+    u.wobble.value = this.wobbleOn ? 1 : 0;
+    u.resolution.value.copy(this.resolution);
+    u.thickness.value = this.thickness;
+    u.ink.value.copy(this.ink);
+    u.fogNear.value = this.fog[0];
+    u.fogFar.value = this.fog[1];
 
     const bg = scene.background;
     scene.background = null;
@@ -251,9 +267,26 @@ export class InkRenderer {
     r.render(scene, camera);
     scene.background = bg;
 
-    this.uniforms.tColor.value = this.colorRT.texture;
-    this.uniforms.tND.value = this.ndRT.texture;
-    r.setRenderTarget(null);
+    u.tColor.value = this.colorRT.texture;
+    u.tND.value = this.ndRT.texture;
+    r.setRenderTarget(target);
     r.render(this.quadScene, this.quadCam);
+    r.setRenderTarget(null);
   }
+}
+
+// A window that shows another scene: samples a full-view render of it at
+// this pixel's screen position, so the view lines up with your eye.
+export function portalMaterial() {
+  return new THREE.ShaderMaterial({
+    uniforms: { tView: { value: null }, screen: { value: new THREE.Vector2(1, 1) } },
+    vertexShader: /* glsl */ `void main() { gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: /* glsl */ `
+      uniform sampler2D tView;
+      uniform vec2 screen;
+      void main() {
+        gl_FragColor = texture2D(tView, gl_FragCoord.xy / screen);
+        #include <colorspace_fragment>
+      }`,
+  });
 }

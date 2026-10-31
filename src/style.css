@@ -180,3 +180,24 @@ body { background: var(--ground); color: var(--ink); font-family: var(--font-bod
 .finds-panel .t small { display: block; font-family: var(--font-hand); font-size: 16px; color: var(--ink-muted); }
 .finds-intro { margin: 0 0 var(--space-2); font-family: var(--font-hand); font-size: 18px; color: var(--ink-muted); }
 .finds-panel .row .box.done + .t { color: var(--ink); text-decoration: none; }
+
+/* ---------- town hall: notes, speech, cards ---------- */
+.note-tip { position: fixed; left: 0; top: 0; z-index: 5; max-width: 260px; padding: var(--space-2) var(--space-3); background: var(--surface); color: var(--ink); border: var(--stroke-ink) solid var(--ink); border-radius: var(--radius-m); box-shadow: 0 3px 0 var(--ink); pointer-events: none; transition: opacity 100ms ease; }
+.note-tip b { display: block; font-family: var(--font-hand); font-weight: 400; font-size: 20px; line-height: 24px; overflow-wrap: anywhere; }
+.note-tip small { display: block; margin-top: 2px; font-family: var(--font-display); font-size: 14px; letter-spacing: 0.04em; color: var(--ink-muted); }
+.note-tip.is-hidden, .speech.is-hidden { opacity: 0; }
+
+.speech { position: fixed; left: 0; top: 0; z-index: 4; max-width: 280px; padding: var(--space-2) var(--space-3); background: var(--surface); color: var(--ink); border: var(--stroke-ink) solid var(--ink); border-radius: var(--radius-l); font-family: var(--font-hand); font-size: 19px; line-height: 23px; pointer-events: none; transition: opacity 160ms ease; }
+.speech::after { content: ""; position: absolute; left: 50%; bottom: -12px; width: 18px; height: 18px; margin-left: -9px; background: var(--surface); border-right: var(--stroke-ink) solid var(--ink); border-bottom: var(--stroke-ink) solid var(--ink); transform: rotate(45deg); }
+
+.paper-note { margin: var(--space-2) auto var(--space-4); max-width: 320px; min-height: 160px; padding: var(--space-6) var(--space-6) var(--space-4); background: var(--surface); border: 2px solid var(--line); box-shadow: 0 4px 0 var(--line); transform: rotate(-1.5deg); position: relative; }
+.paper-note::before { content: ""; position: absolute; top: 8px; left: 50%; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: var(--todo); border: 2px solid var(--ink); }
+.paper-note.is-late { transform: rotate(2.5deg); }
+.paper-note.is-late::before { background: var(--alert); }
+.paper-note .nt { margin: 0; font-family: var(--font-hand); font-size: 26px; line-height: 30px; overflow-wrap: anywhere; }
+.paper-note .nd { margin: var(--space-4) 0 0; padding-top: var(--space-2); border-top: 2px solid var(--ink); font-family: var(--font-display); font-size: 17px; letter-spacing: 0.04em; }
+.paper-note.is-late .nd { color: var(--alert); }
+.note-actions, .tw-row { display: flex; flex-wrap: wrap; gap: var(--space-3); justify-content: center; }
+.tw-intro { margin: 0 0 var(--space-3); font-family: var(--font-hand); font-size: 20px; color: var(--ink-muted); }
+.tw-input { width: 100%; margin-bottom: var(--space-3); font-family: "DM Mono", ui-monospace, monospace; }
+.tw-row .td-date { flex: 1; }

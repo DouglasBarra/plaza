@@ -33,6 +33,20 @@ function dueLabel(due, today = dateKey()) {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
+// Days in a row on which everything due was cleared (and something got done).
+function streak(tasks, today = dateKey()) {
+  const doneOn = new Map();
+  for (const t of tasks) if (t.done && t.doneAt) {
+    const d = dateKey(new Date(t.doneAt));
+    doneOn.set(d, (doneOn.get(d) || 0) + 1);
+  }
+  const cleared = (d) => doneOn.has(d) && !tasks.some((t) => t.due === d && (!t.done || dateKey(new Date(t.doneAt)) > d));
+  let day = cleared(today) ? today : addDays(today, -1);
+  let n = 0;
+  while (cleared(day) && n < 3650) { n++; day = addDays(day, -1); }
+  return n;
+}
+
 export const todos = {
   id: 'todo',
   name: 'ToDos',
@@ -40,6 +54,23 @@ export const todos = {
   title: 'Tasks',
 
   subscribe: (fn) => store.subscribe(fn),
+
+  // what the town hall building needs to read and change tasks
+  api: {
+    groups: () => groups(store.get().tasks),
+    dueLabel,
+    add(title, due = dateKey()) {
+      const t = { id: uid(), title: title.trim().slice(0, 200), due, done: false, createdAt: Date.now() };
+      if (t.title) update((ts) => [...ts, t]);
+      return t;
+    },
+    complete(id) {
+      update((ts) => ts.map((t) => (t.id === id ? { ...t, done: true, doneAt: Date.now() } : t)));
+    },
+    doneCount: () => store.get().tasks.filter((t) => t.done).length,
+    doneToday: () => store.get().tasks.filter((t) => t.done && t.doneAt && dateKey(new Date(t.doneAt)) === dateKey()).length,
+    streak: () => streak(store.get().tasks),
+  },
 
   // what the plaza shows on the town hall's sign
   summary() {
@@ -53,8 +84,8 @@ export const todos = {
     return { status, count: due, overdue: g.overdue.length, allClear: due === 0 };
   },
 
-  mount(el, { reward }) {
-    let tab = 'today';
+  mount(el, { reward, tab: startTab }) {
+    let tab = startTab || 'today';
     el.innerHTML = `
       <form class="td-add" autocomplete="off">
         <label class="sr-only" for="td-new">New task</label>

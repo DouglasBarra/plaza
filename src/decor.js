@@ -4,8 +4,11 @@
 // +z; rotate it with `rotY` for other walls.
 import * as THREE from 'three';
 import { toon } from './ink.js';
-import { M, stamp, mesh, box, cyl } from './kit.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { M, stamp, mesh, box, cyl, boxGeo } from './kit.js';
 import { spin } from './life.js';
+import { swapModel } from './models.js';
+import { roundTree } from './world.js';
 
 const dark = toon('#3a3a3a');
 
@@ -151,3 +154,52 @@ export function sack(p, x, z, s = 1) {
   cyl(p, 0.08 * s, 0.12 * s, 0.14 * s, M.white, x, 0.6 * s, z, 8);
   box(p, 0.16 * s, 0.03, 0.17 * s, stamp.finance, x, 0.52 * s, z);
 }
+
+// ---------- furniture shared by the rooms ----------
+export function chair(p, x, z, rotY) {
+  const g = new THREE.Group();
+  box(g, 0.5, 0.06, 0.5, M.planks, 0, 0.48, 0);
+  box(g, 0.5, 0.6, 0.06, M.planks, 0, 0.8, -0.22);
+  for (const lx of [-0.2, 0.2]) for (const lz of [-0.2, 0.2]) box(g, 0.05, 0.46, 0.05, M.white, lx, 0.23, lz);
+  g.position.set(x, 0, z); g.rotation.y = rotY;
+  p.add(swapModel(g, 'chair'));
+}
+
+export function desk(p, x, z, rotY) {
+  const g = new THREE.Group();
+  box(g, 2.4, 0.1, 1.1, M.planks, 0, 0.8, 0);
+  for (const sx of [-1.05, 1.05]) box(g, 0.25, 0.75, 1.0, M.planks, sx, 0.38, 0);
+  box(g, 2.1, 0.6, 0.06, M.planks, 0, 0.45, -0.45);
+  g.position.set(x, 0, z); g.rotation.y = rotY;
+  p.add(swapModel(g, 'desk'));
+  return g;
+}
+
+export function plant(p, x, z) {
+  cyl(p, 0.3, 0.24, 0.5, M.planks, x, 0.25, z, 10);
+  roundTree(p, x, z, 0.55);
+}
+
+// A shelf unit full of books, merged into one mesh so a room of them stays cheap.
+export function bookshelf(p, x, z, rotY, rand) {
+  const g = new THREE.Group();
+  const w = 2.2, h = 3.0, d = 0.5;
+  box(g, w, 0.08, d, M.planks, 0, h, 0);
+  for (const sx of [-w / 2, w / 2]) box(g, 0.08, h, d, M.planks, sx, h / 2, 0);
+  box(g, w, h, 0.04, M.planks, 0, h / 2, -d / 2);
+  const books = [];
+  for (let s = 0; s < 4; s++) {
+    const y = 0.1 + s * 0.74;
+    box(g, w, 0.05, d, M.planks, 0, y, 0);
+    let bx = -w / 2 + 0.1;
+    while (bx < w / 2 - 0.2) {
+      const bw = 0.07 + rand() * 0.08, bh = 0.38 + rand() * 0.24;
+      if (rand() > 0.12) books.push(boxGeo(bw, bh, 0.32).translate(bx + bw / 2, y + 0.03 + bh / 2, 0.04));
+      bx += bw + 0.01;
+    }
+  }
+  if (books.length) g.add(mesh(mergeGeometries(books), M.white));
+  g.position.set(x, 0, z); g.rotation.y = rotY;
+  p.add(swapModel(g, 'bookshelf'));
+}
+

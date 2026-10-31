@@ -7,9 +7,10 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { M, stamp, boxGeo, mesh, box, cyl, windowAt, folk, roundTree } from './world.js';
 import { swapModel } from './models.js';
 import { placeRoomFinds } from './finds.js';
+import { buildTownHall } from './townhall.js';
 import { clockHands } from './details.js';
 import { steam, swingSign } from './life.js';
-import { picture, wallShelf, rug, coatRack, ladder, gear, pegboard, typewriter, sack } from './decor.js';
+import { picture, wallShelf, rug, coatRack, ladder, gear, pegboard, typewriter, sack, chair, desk, plant, bookshelf } from './decor.js';
 
 const W = 12, D = 10, H = 4.2, T = 0.3;
 const BACK = -D / 2 + 0.04, LEFT = -W / 2 + 0.04; // just in front of the back and left walls
@@ -57,55 +58,8 @@ function lightRoom(scene) {
   Object.assign(sun.shadow.camera, { left: -10, right: 10, top: 10, bottom: -10, near: 1, far: 40 });
   sun.shadow.bias = -0.0005;
   sun.shadow.normalBias = 0.03;
-  scene.add(ambient, sun);
+  scene.add(ambient, sun, sun.target);
   return { ambient, sun };
-}
-
-function chair(p, x, z, rotY) {
-  const g = new THREE.Group();
-  box(g, 0.5, 0.06, 0.5, M.planks, 0, 0.48, 0);
-  box(g, 0.5, 0.6, 0.06, M.planks, 0, 0.8, -0.22);
-  for (const lx of [-0.2, 0.2]) for (const lz of [-0.2, 0.2]) box(g, 0.05, 0.46, 0.05, M.white, lx, 0.23, lz);
-  g.position.set(x, 0, z); g.rotation.y = rotY;
-  p.add(swapModel(g, 'chair'));
-}
-
-function desk(p, x, z, rotY) {
-  const g = new THREE.Group();
-  box(g, 2.4, 0.1, 1.1, M.planks, 0, 0.8, 0);
-  for (const sx of [-1.05, 1.05]) box(g, 0.25, 0.75, 1.0, M.planks, sx, 0.38, 0);
-  box(g, 2.1, 0.6, 0.06, M.planks, 0, 0.45, -0.45);
-  g.position.set(x, 0, z); g.rotation.y = rotY;
-  p.add(swapModel(g, 'desk'));
-  return g;
-}
-
-function plant(p, x, z) {
-  cyl(p, 0.3, 0.24, 0.5, M.planks, x, 0.25, z, 10);
-  roundTree(p, x, z, 0.55);
-}
-
-// A shelf unit full of books, merged into one mesh so a room of them stays cheap.
-function bookshelf(p, x, z, rotY, rand) {
-  const g = new THREE.Group();
-  const w = 2.2, h = 3.0, d = 0.5;
-  box(g, w, 0.08, d, M.planks, 0, h, 0);
-  for (const sx of [-w / 2, w / 2]) box(g, 0.08, h, d, M.planks, sx, h / 2, 0);
-  box(g, w, h, 0.04, M.planks, 0, h / 2, -d / 2);
-  const books = [];
-  for (let s = 0; s < 4; s++) {
-    const y = 0.1 + s * 0.74;
-    box(g, w, 0.05, d, M.planks, 0, y, 0);
-    let bx = -w / 2 + 0.1;
-    while (bx < w / 2 - 0.2) {
-      const bw = 0.07 + rand() * 0.08, bh = 0.38 + rand() * 0.24;
-      if (rand() > 0.12) books.push(boxGeo(bw, bh, 0.32).translate(bx + bw / 2, y + 0.03 + bh / 2, 0.04));
-      bx += bw + 0.01;
-    }
-  }
-  if (books.length) g.add(mesh(mergeGeometries(books), M.white));
-  g.position.set(x, 0, z); g.rotation.y = rotY;
-  p.add(swapModel(g, 'bookshelf'));
 }
 
 // Paper notes pinned to a board; the count can change live.
@@ -133,59 +87,8 @@ function noteBoard(p, x, y, z, w, h, pinMat) {
 }
 
 const INTERIORS = {
-  // ---------- Town hall: the ToDos office ----------
-  todo(scene, rand) {
-    const cutaway = shell(scene, M.bricks, M.floor);
-    const board = noteBoard(scene, 0, 2.3, -D / 2 + 0.12, 4.2, 2.2, stamp.todo);
-    desk(scene, 3.6, -1.6, -Math.PI / 2);
-    chair(scene, 4.6, -1.6, -Math.PI / 2);
-    folk(scene, 4.6, -1.6, -Math.PI / 2, { pose: 'type', seat: 0.48, look: { hat: 'bowler', glasses: true } });
-    typewriter(scene, 3.9, 0.85, -1.6, Math.PI / 2);
-    cyl(scene, 0.06, 0.05, 0.12, M.white, 3.5, 0.91, -2.55, 10);
-    steam(scene, 3.5, 0.99, -2.55);
-    box(scene, 0.5, 0.12, 0.4, M.white, 3.4, 0.9, -2.0);
-    box(scene, 0.45, 0.06, 0.35, M.white, 3.5, 0.99, -1.95).rotation.y = 0.2;
-    cyl(scene, 0.04, 0.04, 0.5, M.white, 3.3, 1.1, -0.8, 6);
-    mesh(new THREE.ConeGeometry(0.25, 0.25, 10), M.white, 3.3, 1.4, -0.8, scene);
-    for (const z of [-4.2, -3.4]) {
-      box(scene, 0.7, 1.4, 0.7, M.white, -5.5, 0.7, z);
-      for (const y of [0.35, 0.8, 1.2]) box(scene, 0.04, 0.05, 0.25, M.white, -5.13, y, z);
-    }
-    box(scene, 0.6, 2.3, 0.45, M.planks, -5.6, 1.15, 2.4);
-    const face = mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.04, 20), [M.white, M.clock, M.white], -5.36, 1.9, 2.4, scene);
-    face.rotation.z = -Math.PI / 2;
-    // the tall clock keeps real time, and its pendulum swings
-    const hands = new THREE.Group();
-    hands.position.set(-5.33, 1.9, 2.4);
-    hands.rotation.y = Math.PI / 2;
-    scene.add(hands);
-    clockHands(hands, 0, 0, 0, 0.21);
-    const pendulum = new THREE.Group();
-    pendulum.position.set(-5.32, 1.6, 2.4);
-    box(pendulum, 0.02, 0.55, 0.02, M.white, 0, -0.28, 0);
-    mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.03, 14), M.white, 0, -0.58, 0, pendulum).rotation.z = Math.PI / 2;
-    scene.add(pendulum);
-    swingSign(pendulum);
-    // pictures, a shelf, a rug, a coat rack, papers on the floor, a visitor waiting
-    picture(scene, LEFT, 2.4, 0, 1.0, 1.2, Math.PI / 2, 'portrait');
-    picture(scene, 5.1, 2.4, BACK, 0.8, 0.8, 0, 'map');
-    wallShelf(scene, LEFT, 2.9, -3.8, 1.6, Math.PI / 2, rand);
-    rug(scene, 0, 0.6, 5, 3.4);
-    coatRack(scene, 4.6, 3.6);
-    box(scene, 0.3, 0.01, 0.4, M.white, 2.5, 0.01, -0.3).rotation.y = 0.5;
-    box(scene, 0.3, 0.01, 0.4, M.white, 2.1, 0.01, 0.15).rotation.y = -0.3;
-    folk(scene, -2.6, 2.8, Math.PI / 2, { pose: 'sit', seat: 0.5, look: { hat: 'top', scarf: true } });
-    plant(scene, -5.2, 4.2);
-    plant(scene, 5.2, 4.2);
-    chair(scene, -2.6, 2.8, Math.PI / 2);
-    chair(scene, -2.6, 3.6, Math.PI / 2);
-    return {
-      cutaway,
-      colliders: [{ x: 3.6, z: -1.6, r: 1.3 }, { x: -5.5, z: -3.8, r: 0.9 }, { x: -5.6, z: 2.4, r: 0.5 }, { x: -5.2, z: 4.2, r: 0.5 }, { x: 5.2, z: 4.2, r: 0.5 }, { x: -2.6, z: 3.2, r: 0.7 }, { x: 4.6, z: 3.6, r: 0.4 }],
-      station: { point: new THREE.Vector3(0, 0, -D / 2 + 1.8), label: 'Open the task board' },
-      setNotes: board.setNotes,
-    };
-  },
+  // ---------- Town hall: the ToDos district (see townhall.js) ----------
+  todo: buildTownHall,
 
   // ---------- Bank: Finance ----------
   finance(scene) {
@@ -302,17 +205,17 @@ export function buildInterior(id) {
   const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
   const scene = new THREE.Scene();
   const lights = lightRoom(scene);
-  const room = INTERIORS[id](scene, rand);
+  const room = INTERIORS[id](scene, rand, lights);
   placeRoomFinds(id, scene);
   return {
     id,
     scene,
     lights,
-    ...room,
     bounds: { minX: -W / 2 + 0.5, maxX: W / 2 - 0.5, minZ: -D / 2 + 0.6, maxZ: D / 2 - 0.4 },
     spawn: new THREE.Vector3(0, 0, D / 2 - 2.2),
     exit: new THREE.Vector3(0, 0, D / 2 - 0.6),
     // where the third-person camera looks from (front-right, above the cut walls)
     cameraOffset: new THREE.Vector3(9, 13, 15),
-  };
+    ...room,
+  };;
 }

@@ -20,6 +20,7 @@ Then open http://localhost:5173.
 - Inside, walk up to the room's board, counter or table and press **E** to open that district's app; stand on the doormat and press **E** to leave
 - **1–6** open a district's app right away, **Esc** closes it
 - **Drag** to look around, **scroll** to zoom out over the town
+- In the **town hall** (ToDos): hover a note on the board to read it, click it to open it, and tear it off to finish it. Ask the clerk at the desk to type a new task. Take the stairs up for the calendar, what's coming up and the archive
 - **V** switches to first person: the mouse looks around (click to capture it, **Esc** frees it), and a click does what **E** does
 
 ## How it's built
@@ -33,6 +34,7 @@ Three.js with Vite, no framework yet.
 | `src/world.js` | The plaza: buildings, props, folks |
 | `src/town.js` | Everything outside: the endless town, mountains, clouds, birds |
 | `src/interiors.js` | The rooms inside each building |
+| `src/townhall.js` | The two-story town hall: task boards, stairs, fireplace, calendar, archive |
 | `src/avatar.js` | You: walking, collisions, doors |
 | `src/districts/` | Each district's app (`todos.js` is the first real one) |
 | `src/store.js` | Saving district data on this computer |

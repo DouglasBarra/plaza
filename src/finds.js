@@ -184,11 +184,11 @@ export function placeFinds(world, buildings) {
 export function placeRoomFinds(id, scene) {
   if (id !== 'todo') return;
   // a little arched hole at the bottom of the left wall
-  const hole = mesh(new THREE.CircleGeometry(0.16, 16, 0, Math.PI), M.deep, -5.98, 0, 0.6, scene);
+  const hole = mesh(new THREE.CircleGeometry(0.16, 16, 0, Math.PI), M.deep, -5.98, 0, 2.1, scene);
   hole.rotation.y = Math.PI / 2;
   hole.castShadow = false;
   const m = mouse();
-  m.position.set(-5.55, 0, 0.9);
+  m.position.set(-5.55, 0, 2.4);
   m.rotation.y = -0.6;
   scene.add(register('mouse', 'The office mouse', 'Inside the town hall, someone lives in the wall.', m));
 }
