@@ -123,7 +123,7 @@ const INTERIORS = {
     const board = noteBoard(scene, 0, 2.3, -D / 2 + 0.12, 4.2, 2.2, stamp.todo);
     desk(scene, 3.6, -1.6, -Math.PI / 2);
     chair(scene, 4.6, -1.6, -Math.PI / 2);
-    folk(scene, 4.6, -0.6, -Math.PI / 2, { hat: true });
+    folk(scene, 4.6, -1.6, -Math.PI / 2, { pose: 'read', seat: 0.48, look: { hat: 'bowler', glasses: true, item: 'paper' } });
     box(scene, 0.5, 0.12, 0.4, M.white, 3.4, 0.9, -2.0);
     box(scene, 0.45, 0.06, 0.35, M.white, 3.5, 0.99, -1.95).rotation.y = 0.2;
     cyl(scene, 0.04, 0.04, 0.5, M.white, 3.3, 1.1, -0.8, 6);
@@ -155,8 +155,8 @@ const INTERIORS = {
     for (const x of [-3.4, -1.15, 1.15, 3.4]) box(scene, 0.08, 1.2, 0.08, M.white, x, 1.8, -2.4);
     box(scene, 7, 0.1, 0.12, M.white, 0, 2.4, -2.4);
     for (const [x, n] of [[-1.8, 4], [-1.5, 6], [2.2, 3]]) for (let i = 0; i < n; i++) cyl(scene, 0.12, 0.12, 0.05, M.white, x, 1.23 + i * 0.05, -2.3, 12);
-    folk(scene, 0, -3.4, 0);
-    folk(scene, -2.6, -3.5, 0.2, { hat: true });
+    folk(scene, 0, -3.4, 0, { pose: 'vendor', look: { hat: 'cap' } });
+    folk(scene, -2.6, -3.5, 0.2, { pose: 'chat', look: { hair: 'bun', glasses: true } });
     const vault = mesh(new THREE.CylinderGeometry(1.2, 1.2, 0.3, 28), stamp.finance, 3.6, 1.7, -D / 2 + 0.2, scene);
     vault.rotation.x = Math.PI / 2;
     for (let i = 0; i < 3; i++) box(scene, 1.6, 0.1, 0.1, M.white, 3.6, 1.7, -D / 2 + 0.42).rotation.z = (i * Math.PI) / 3;
@@ -184,8 +184,8 @@ const INTERIORS = {
     box(scene, 0.7, 0.04, 0.5, M.white, 0.2, 0.92, 0.7).rotation.y = 0.15;
     cyl(scene, 0.05, 0.12, 0.9, M.white, 4.4, 0.45, 2.6, 8);
     mesh(new THREE.IcosahedronGeometry(0.45, 1), M.white, 4.4, 1.3, 2.6, scene);
-    folk(scene, 3.4, -2.8, 0.4, { hat: true });
-    folk(scene, -0.3, -0.4, Math.PI * 0.95);
+    folk(scene, 3.4, -3.9, Math.PI, { pose: 'look', look: { hair: 'long' } });
+    folk(scene, -0.3, -0.4, 0, { pose: 'read', seat: 0.48, look: { glasses: true, item: 'paper' } });
     plant(scene, 5.2, 4.2);
     return {
       cutaway,
@@ -214,7 +214,7 @@ const INTERIORS = {
     bulb.castShadow = false;
     for (const [x, z, s] of [[-4.8, 3.6, 0.9], [-4.0, 4.1, 0.7], [-4.6, 2.7, 0.6]]) box(scene, s, s, s, M.planks, x, s / 2, z).rotation.y = x;
     for (let i = 0; i < 6; i++) mesh(new THREE.IcosahedronGeometry(0.1, 0), M.white, -2 + rand() * 4, 0.1, 1 + rand() * 2, scene);
-    folk(scene, 4.2, -0.2, Math.PI, { hat: true });
+    folk(scene, 4.2, -0.3, Math.PI, { pose: 'feed', look: { hat: 'cap', glasses: true } });
     return {
       cutaway,
       colliders: [{ x: 4.2, z: -1.2, r: 1.6 }, { x: 3.6, z: 0.2, r: 0.4 }, { x: -4.5, z: 3.5, r: 1.2 }],

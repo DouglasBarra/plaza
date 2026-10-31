@@ -1,8 +1,7 @@
 // You: a plaza folk in a dark beanie and scarf. Walk with WASD / arrows or
 // click the ground. You can't leave the plaza; buildings and props block you.
 import * as THREE from 'three';
-import { toon, deep } from './ink.js';
-import { M, mesh } from './world.js';
+import { makeFigure, poseFigure } from './folks.js';
 
 const SPEED = 5.5;
 const RADIUS = 0.4;
@@ -18,18 +17,8 @@ export class Avatar {
     this.moving = false;
 
     const g = new THREE.Group();
-    const dark = toon('#3a3a3a');
-    mesh(new THREE.CapsuleGeometry(0.22, 0.42, 3, 10), M.white, 0, 0.44, 0, g);
-    mesh(new THREE.SphereGeometry(0.22, 12, 10), M.white, 0, 1.04, 0, g);
-    mesh(new THREE.SphereGeometry(0.235, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), dark, 0, 1.08, 0, g); // beanie
-    mesh(new THREE.SphereGeometry(0.07, 8, 6), dark, 0, 1.33, 0, g); // pompom
-    mesh(new THREE.TorusGeometry(0.2, 0.06, 6, 14), dark, 0, 0.82, 0, g).rotation.x = Math.PI / 2; // scarf
-    const tail = mesh(new THREE.BoxGeometry(0.1, 0.32, 0.05), dark, 0.1, 0.66, -0.2, g);
-    tail.rotation.z = 0.2;
-    for (const ex of [-0.08, 0.08]) {
-      const e = mesh(new THREE.SphereGeometry(0.032, 6, 4), deep(), ex, 1.04, 0.2, g);
-      e.castShadow = false;
-    }
+    this.figure = makeFigure({ hat: 'beanie', scarf: true, backpack: true, height: 1.05 });
+    g.add(this.figure);
     // a little ink ring under your feet so you can always find yourself
     const ring = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.68, 28), new THREE.MeshBasicMaterial({ color: '#111111' }));
     ring.rotation.x = -Math.PI / 2;
@@ -102,9 +91,9 @@ export class Avatar {
     }
 
     // hand-drawn 2-frame animation: quick steps when walking, slow sway when idle
-    const frame = Math.floor(time * (this.moving ? 8 : 2)) % 2;
-    this.body.rotation.z = (frame ? 1 : -1) * (this.moving ? 0.1 : 0.04);
-    p.y = this.moving && frame ? 0.07 : 0;
+    const frame = Math.floor(time * (this.moving ? 7 : 2)) % 2;
+    poseFigure(this.figure, this.moving ? 'walk' : 'idle', frame);
+    p.y = 0;
   }
 
   collide() {

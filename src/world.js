@@ -1,99 +1,10 @@
 // The plaza, built from simple shapes. Units are meters; +z is a building's front.
 import * as THREE from 'three';
-import { toon, deep } from './ink.js';
-import { tex } from './textures.js';
+import { M, stamp, glow, boxGeo, prismGeo, mesh, box, cyl, slab, windowAt, gable } from './kit.js';
 import { swapModel } from './models.js';
-
-export const STAMPS = {
-  todo: '#ff6a13',
-  finance: '#1fcf6a',
-  study: '#19a7ff',
-  projects: '#ff2e88',
-  ideas: '#ffd21f',
-  people: '#9b6bff',
-};
+import { addFolk, folk, animateFigures } from './folks.js';
 
 const TILE = 0.4; // height of each building's raised ground tile
-
-// ---------- materials ----------
-const M = {
-  white: toon(),
-  bricks: toon('#ffffff', tex.bricks()),
-  stone: toon('#ffffff', tex.stone()),
-  paving: toon('#ffffff', tex.paving()),
-  shingles: toon('#ffffff', tex.shingles()),
-  planks: toon('#ffffff', tex.planks()),
-  floor: toon('#ffffff', tex.floorboards()),
-  dirt: toon('#ffffff', tex.dirt()),
-  grass: toon('#ffffff', tex.grass()),
-  water: toon('#ffffff', tex.water()),
-  stripes: toon('#ffffff', tex.stripes()),
-  roofTiles: toon('#ffffff', tex.roofTiles()),
-  clock: toon('#ffffff', tex.clock()),
-  deep: deep(),
-};
-const stamp = {};
-for (const [k, c] of Object.entries(STAMPS)) stamp[k] = toon(c);
-const glow = new THREE.MeshBasicMaterial({ color: STAMPS.ideas });
-
-// ---------- geometry helpers (UVs in meters so textures keep their scale) ----------
-function boxGeo(w, h, d) {
-  const g = new THREE.BoxGeometry(w, h, d);
-  const uv = g.attributes.uv;
-  // face order: +x, -x, +y, -y, +z, -z (4 verts each)
-  const sizes = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]];
-  for (let f = 0; f < 6; f++) for (let i = 0; i < 4; i++) {
-    const k = f * 4 + i;
-    uv.setXY(k, uv.getX(k) * sizes[f][0], uv.getY(k) * sizes[f][1]);
-  }
-  return g;
-}
-
-function cylGeo(rt, rb, h, seg = 16) {
-  const g = new THREE.CylinderGeometry(rt, rb, h, seg);
-  const uv = g.attributes.uv;
-  const circ = Math.PI * (rt + rb);
-  for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * circ, uv.getY(i) * h);
-  return g;
-}
-
-// Triangular prism for gable roofs: triangle in x/y, extruded along z.
-function prismGeo(w, h, d) {
-  const s = new THREE.Shape();
-  s.moveTo(-w / 2, 0); s.lineTo(w / 2, 0); s.lineTo(0, h); s.closePath();
-  const g = new THREE.ExtrudeGeometry(s, { depth: d, bevelEnabled: false });
-  g.translate(0, 0, -d / 2);
-  return g;
-}
-
-function mesh(geo, mat, x = 0, y = 0, z = 0, parent) {
-  const m = new THREE.Mesh(geo, mat);
-  m.position.set(x, y, z);
-  m.castShadow = m.receiveShadow = true;
-  if (parent) parent.add(m);
-  return m;
-}
-
-const box = (p, w, h, d, mat, x, y, z) => mesh(boxGeo(w, h, d), mat, x, y, z, p);
-const cyl = (p, rt, rb, h, mat, x, y, z, seg) => mesh(cylGeo(rt, rb, h, seg), mat, x, y, z, p);
-
-// A box with one material on top and another on the sides.
-function slab(p, w, h, d, top, side, x, y, z) {
-  return mesh(boxGeo(w, h, d), [side, side, top, side, side, side], x, y, z, p);
-}
-
-function windowAt(p, x, y, z, w, h, rotY = 0) {
-  const m = box(p, w, h, 0.08, M.deep, x, y, z);
-  m.rotation.y = rotY;
-  m.castShadow = false;
-  return m;
-}
-
-function gable(p, w, h, d, mat, y, z = 0, rotY = 0) {
-  const r = mesh(prismGeo(w, h, d), mat, 0, y, z, p);
-  r.rotation.y = rotY;
-  return r;
-}
 
 function groundTile(p, size, top) {
   slab(p, size, TILE, size, top, M.stone, 0, TILE / 2, 0);
@@ -269,29 +180,6 @@ function fountain(p) {
   p.add(g);
 }
 
-// Little plaza folks: a capsule, a head, two dot eyes. They wiggle on a
-// 2-frame loop like hand-drawn animation.
-const folks = [];
-function folk(p, x, z, rotY, opts = {}) {
-  const g = new THREE.Group();
-  mesh(new THREE.CapsuleGeometry(0.2, 0.4, 3, 8), M.white, 0, 0.42, 0, g);
-  mesh(new THREE.SphereGeometry(0.2, 10, 8), M.white, 0, 0.98, 0, g);
-  for (const ex of [-0.07, 0.07]) {
-    const e = mesh(new THREE.SphereGeometry(0.03, 6, 4), M.deep, ex, 1.0, 0.18, g);
-    e.castShadow = false;
-  }
-  if (opts.balloon) {
-    cyl(g, 0.008, 0.008, 1.2, M.white, 0.25, 1.2, 0, 3);
-    mesh(new THREE.SphereGeometry(0.22, 10, 8), stamp[opts.balloon], 0.25, 1.95, 0, g);
-  }
-  if (opts.hat) mesh(new THREE.ConeGeometry(0.16, 0.3, 8), M.white, 0, 1.3, 0, g);
-  g.position.set(x, 0, z); g.rotation.y = rotY;
-  g.userData = { phase: Math.random() * 10, walk: opts.walk };
-  p.add(g);
-  folks.push(g);
-  return g;
-}
-
 function cat(p, x, z, rotY) {
   const g = new THREE.Group();
   box(g, 0.5, 0.22, 0.2, M.white, 0, 0.2, 0);
@@ -450,17 +338,30 @@ export function buildPlaza(scene) {
   roundTree(world, -12.2, -7.0, 0.7);
   for (const [x, z] of [[1.8, 3.4], [2.3, 3.0], [-3.2, -1.6], [-3.4, -2.2], [3.1, -2.6], [2.2, -3.4]]) pigeon(world, x, z);
 
-  // folks
-  folk(world, 3.6, 3.2, 2.4);
-  folk(world, 4.2, 2.5, -0.9, { hat: true });
-  folk(world, -4.0, 3.8, 0.6, { balloon: 'projects' });
-  folk(world, 7, -3, -2.0, { walk: { r: 7.6, speed: 0.1 } });
-  folk(world, -7, -1.2, 1.0, { walk: { r: 8.4, speed: -0.08, offset: 2 } });
-  folk(world, 1.4, -7.8, 3.1, { hat: true });
-  folk(world, 4.8, -11.0, 0.3);
-  folk(world, 11.4, -4.6, 1.6);
-  folk(world, -10.6, 7.6, 2.2, { balloon: 'people' });
-  folk(world, -5.0, 12.2, 0);
+  // folks, each busy with something
+  const onBench = (i, side = 0) => {
+    const a = (i / 4) * Math.PI * 2 + Math.PI / 4, rot = a + Math.PI;
+    return { x: Math.sin(a) * 4.6 + Math.cos(rot) * side, z: Math.cos(a) * 4.6 - Math.sin(rot) * side, rot, seat: 0.5 };
+  };
+  addFolk(world, { ...onBench(0, -0.4), pose: 'read', look: { hat: 'bowler', glasses: true, item: 'paper' } });
+  addFolk(world, { ...onBench(0, 0.45), pose: 'sit', look: { hair: 'bun', dress: true, height: 0.95 } });
+  addFolk(world, { ...onBench(1), pose: 'nap', look: { hat: 'cap' } });
+  addFolk(world, { ...onBench(3, 0.3), pose: 'sit', look: { hat: 'top', glasses: true, height: 1.08 } });
+  addFolk(world, { x: -6.6, z: 11.6, rot: Math.PI * 0.85, seat: 0.5, pose: 'read', look: { hair: 'long', item: 'paper' } });
+  addFolk(world, { x: 0, z: 2.3, rot: 0, seat: 0.6, pose: 'music', look: { hat: 'cap', item: 'guitar' } });
+  addFolk(world, { x: -4.4, z: -1.2, rot: 2.14, pose: 'feed', look: { hair: 'bun', dress: true, height: 0.95 } });
+  addFolk(world, { x: 8.5, z: -8.0, rot: 0.93, pose: 'chat', look: { hair: 'long', scarf: true } });
+  addFolk(world, { x: 9.3, z: -7.4, rot: 0.93 + Math.PI, pose: 'idle', look: { hat: 'cone', backpack: true } });
+  addFolk(world, { pose: 'walk', walk: { r: 9.5, speed: 0.09 }, dog: true, look: { hat: 'cap', scarf: true } });
+  addFolk(world, { pose: 'walk', walk: { r: 7.8, speed: -0.07, offset: 2 }, look: { glasses: true, backpack: true } });
+  addFolk(world, { x: -6.5, z: -5.5, rot: 0.8, pose: 'sweep', look: { hat: 'bowler', item: 'broom' } });
+  addFolk(world, { x: 6.5, z: 9.0, rot: 2.45, pose: 'kite', kite: true, look: { hat: 'cap', height: 0.72 } });
+  addFolk(world, { x: 13.9, z: -4.8, rot: -Math.PI / 2, pose: 'vendor', look: { hat: 'cone' } });
+  addFolk(world, { x: 11.2, z: -4.3, rot: Math.PI / 2, pose: 'chat', look: { hair: 'long', dress: true } });
+  addFolk(world, { x: 2.65, z: -13.4, rot: Math.PI / 2, seat: 0.45, pose: 'sit', look: { hair: 'bun' } });
+  addFolk(world, { x: 6.95, z: -12.0, rot: -Math.PI / 2, seat: 0.45, pose: 'read', look: { glasses: true, item: 'paper' } });
+  addFolk(world, { x: -4.8, z: 12.2, rot: 0, pose: 'look', look: { hat: 'top' } });
+  addFolk(world, { x: -10.2, z: 7.6, rot: 2.2, pose: 'wave', look: { item: 'balloon', balloon: 'people', height: 0.75 } });
   cat(world, 2.1, 3.9, 0.7);
   cat(world, -12.2, 2.0, 2.4);
 
@@ -468,19 +369,7 @@ export function buildPlaza(scene) {
 }
 
 export function animateFolks(time) {
-  const frame = Math.floor(time * 3); // 3 drawings per second
-  for (const f of folks) {
-    const flip = (frame + Math.floor(f.userData.phase * 3)) % 2;
-    f.rotation.z = flip ? 0.06 : -0.06;
-    const w = f.userData.walk;
-    if (w) {
-      const a = time * w.speed + (w.offset || 0);
-      f.position.set(Math.cos(a) * w.r, flip ? 0.05 : 0, Math.sin(a) * w.r);
-      f.rotation.y = -a + (w.speed > 0 ? 0 : Math.PI);
-    } else {
-      f.position.y = flip ? 0.03 : 0;
-    }
-  }
+  animateFigures(time);
   for (const p of pigeons) {
     const k = Math.floor(time * 1.5 + p.userData.phase);
     const hop = k % 5 === 0;
@@ -490,3 +379,4 @@ export function animateFolks(time) {
 }
 
 export { M, stamp, boxGeo, prismGeo, mesh, box, cyl, windowAt, folk, roundTree };
+export { STAMPS } from './kit.js';
