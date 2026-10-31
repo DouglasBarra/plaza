@@ -144,7 +144,13 @@ export function poseFigure(fig, pose, frame, seat = 0.5) {
       head.rotation.x = 0.25;
       if (item) item.rotation.z = frame ? 0.04 : -0.04;
       break;
-    case 'nap':
+    case 'type':
+      sit();
+      arms[0].rotation.set(frame ? -1.25 : -1.05, 0, 0.25);
+      arms[1].rotation.set(frame ? -1.05 : -1.25, 0, -0.25);
+      head.rotation.x = 0.2;
+      break;
+        case 'nap':
       sit();
       head.rotation.set(0.25, 0, 0.35);
       body.position.y += frame ? 0.02 : 0;

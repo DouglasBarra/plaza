@@ -16,6 +16,7 @@ const fountains = [];
 const leafList = [];
 const lamps = [];
 const panes = [];
+const spinners = [];
 
 const puffGeo = new THREE.IcosahedronGeometry(1, 0);
 
@@ -61,6 +62,11 @@ export function fountainWater(p) {
 // ---------- trees, leaves, signs ----------
 export function sway(g, amount = 0.025) {
   swayers.push({ g, amount, phase: Math.random() * 10, rx: g.rotation.x, rz: g.rotation.z });
+}
+
+// Turn something steadily around one of its own axes (gears, fans).
+export function spin(obj, speed, axis = 'y') {
+  spinners.push({ obj, speed, axis });
 }
 
 export function swingSign(pivot) {
@@ -124,6 +130,7 @@ export function animateLife(time) {
     s.g.rotation.x = s.rx + Math.sin(time * 1.1 + s.phase) * s.amount;
     s.g.rotation.z = s.rz + Math.cos(time * 0.9 + s.phase) * s.amount;
   }
+  for (const s of spinners) s.obj.rotation[s.axis] = time * s.speed;
   for (const s of swings) s.pivot.rotation.x = Math.sin(time * 1.6 + s.phase) * 0.14;
   for (const f of fountains) {
     for (const d of f.drops) d.d.position.copy(d.curve.getPoint((time * 0.7 + d.k) % 1));
