@@ -411,6 +411,22 @@ refreshSigns();
 // dates roll over at midnight; refresh the signs every minute
 setInterval(refreshSigns, 60_000);
 
+// Dev-only handle for testing from the browser console (left out of builds).
+if (import.meta.env.DEV) {
+  window.__plaza = {
+    me, enterBuilding, exitBuilding, setView, openApp, closeApp,
+    state: () => ({ room: room?.id ?? null, view, appOpen, action: action?.label ?? null, pos: me.position.toArray().map((n) => +n.toFixed(2)) }),
+    // walk with held keys for `seconds`, simulated at 60 fps
+    walk(keys, seconds) {
+      keys.forEach((k) => me.keys.add(k));
+      for (let i = 0; i < seconds * 60; i++) me.update(1 / 60, i / 60, camera);
+      keys.forEach((k) => me.keys.delete(k));
+      action = findAction();
+      return this.state();
+    },
+  };
+}
+
 // ---------- loop ----------
 function resize() {
   const w = window.innerWidth, h = window.innerHeight;

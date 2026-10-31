@@ -146,7 +146,7 @@ body { background: var(--ground); color: var(--ink); font-family: var(--font-bod
 
 /* ---------- first person, rooms, transitions ---------- */
 .prompt { pointer-events: auto; border: 0; cursor: pointer; }
-.prompt.is-center { left: 50%; top: auto; bottom: 120px; transform: translateX(-50%); }
+.prompt.is-center { left: 50%; top: auto; bottom: 150px; transform: translateX(-50%); }
 #crosshair { position: fixed; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border: 2px solid var(--ink); border-radius: 50%; background: var(--surface); pointer-events: none; display: none; }
 .first-person.looking #crosshair { display: block; }
 #fade { position: fixed; inset: 0; background: var(--ground); opacity: 0; pointer-events: none; transition: opacity 240ms ease; }
@@ -156,3 +156,4 @@ body { background: var(--ground); color: var(--ink); font-family: var(--font-bod
 .first-person .hint-third { display: none; }
 .app-open .hint { display: none; }
 @media (prefers-reduced-motion: reduce) { #fade { transition: none; } }
+.in-room .label { display: none; }

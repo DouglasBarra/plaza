@@ -189,8 +189,8 @@ const INTERIORS = {
     plant(scene, 5.2, 4.2);
     return {
       cutaway,
-      colliders: [{ x: 0.6, z: 0.6, r: 1.9 }, { x: 4.4, z: 2.6, r: 0.6 }, { x: 5.2, z: 4.2, r: 0.5 }],
-      station: { point: new THREE.Vector3(0.6, 0, 2.6), label: 'Open your reading list' },
+      colliders: [{ x: 0.6, z: 0.6, r: 1.8 }, { x: 4.4, z: 2.6, r: 0.6 }, { x: 5.2, z: 4.2, r: 0.5 }],
+      station: { point: new THREE.Vector3(3.0, 0, 0.4), label: 'Open your reading list' },
     };
   },
 
