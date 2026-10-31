@@ -7,6 +7,7 @@ import { buildTown } from './town.js';
 import { Avatar } from './avatar.js';
 import { DISTRICTS } from './districts/index.js';
 import { buildInterior, hasInterior } from './interiors.js';
+import * as finds from './finds.js';
 
 // ---------- renderer, scene, camera ----------
 const canvas = document.getElementById('scene');
@@ -308,6 +309,60 @@ function reward(text) {
   setTimeout(() => el.remove(), 950);
 }
 
+// ---------- the finds list ----------
+const findsBtn = document.getElementById('finds-btn');
+function refreshFinds() {
+  const { found, total } = finds.progress();
+  findsBtn.textContent = `Finds ${found}/${total}`;
+}
+finds.subscribe(refreshFinds);
+findsBtn.addEventListener('click', openFinds);
+
+function openFinds() {
+  unmount?.();
+  unmount = null;
+  appOpen = 'finds';
+  me.goal = null;
+  me.keys.clear();
+  if (document.pointerLockElement) document.exitPointerLock();
+  const { found, total } = finds.progress();
+  panel.className = 'pz-panel finds-panel';
+  panel.innerHTML = `
+    <header class="pz-panel-head">
+      <span class="pz-panel-tag">Finds</span>
+      <h2 class="pz-panel-title">Little things</h2>
+      <button class="pz-panel-close" aria-label="Close">×</button>
+    </header>
+    <div class="pz-panel-body">
+      <p class="finds-intro">${found} of ${total} found. Click anything that looks a little out of place.</p>
+      ${finds.list().map((f) => `
+        <div class="row">
+          <span class="box${f.found ? ' done' : ''}" aria-hidden="true"></span>
+          <span class="t">${f.found ? f.name : '???'}<small>${f.hint}</small></span>
+        </div>`).join('')}
+    </div>`;
+  overlay.hidden = false;
+  document.body.classList.add('app-open');
+  panel.querySelector('.pz-panel-close').addEventListener('click', closeApp);
+}
+
+// Click (or, in first person, look and click): did that hit a find?
+const centerOfView = new THREE.Vector2(0, 0);
+function shownInScene(o) {
+  for (; o; o = o.parent) if (!o.visible) return false;
+  return true;
+}
+function tryFind(fromCenter = false) {
+  current().updateMatrixWorld(); // positions as they are right now
+  if (fromCenter) ray.setFromCamera(centerOfView, camera);
+  const hit = ray.intersectObjects(current().children, true)
+    .find((h) => !h.object.material?.transparent && shownInScene(h.object) && (!fromCenter || h.distance < 25));
+  const f = hit && finds.findOf(hit.object);
+  if (!f) return false;
+  if (finds.markFound(f)) reward(`Found: ${f.name.replace(/^The /, '')}!`);
+  return true;
+}
+
 // ---------- first person ----------
 const viewBtn = document.getElementById('toggle-view');
 let yaw = 0, pitch = -0.08;
@@ -386,12 +441,19 @@ canvas.addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY];
 canvas.addEventListener('pointerup', (e) => {
   if (view === 'first') {
     if (appOpen) return;
-    if (document.pointerLockElement !== canvas) return canvas.requestPointerLock?.();
+    if (document.pointerLockElement !== canvas) {
+      // mouse not captured: a click finds what's under the pointer, else captures it
+      const clicked = downAt && Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) <= 5;
+      if (clicked) { setPointer(e); if (tryFind()) return; }
+      return canvas.requestPointerLock?.();
+    }
+    if (tryFind(true)) return;
     return interact();
   }
   if (!downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 5) return;
   setPointer(e);
   if (appOpen) return closeApp();
+  if (tryFind()) return;
   const b = pickBuilding();
   if (b) return me.walkTo(b.userData.door, () => enterBuilding(b.userData.district));
   const p = ray.ray.intersectPlane(floor, new THREE.Vector3());
@@ -438,13 +500,26 @@ wobbleBtn.addEventListener('click', () => {
 });
 
 refreshSigns();
+refreshFinds();
 // dates roll over at midnight; refresh the signs every minute
 setInterval(refreshSigns, 60_000);
 
 // Dev-only handle for testing from the browser console (left out of builds).
 if (import.meta.env.DEV) {
   window.__plaza = {
-    me, enterBuilding, exitBuilding, setView, openApp, closeApp,
+    me, camera, enterBuilding, exitBuilding, setView, openApp, closeApp, openFinds, finds,
+    // click a find by id, exactly as a person clicking on it would
+    clickFind(id) {
+      if (view === 'third') controls.update(); // settle the camera even if no frame has run
+      camera.updateMatrixWorld();
+      const p = finds.worldPositionOf(id).add(new THREE.Vector3(0, 0.1, 0)).project(camera);
+      const r = canvas.getBoundingClientRect();
+      const e = { clientX: r.left + (p.x * 0.5 + 0.5) * r.width, clientY: r.top + (-p.y * 0.5 + 0.5) * r.height };
+      setPointer(e);
+      current().updateMatrixWorld();
+      const first = ray.intersectObjects(current().children, true).find((h) => !h.object.material?.transparent && shownInScene(h.object));
+      return { onScreen: Math.abs(p.x) < 1 && Math.abs(p.y) < 1, firstHit: first?.object.userData.findId ?? first?.object.geometry?.type ?? null, found: tryFind() };
+    },
     state: () => ({ room: room?.id ?? null, view, appOpen, action: action?.label ?? null, pos: me.position.toArray().map((n) => +n.toFixed(2)) }),
     // walk with held keys for `seconds`, simulated at 60 fps
     walk(keys, seconds) {

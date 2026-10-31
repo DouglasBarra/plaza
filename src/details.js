@@ -203,6 +203,7 @@ export function crane(p, x, y, z, height = 8, jib = 6) {
     }
   }
   const top = new THREE.Group();
+  top.name = 'craneTop';
   top.position.y = height;
   g.add(top);
   box(top, 0.8, 0.7, 0.7, M.white, 0, 0.35, 0);              // cab

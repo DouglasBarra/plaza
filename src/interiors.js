@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { M, stamp, boxGeo, mesh, box, cyl, windowAt, folk, roundTree } from './world.js';
 import { swapModel } from './models.js';
+import { placeRoomFinds } from './finds.js';
 
 const W = 12, D = 10, H = 4.2, T = 0.3;
 
@@ -231,6 +232,7 @@ export function buildInterior(id) {
   const scene = new THREE.Scene();
   const lights = lightRoom(scene);
   const room = INTERIORS[id](scene, rand);
+  placeRoomFinds(id, scene);
   return {
     id,
     scene,

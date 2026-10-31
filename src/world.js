@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { M, stamp, glow, boxGeo, prismGeo, mesh, box, cyl, slab, windowAt, gable } from './kit.js';
 import { swapModel } from './models.js';
+import { placeFinds, animateFinds } from './finds.js';
 import { fountainWater, steam, sway, swingSign, leaves, lampLight, skipND, nightOnly, animateLife } from './life.js';
 import { addFolk, folk, animateFigures } from './folks.js';
 import { fancyWindow, door, signBoard, clockHands, updateClocks, ridge, chimney, statue, scaffold, crane, animateCranes, billboard } from './details.js';
@@ -458,6 +459,8 @@ export function buildPlaza(scene) {
   cat(world, 2.1, 3.9, 0.7, true);
   cat(world, -12.2, 2.0, 2.4);
 
+  placeFinds(world, buildings);
+
   return { world, buildings, colliders };
 }
 
@@ -465,6 +468,7 @@ export function buildPlaza(scene) {
 export function animateFolks(time, player = null, dt = 1 / 60) {
   animateFigures(time);
   animateLife(time);
+  animateFinds(time);
   updateClocks();
   animateCranes(time);
   for (const b of beams) b.rotation.y = time * 0.6;

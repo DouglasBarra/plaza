@@ -172,3 +172,11 @@ body { background: var(--ground); color: var(--ink); font-family: var(--font-bod
 }
 /* first person needs a mouse and keys */
 @media (pointer: coarse) { #toggle-view { display: none; } }
+
+/* ---------- finds ---------- */
+.finds-panel .pz-panel-tag { background: var(--surface); color: var(--ink); }
+.finds-panel .box { cursor: default; }
+.finds-panel .box.done { background: var(--ink); }
+.finds-panel .t small { display: block; font-family: var(--font-hand); font-size: 16px; color: var(--ink-muted); }
+.finds-intro { margin: 0 0 var(--space-2); font-family: var(--font-hand); font-size: 18px; color: var(--ink-muted); }
+.finds-panel .row .box.done + .t { color: var(--ink); text-decoration: none; }
