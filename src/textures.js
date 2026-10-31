@@ -21,6 +21,7 @@ function canvas(draw) {
   g.lineWidth = 5;
   draw(g);
   const tex = new THREE.CanvasTexture(c);
+  tex.userData.lineArt = true; // drawn in the current ink color, not multiplied (see ink.js)
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 8;
@@ -94,6 +95,16 @@ export const tex = {
   planks: () => canvas((g) => {
     for (let x = 0; x < S; x += S / 5) line(g, x + 2, 0, x + 2, S, 2);
     for (let i = 0; i < 3; i++) { const x = rand() * S, y = rand() * S; g.beginPath(); g.ellipse(x, y, 7, 4, 0, 0, 7); g.stroke(); }
+  }),
+
+  // Wide floorboards: three boards per meter, with a few end joints.
+  floorboards: () => canvas((g) => {
+    g.lineWidth = 4;
+    for (let x = 0; x < S; x += S / 3) {
+      line(g, x + 2, 0, x + 2, S, 1.5);
+      if (rand() > 0.4) { const y = rand() * S; line(g, x + 2, y, x + S / 3, y, 0.8); }
+    }
+    for (let i = 0; i < 2; i++) { const x = rand() * S, y = rand() * S; g.beginPath(); g.ellipse(x, y, 6, 3, 0, 0, 7); g.stroke(); }
   }),
 
   dirt: () => canvas((g) => {

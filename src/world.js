@@ -23,6 +23,7 @@ const M = {
   paving: toon('#ffffff', tex.paving()),
   shingles: toon('#ffffff', tex.shingles()),
   planks: toon('#ffffff', tex.planks()),
+  floor: toon('#ffffff', tex.floorboards()),
   dirt: toon('#ffffff', tex.dirt()),
   grass: toon('#ffffff', tex.grass()),
   water: toon('#ffffff', tex.water()),

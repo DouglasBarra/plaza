@@ -51,8 +51,29 @@ const toonMaterials = new Set();
 const deepMaterials = new Set();
 let gradient = makeGradient('day');
 
+// Line-art textures (bricks, shingles…) are read as "how much ink is here"
+// and painted in the current ink color after shading, so the details stay
+// black on white by day and turn to chalk at night.
+const inkUniform = { value: new THREE.Color(THEMES.day.ink) };
+function drawLinesInInk(shader) {
+  shader.uniforms.uInk = inkUniform;
+  shader.fragmentShader = 'uniform vec3 uInk;\n' + shader.fragmentShader
+    .replace('#include <map_fragment>', `
+      float lineAmt = 0.0;
+      #ifdef USE_MAP
+        lineAmt = 1.0 - texture2D( map, vMapUv ).r;
+      #endif`)
+    .replace('#include <opaque_fragment>', `
+      outgoingLight = mix( outgoingLight, uInk, lineAmt );
+      #include <opaque_fragment>`);
+}
+
 export function toon(color = '#ffffff', map = null) {
   const m = new THREE.MeshToonMaterial({ color, map, gradientMap: gradient });
+  if (map?.userData.lineArt) {
+    m.onBeforeCompile = drawLinesInInk;
+    m.customProgramCacheKey = () => 'ink-lines';
+  }
   toonMaterials.add(m);
   return m;
 }
@@ -69,6 +90,7 @@ export function applyTheme(theme, lights) {
   gradient = makeGradient(theme);
   for (const m of toonMaterials) { m.gradientMap = gradient; m.needsUpdate = true; }
   for (const m of deepMaterials) m.color.set(t.deep);
+  inkUniform.value.set(t.ink);
   lights.ambient.intensity = t.shadow * Math.PI;
   lights.sun.intensity = Math.PI;
 }

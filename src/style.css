@@ -157,3 +157,18 @@ body { background: var(--ground); color: var(--ink); font-family: var(--font-bod
 .app-open .hint { display: none; }
 @media (prefers-reduced-motion: reduce) { #fade { transition: none; } }
 .in-room .label { display: none; }
+
+/* ---------- small screens and touch ---------- */
+@media (max-width: 640px) {
+  .hud-actions { gap: var(--space-2); }
+  .hud-actions .pz-btn { height: 36px; padding: 0 var(--space-3); font-size: 15px; }
+  .td-add { flex-wrap: wrap; }
+  .td-add .td-input { flex: 1 1 100%; }
+  .td-add .td-date { flex: 1; width: auto; }
+  .pz-panel-body { padding: var(--space-4); }
+  .pz-panel-head { padding-left: var(--space-4); }
+  .overlay { padding-bottom: 96px; }
+  .dock { bottom: var(--space-4); }
+}
+/* first person needs a mouse and keys */
+@media (pointer: coarse) { #toggle-view { display: none; } }

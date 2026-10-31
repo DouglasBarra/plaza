@@ -125,12 +125,36 @@ function findAction() {
 }
 function interact() { action?.run(); }
 
+const hudEls = ['.greeting', '.hud-actions', '#dock'].map((s) => document.querySelector(s));
+const overlaps = (a, b) => a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t;
+
 function placeLabels() {
   const camDist = camera.position.distanceTo(controls.target);
+  const hud = hudEls.map((el) => { const r = el.getBoundingClientRect(); return { l: r.left - 8, r: r.right + 8, t: r.top - 8, b: r.bottom + 8 }; });
+  // nearest labels claim their spot first; farther ones step up out of the way
+  const items = [];
   for (const [b, el] of labels) {
     const [x, y, z] = screenOf(new THREE.Vector3(0, b.userData.labelY, 0).applyMatrix4(b.matrixWorld));
-    el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%)`;
-    el.classList.toggle('is-hidden', !!room || z > 1 || (focused && focused !== b) || (view === 'third' && camDist > 110));
+    const hidden = !!room || z > 1 || (focused && focused !== b) || (view === 'third' && camDist > 110);
+    items.push({ el, x, y, z, hidden, w: el.offsetWidth, h: el.offsetHeight });
+  }
+  items.sort((a, b) => a.z - b.z);
+  const placed = [];
+  for (const it of items) {
+    let { y } = it;
+    if (!it.hidden) {
+      for (let tries = 0; tries < 10; tries++) {
+        const box = { l: it.x - it.w / 2, r: it.x + it.w / 2, t: y - it.h, b: y };
+        const hit = placed.find((p) => overlaps(box, p));
+        if (!hit) break;
+        y = hit.t - 4;
+      }
+      const box = { l: it.x - it.w / 2, r: it.x + it.w / 2, t: y - it.h, b: y };
+      if (hud.some((h) => overlaps(box, h))) it.hidden = true;
+      else placed.push(box);
+    }
+    it.el.style.transform = `translate(${it.x}px, ${y}px) translate(-50%, -100%)`;
+    it.el.classList.toggle('is-hidden', it.hidden);
   }
   prompt.classList.toggle('is-hidden', !action);
   prompt.classList.toggle('is-center', view === 'first');
@@ -315,7 +339,10 @@ function setView(next) {
 viewBtn.addEventListener('click', () => setView(view === 'first' ? 'third' : 'first'));
 
 document.addEventListener('mousemove', (e) => {
-  if (view !== 'first' || document.pointerLockElement !== canvas) return;
+  if (view !== 'first') return;
+  // look with the captured mouse, or by dragging when the mouse isn't captured
+  const dragging = e.buttons === 1 && e.target === canvas;
+  if (document.pointerLockElement !== canvas && !dragging) return;
   yaw -= e.movementX * 0.0022;
   pitch = THREE.MathUtils.clamp(pitch - e.movementY * 0.0022, -1.3, 1.2);
 });

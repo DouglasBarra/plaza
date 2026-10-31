@@ -119,7 +119,7 @@ function noteBoard(p, x, y, z, w, h, pinMat) {
 const INTERIORS = {
   // ---------- Town hall: the ToDos office ----------
   todo(scene, rand) {
-    const cutaway = shell(scene, M.bricks, M.planks);
+    const cutaway = shell(scene, M.bricks, M.floor);
     const board = noteBoard(scene, 0, 2.3, -D / 2 + 0.12, 4.2, 2.2, stamp.todo);
     desk(scene, 3.6, -1.6, -Math.PI / 2);
     chair(scene, 4.6, -1.6, -Math.PI / 2);
@@ -173,7 +173,7 @@ const INTERIORS = {
 
   // ---------- Library: Study ----------
   study(scene, rand) {
-    const cutaway = shell(scene, M.planks, M.planks);
+    const cutaway = shell(scene, M.planks, M.floor);
     for (const x of [-4.6, -2.2, 2.2, 4.6]) bookshelf(scene, x, -D / 2 + 0.35, 0, rand);
     for (const z of [-1.0, 1.4]) bookshelf(scene, -W / 2 + 0.35, z, Math.PI / 2, rand);
     box(scene, 3, 0.1, 1.5, M.planks, 0.6, 0.85, 0.6);
@@ -196,7 +196,7 @@ const INTERIORS = {
 
   // ---------- Lighthouse workshop: Ideas ----------
   ideas(scene, rand) {
-    const cutaway = shell(scene, M.planks, M.planks);
+    const cutaway = shell(scene, M.planks, M.floor);
     const board = noteBoard(scene, -1, 2.3, -D / 2 + 0.12, 5.2, 2.4, stamp.ideas);
     board.setNotes(10);
     // string between some of the notes: the idea wall
