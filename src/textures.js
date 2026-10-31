@@ -168,9 +168,7 @@ export const tex = {
         const a = (i / 12) * Math.PI * 2;
         line(g, S / 2 + Math.cos(a) * r * 0.78, S / 2 + Math.sin(a) * r * 0.78, S / 2 + Math.cos(a) * r * 0.9, S / 2 + Math.sin(a) * r * 0.9, 0);
       }
-      g.lineWidth = 9;
-      line(g, S / 2, S / 2, S / 2, S / 2 - r * 0.6, 0);
-      line(g, S / 2, S / 2, S / 2 + r * 0.42, S / 2 + r * 0.1, 0);
+      // the hands are real objects that tell the time (details.js)
     });
     c.wrapS = c.wrapT = THREE.ClampToEdgeWrapping;
     return c;

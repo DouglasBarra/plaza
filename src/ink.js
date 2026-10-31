@@ -204,6 +204,7 @@ export class InkRenderer {
     this.uniforms = compositeMaterial.uniforms;
     this.paper = new THREE.Color(THEMES.day.paper);
     this.wobbleOn = true;
+    this.skipND = [];
     this.lastStep = -1;
   }
 
@@ -234,6 +235,9 @@ export class InkRenderer {
 
     const bg = scene.background;
     scene.background = null;
+    // see-through things (the lighthouse beam) get no outlines and hide none
+    const skipped = this.skipND.filter((o) => o.visible);
+    for (const o of skipped) o.visible = false;
     scene.overrideMaterial = ndMaterial;
     r.setRenderTarget(this.ndRT);
     r.setClearColor(0x000000, 0);
@@ -241,6 +245,7 @@ export class InkRenderer {
     r.render(scene, camera);
 
     scene.overrideMaterial = null;
+    for (const o of skipped) o.visible = true;
     scene.background = this.paper;
     r.setRenderTarget(this.colorRT);
     r.render(scene, camera);

@@ -92,8 +92,9 @@ export function makeFigure(look = {}) {
     item.rotation.z = 0.9;
     body.add(item);
   } else if (look.item === 'balloon') {
-    mesh(new THREE.CylinderGeometry(0.008, 0.008, 1.2, 3), M.white, 0, 0.2, 0, arms[1]);
-    mesh(new THREE.SphereGeometry(0.22, 10, 8), stamp[look.balloon || 'projects'], 0, 0.95, 0, arms[1]);
+    // held in the left hand, so the right one is free to wave
+    mesh(new THREE.CylinderGeometry(0.008, 0.008, 1.2, 3), M.white, 0, 0.2, 0, arms[0]);
+    mesh(new THREE.SphereGeometry(0.22, 10, 8), stamp[look.balloon || 'projects'], 0, 0.95, 0, arms[0]);
   }
 
   root.scale.setScalar(look.height ?? 1);

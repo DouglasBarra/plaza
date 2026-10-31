@@ -3,6 +3,9 @@ import * as THREE from 'three';
 import { M, stamp, glow, boxGeo, prismGeo, mesh, box, cyl, slab, windowAt, gable } from './kit.js';
 import { swapModel } from './models.js';
 import { addFolk, folk, animateFigures } from './folks.js';
+import { fancyWindow, door, signBoard, clockHands, updateClocks, ridge, chimney, statue, scaffold, crane, animateCranes, billboard } from './details.js';
+
+export const beams = [];
 
 const TILE = 0.4; // height of each building's raised ground tile
 
@@ -11,28 +14,40 @@ function groundTile(p, size, top) {
 }
 
 // ---------- buildings ----------
+// Night-only things (the lighthouse beam); main.js toggles them with the theme.
+export const nightOnly = [];
+
 function townHall() {
   const g = new THREE.Group();
   groundTile(g, 6, M.grass);
   const T = TILE;
   box(g, 5, 3, 3.6, M.bricks, 0, T + 1.5, 0);
   gable(g, 5.5, 1.6, 4.0, M.shingles, T + 3);
+  ridge(g, 0, T + 4.62, 0, 4.1);
+  chimney(g, 1.6, T + 3.9, -1.1);
   box(g, 1.6, 3.2, 1.6, M.bricks, 0, T + 3 + 1.6, -0.6);
-  const roof = mesh(new THREE.ConeGeometry(1.35, 1.7, 4), M.white, 0, T + 6.2 + 0.85, -0.6, g);
+  box(g, 1.8, 0.12, 1.8, M.white, 0, T + 6.26, -0.6);
+  const roof = mesh(new THREE.ConeGeometry(1.35, 1.7, 4), M.shingles, 0, T + 6.2 + 0.85, -0.6, g);
   roof.rotation.y = Math.PI / 4;
+  // the clock tells the real time
   const clock = mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.06, 24), [M.white, M.clock, M.white], 0, T + 5.3, -0.6 + 0.83, g);
   clock.rotation.x = Math.PI / 2;
+  cyl(g, 0.6, 0.6, 0.04, M.white, 0, T + 5.3, -0.6 + 0.81, 24).rotation.x = Math.PI / 2;
+  clockHands(g, 0, T + 5.3, -0.6 + 0.88, 0.5);
   // flag on the tower: the ToDos stamp
   cyl(g, 0.04, 0.04, 1.3, M.white, 0, T + 7.9 + 0.5, -0.6);
   const flag = box(g, 0.7, 0.4, 0.04, stamp.todo, 0.37, T + 8.1, -0.6);
-  // door + awning (stamp)
-  box(g, 0.95, 1.55, 0.08, M.deep, 0, T + 0.78, 1.82);
-  const awning = box(g, 1.7, 0.08, 0.8, stamp.todo, 0, T + 1.85, 2.15);
+  // door, awning (stamp) and sign
+  door(g, 0, T, 1.82, 0.95, 1.6, M.planks, { step: true });
+  const awning = box(g, 1.7, 0.08, 0.8, stamp.todo, 0, T + 1.95, 2.15);
   awning.rotation.x = 0.35;
-  box(g, 1.6, 0.16, 0.5, M.stone, 0, T + 0.08, 2.05);
-  for (const x of [-1.7, 1.7]) windowAt(g, x, T + 2.0, 1.82, 0.6, 0.85);
-  for (const x of [-1.7, -0.6, 0.6, 1.7]) windowAt(g, x, T + 2.0, -1.82, 0.5, 0.8);
-  for (const z of [-0.8, 0.8]) { windowAt(g, 2.52, T + 1.9, z, 0.5, 0.8, Math.PI / 2); windowAt(g, -2.52, T + 1.9, z, 0.5, 0.8, Math.PI / 2); }
+  signBoard(g, 0, T + 2.6, 1.84, 1.9, 0.42, 'Town Hall');
+  for (const x of [-1.7, 1.7]) fancyWindow(g, x, T + 2.0, 1.82, 0.6, 0.85, 0, { shutters: true, flowers: 'white' });
+  for (const x of [-1.7, -0.6, 0.6, 1.7]) fancyWindow(g, x, T + 2.0, -1.82, 0.5, 0.8, Math.PI);
+  for (const z of [-0.8, 0.8]) {
+    fancyWindow(g, 2.52, T + 1.9, z, 0.5, 0.8, Math.PI / 2, { curtains: true });
+    fancyWindow(g, -2.52, T + 1.9, z, 0.5, 0.8, -Math.PI / 2, { curtains: true });
+  }
   // the flag rises to the top when nothing is due (driven from main.js)
   g.userData = { district: 'todo', labelY: 9.6, flag, flagLow: T + 8.1, flagHigh: T + 8.8, flagUp: false };
   return g;
@@ -48,15 +63,23 @@ function bank() {
   box(g, 4.6, 2.8, 2.8, M.stone, 0, F + 1.4, -0.6);
   for (const x of [-1.8, -0.6, 0.6, 1.8]) {
     cyl(g, 0.2, 0.24, 2.6, M.white, x, F + 1.3, 1.45, 12);
+    box(g, 0.55, 0.12, 0.55, M.white, x, F + 2.62, 1.45);
+    box(g, 0.55, 0.12, 0.55, M.white, x, F + 0.06, 1.45);
   }
   slab(g, 5.0, 0.4, 4.2, M.white, M.white, 0, F + 2.8, 0);
   gable(g, 5.0, 0.9, 0.7, M.roofTiles, F + 3.0, 1.75);
-  gable(g, 4.6, 0.7, 3.4, M.roofTiles, F + 3.0, -0.3);
-  // stamp: green doors + sign band
-  box(g, 1.1, 1.8, 0.08, stamp.finance, 0, F + 0.9, 0.84);
+  // a dome on a drum, where the back roof used to be
+  cyl(g, 1.25, 1.25, 0.55, M.stone, 0, F + 3.27, -0.5, 24);
+  mesh(new THREE.SphereGeometry(1.2, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), M.roofTiles, 0, F + 3.55, -0.5, g);
+  cyl(g, 0.08, 0.12, 0.5, M.white, 0, F + 4.95, -0.5, 8);
+  mesh(new THREE.SphereGeometry(0.14, 10, 8), M.white, 0, F + 5.25, -0.5, g);
+  // stamp: green doors + the name on the frieze
+  door(g, 0, F, 0.84, 1.1, 1.8, stamp.finance);
   box(g, 2.6, 0.32, 0.06, stamp.finance, 0, F + 2.8, 2.13);
-  for (const x of [-1.5, 1.5]) windowAt(g, x, F + 1.3, 0.84, 0.5, 1.3);
-  g.userData = { district: 'finance', labelY: 6.2 };
+  signBoard(g, 0, F + 2.8, 2.17, 2.2, 0.26, 'Bank of Plaza');
+  for (const x of [-1.5, 1.5]) fancyWindow(g, x, F + 1.3, 0.84, 0.5, 1.3);
+  statue(g, -2.35, T, 2.25, 0.5);
+  g.userData = { district: 'finance', labelY: 6.6 };
   return g;
 }
 
@@ -66,19 +89,29 @@ function library() {
   const T = TILE;
   box(g, 4.2, 4.4, 3.6, M.bricks, 0, T + 2.2, 0);
   gable(g, 4.7, 1.9, 4.0, M.roofTiles, T + 4.4);
-  box(g, 0.55, 1.4, 0.55, M.bricks, 1.2, T + 5.2, -0.8);
-  for (const y of [1.7, 3.3]) for (const x of [-1.15, 1.15]) windowAt(g, x, T + y, 1.82, 0.7, 1.0);
+  ridge(g, 0, T + 6.32, 0, 4.1);
+  chimney(g, 1.2, T + 5.2, -0.8, 0.55, 1.4);
+  for (const x of [-1.15, 1.15]) {
+    fancyWindow(g, x, T + 1.7, 1.82, 0.7, 1.0, 0, { books: true });
+    fancyWindow(g, x, T + 3.3, 1.82, 0.7, 1.0, 0, { curtains: true, flowers: 'white' });
+  }
   const round = mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.08, 20), M.deep, 0, T + 5.0, 2.0, g);
   round.rotation.x = Math.PI / 2;
+  mesh(new THREE.TorusGeometry(0.4, 0.06, 6, 20), M.white, 0, T + 5.0, 2.04, g);
   // stamp: blue door + hanging banner
-  box(g, 1.0, 1.7, 0.08, stamp.study, 0, T + 0.85, 1.82);
+  door(g, 0, T, 1.82, 1.0, 1.7, stamp.study, { step: true });
+  signBoard(g, 0, T + 2.05, 1.85, 1.25, 0.3, 'Library');
   box(g, 0.08, 0.08, 0.6, M.white, 2.1, T + 3.9, 2.05);
   box(g, 0.05, 1.3, 0.5, stamp.study, 2.15, T + 3.2, 2.2);
-  // a stack of books by the door
-  box(g, 0.6, 0.18, 0.4, M.white, -0.9, T + 0.09, 2.3);
-  box(g, 0.5, 0.18, 0.35, M.white, -0.88, T + 0.27, 2.3).rotation.y = 0.2;
-  box(g, 0.45, 0.16, 0.3, stamp.study, -0.92, T + 0.44, 2.28).rotation.y = -0.15;
-  for (const z of [-0.9, 0.9]) for (const y of [1.7, 3.3]) { windowAt(g, 2.12, T + y, z, 0.5, 0.9, Math.PI / 2); windowAt(g, -2.12, T + y, z, 0.5, 0.9, Math.PI / 2); }
+  // a reading bench by the door, with a stack of books
+  bench(g, -1.5, 2.45, 0).position.y = T;
+  box(g, 0.6, 0.18, 0.4, M.white, 1.3, T + 0.09, 2.4);
+  box(g, 0.5, 0.18, 0.35, M.white, 1.32, T + 0.27, 2.4).rotation.y = 0.2;
+  box(g, 0.45, 0.16, 0.3, stamp.study, 1.28, T + 0.44, 2.38).rotation.y = -0.15;
+  for (const z of [-0.9, 0.9]) for (const y of [1.7, 3.3]) {
+    fancyWindow(g, 2.12, T + y, z, 0.5, 0.9, Math.PI / 2);
+    fancyWindow(g, -2.12, T + y, z, 0.5, 0.9, -Math.PI / 2);
+  }
   g.userData = { district: 'study', labelY: 8.0 };
   return g;
 }
@@ -93,21 +126,39 @@ function lighthouse() {
     const a = (i / 12) * Math.PI * 2;
     cyl(g, 0.03, 0.03, 0.45, M.white, -0.6 + Math.cos(a) * 1.35, T + 6.42, -0.4 + Math.sin(a) * 1.35, 5);
   }
+  mesh(new THREE.TorusGeometry(1.35, 0.03, 4, 24), M.white, -0.6, T + 6.64, -0.4, g).rotation.x = Math.PI / 2;
   const lamp = mesh(new THREE.CylinderGeometry(0.75, 0.75, 1.0, 12), glow, -0.6, T + 6.7, -0.4, g);
   lamp.castShadow = false;
   mesh(new THREE.ConeGeometry(1.05, 0.95, 12), M.white, -0.6, T + 7.68, -0.4, g);
-  box(g, 0.7, 1.2, 0.08, M.deep, -0.6, T + 0.6, 0.94);
-  for (const y of [2.6, 4.4]) windowAt(g, -0.6, T + y, 0.72 - (y - 2.6) * 0.07, 0.35, 0.5);
-  // the keeper's hut
+  mesh(new THREE.SphereGeometry(0.12, 8, 6), M.white, -0.6, T + 8.2, -0.4, g);
+  door(g, -0.6, T, 0.97, 0.7, 1.25, M.planks);
+  for (const y of [2.6, 4.4]) fancyWindow(g, -0.6, T + y, 0.74 - (y - 2.6) * 0.07, 0.35, 0.5);
+  // the beam sweeps the town at night
+  const beam = new THREE.Group();
+  beam.position.set(-0.6, T + 6.7, -0.4);
+  const beamMat = new THREE.MeshBasicMaterial({ color: '#ffd21f', transparent: true, opacity: 0.16, depthWrite: false, side: THREE.DoubleSide });
+  for (const s of [-1, 1]) {
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(3.2, 26, 20, 1, true), beamMat);
+    cone.rotation.z = s * Math.PI / 2;
+    cone.position.x = s * 13;
+    beam.add(cone);
+  }
+  beam.visible = false;
+  g.add(beam);
+  nightOnly.push(beam);
+  beams.push(beam);
+  // the keeper's hut, now the workshop
   box(g, 2.2, 1.6, 2.0, M.planks, 1.6, T + 0.8, 1.0);
   gable(g, 2.5, 1.0, 2.3, M.shingles, T + 1.6, 1.0, Math.PI / 2).position.x = 1.6;
-  box(g, 0.6, 1.1, 0.08, M.deep, 1.9, T + 0.55, 2.02);
-  windowAt(g, 1.1, T + 0.95, 2.02, 0.45, 0.45);
-  g.userData = { district: 'ideas', labelY: 9.2 };
+  door(g, 1.95, T, 2.02, 0.55, 1.05, M.planks);
+  fancyWindow(g, 1.05, T + 0.85, 2.02, 0.4, 0.4, 0, { flowers: 'ideas' });
+  signBoard(g, 1.55, T + 1.43, 2.05, 1.4, 0.26, 'Workshop');
+  chimney(g, 2.3, T + 2.1, 0.6, 0.35, 0.9);
+  g.userData = { district: 'ideas', labelY: 9.6 };
   return g;
 }
 
-function emptyPlot(district) {
+function emptyPlot(district, big) {
   const g = new THREE.Group();
   groundTile(g, 5, M.dirt);
   const T = TILE;
@@ -118,13 +169,15 @@ function emptyPlot(district) {
     if (i === 3) continue; // open side, the way in
     box(g, Math.abs(x2 - x1) + 0.1 || 0.06, 0.08, Math.abs(z2 - z1) + 0.1 || 0.06, M.white, (x1 + x2) / 2, T + 0.6, (z1 + z2) / 2);
   }
-  // signpost with a stamp-colored board
-  box(g, 0.12, 1.6, 0.12, M.white, 1.2, T + 0.8, 1.6);
-  box(g, 1.3, 0.6, 0.08, stamp[district], 1.2, T + 1.4, 1.68);
-  // a few crates waiting
-  box(g, 0.6, 0.6, 0.6, M.planks, -1.0, T + 0.3, -0.8);
-  box(g, 0.5, 0.5, 0.5, M.planks, -0.4, T + 0.25, -1.2).rotation.y = 0.4;
-  g.userData = { district, labelY: 2.8, plot: true };
+  // a construction site: scaffolding, a crane on the big lot, a billboard
+  scaffold(g, -0.2, T, -1.0, 2.6, 1.4, big ? 3 : 2);
+  if (big) crane(g, 1.4, T, -1.4, 9, 6);
+  const name = district[0].toUpperCase() + district.slice(1);
+  billboard(g, 0.9, T, 1.6, `${name}: coming soon`, district);
+  box(g, 0.6, 0.6, 0.6, M.planks, -1.4, T + 0.3, 1.0);
+  box(g, 0.5, 0.5, 0.5, M.planks, -0.9, T + 0.25, 1.4).rotation.y = 0.4;
+  cyl(g, 0.06, 0.06, 1.6, M.white, -1.6, T + 0.08, 0.3, 6).rotation.z = Math.PI / 2;
+  g.userData = { district, labelY: big ? 3.4 : 2.8, plot: true };
   return g;
 }
 
@@ -158,6 +211,7 @@ function bench(p, x, z, rotY) {
   for (const lx of [-0.6, 0.6]) box(g, 0.08, 0.45, 0.4, M.white, lx, 0.22, 0);
   g.position.set(x, 0, z); g.rotation.y = rotY;
   p.add(swapModel(g, 'bench'));
+  return g;
 }
 
 function lamp(p, x, z) {
@@ -308,7 +362,7 @@ export function buildPlaza(scene) {
   place(bank(), C, -C);
   place(library(), -C, C);
   place(lighthouse(), C, C);
-  place(emptyPlot('projects'), -4.8, -12.6, 0, 3.4);
+  place(emptyPlot('projects', true), -4.8, -12.6, 0, 3.4);
   place(emptyPlot('people'), -12.6, 4.8, Math.PI / 2, 3.4);
 
   fountain(world);
@@ -370,6 +424,9 @@ export function buildPlaza(scene) {
 
 export function animateFolks(time) {
   animateFigures(time);
+  updateClocks();
+  animateCranes(time);
+  for (const b of beams) b.rotation.y = time * 0.6;
   for (const p of pigeons) {
     const k = Math.floor(time * 1.5 + p.userData.phase);
     const hop = k % 5 === 0;
