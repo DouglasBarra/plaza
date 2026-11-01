@@ -34,8 +34,8 @@ export class Avatar {
     g.add(ring);
     this.ring = ring;
     this.body = g;
-    g.position.set(1.2, 0, -18.6); // at the foot of the town hall's steps, the fountain behind you
-    g.rotation.y = Math.PI;
+    g.position.set(0, 0, -10.6); // between the town hall and the fountain, facing the fountain
+    g.rotation.y = 0;
     scene.add(g);
   }
 

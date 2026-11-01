@@ -13,6 +13,7 @@ import { fountain, animateFountain, FOUNTAIN } from './fountain.js';
 import { LAMP_TOP, TREE_LOW_BRANCH, KIOSK, bin, drinkingFountain, bikeRack, kiosk, signpost, streetClock, phoneBox, mapBoard, bunting, treeGrate, chalkDrawing, pottedShrub, shrubPlanter } from './props.js';
 import { DISTRICTS } from '../districts/index.js';
 import { piece, placeable } from '../layout.js';
+import { edgeLawns } from './lawns.js';
 
 // ---------- the plaza ----------
 // A civic square shaped like a U around the fountain, open to the south,
@@ -361,6 +362,10 @@ export function buildPlaza(scene) {
   leaves(world, 30, Math.min(hx, hz) - 2);
   cat(world, 3.6, hz - 8.0, 0.7, true);    // the friendly one, near where you arrive
   cat(world, -16.5, 21.5, 2.4);            // between the library's garden and the food truck's tables
+
+  // ---- grass along the edge, wherever the border is clear of props and yards
+  const clearOf = (x, z) => !onBuilding(x, z, 1.4) && !colliders.some((c) => c.hw == null && Math.hypot(x - c.x, z - c.z) < c.r + 1.0);
+  edgeLawns(world, PLAZA, ROAD_CLEAR, clearOf, colliders);
 
   placeFinds(world, buildings, P);
 
