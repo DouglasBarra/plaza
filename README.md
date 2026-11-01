@@ -45,7 +45,7 @@ Three.js with Vite, no framework yet.
 | `src/app/` | The game shell: renderer and camera (`engine.js`, `camera.js`), going in and out of buildings (`rooms.js`), the plaza through the windows (`window-view.js`), what's under the pointer (`picking.js`), what E does (`actions.js`), mouse and keys (`input.js`), shared state (`state.js`) and the dev console handle (`devtools.js`) |
 | `src/ui/` | Everything drawn in HTML over the scene: the card that districts open in (`card.js`), the town hall's note and typewriter cards (`hall-cards.js`), the finds list, building signs, speech bubbles and the Day/Night and Wobbly lines buttons |
 | `src/plaza/` | The plaza: its layout (`index.js`), buildings, props, and animals |
-| `src/interiors/` | The rooms inside each building: the bank, library and workshop, and the two-story town hall (`townhall/`: walls and stairs, task boards and calendar, fireplace and lamps, and the shared dimensions it has inside and out) |
+| `src/interiors/` | The rooms inside each building: the bank, library and workshop, and the two-story town hall (`townhall/`: the house itself, each floor's furnishings, task boards and calendar, fireplace and lamps, and the dimensions it shares inside and out) |
 | `src/town.js` | Everything outside: the endless town, mountains, clouds, birds |
 | `src/ink.js` | The ink look: stepped gray shading and the hand-drawn outline pass |
 | `src/textures.js` | Line-art textures (bricks, shingles, paving…) drawn on canvas at load |

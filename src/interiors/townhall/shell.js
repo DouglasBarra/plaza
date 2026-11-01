@@ -2,7 +2,7 @@
 // wood trim, and the stairs between the floors.
 import * as THREE from 'three';
 import { M, mesh, box, cyl } from '../../kit.js';
-import { T, F } from './dims.js';
+import { W, D, T, F, TOP, DOOR, DOOR_HOLE, HOLES } from './dims.js';
 import { dark, glassDay } from './materials.js';
 
 // ---------- walls with real openings ----------
@@ -113,4 +113,83 @@ export function stairs(p) {
     box(p, 0.04, 0.95, 0.04, M.white, STAIR.x0 + 0.05, rise * i + 0.47, z);
   }
   box(p, 0.14, 1.1, 0.14, M.planks, STAIR.x0 + 0.05, 0.55, STAIR.zBottom);
+}
+
+// The whole house: floor, walls with their windows, the open front door,
+// the upper floor with the stairwell, ceiling beams, roof, stairs and trim.
+// Parts go into the render groups made by buildTownHall. Returns the door's
+// hinge and the direction of its leaf, for the door's colliders.
+export function buildHouse({ lower, upper, ceilings, cutLower, cutUpper, panes }) {
+  box(lower, W + T * 2, 0.3, D + T * 2, M.floor, 0, -0.15, 0);
+  const backHoles = HOLES.back.lower, leftHoles = HOLES.left.lower, rightHoles = HOLES.right.lower;
+  const frontHoles = [...HOLES.front.lower, DOOR_HOLE];
+  const bz = -D / 2 - T / 2, fz = D / 2 + T / 2, lx = -W / 2 - T / 2, rx = W / 2 + T / 2;
+  wall(lower, 'x', bz, -W / 2 - T, W / 2 + T, 0, F, backHoles, M.bricks);
+  wall(lower, 'z', lx, -D / 2, D / 2, 0, F, leftHoles, M.bricks);
+  wall(cutLower, 'z', rx, -D / 2, D / 2, 0, F, rightHoles, M.bricks);
+  wall(cutLower, 'x', fz, -W / 2 - T, W / 2 + T, 0, F, frontHoles, M.bricks);
+  backHoles.forEach((h) => windowIn(lower, 'x', bz, h, '+z', panes));
+  leftHoles.forEach((h) => windowIn(lower, 'z', lx, h, '+x', panes));
+  rightHoles.forEach((h) => windowIn(cutLower, 'z', rx, h, '-x', panes));
+  frontHoles.forEach((h) => windowIn(cutLower, 'x', fz, h, '-z', panes, h === DOOR_HOLE));
+  // the door frame and mat stay visible in the cutaway, so you can find the way out
+  for (const x of [-1, 1]) box(lower, 0.16, DOOR.h + 0.1, 0.4, M.white, x * (DOOR.w / 2 + 0.08), (DOOR.h + 0.1) / 2, fz);
+  box(lower, DOOR.w + 0.32, 0.16, 0.4, M.white, 0, DOOR.h + 0.08, fz);
+  box(lower, DOOR.w + 0.1, 0.04, 1.0, M.dirt, 0, 0.02, D / 2 - 0.7);
+  // the door itself, hinged on the right and standing open into the room, same size as the one outside
+  const hinge = new THREE.Vector3(DOOR.w / 2, 0, D / 2 - 0.05);
+  const swing = -1.87;                                     // a little past square: the opening stays clear
+  const leaf = new THREE.Group();
+  leaf.position.copy(hinge);
+  leaf.rotation.y = swing;
+  lower.add(leaf);
+  box(leaf, DOOR.w, DOOR.h, 0.07, M.planks, -DOOR.w / 2, DOOR.h / 2, 0);
+  for (const s2 of [-1, 1]) for (const side of [-1, 1]) {
+    box(leaf, DOOR.w * 0.34, DOOR.h * 0.36, 0.03, M.planks, -DOOR.w / 2 + s2 * DOOR.w * 0.2, DOOR.h * 0.72, side * 0.05);
+    box(leaf, DOOR.w * 0.34, DOOR.h * 0.3, 0.03, M.planks, -DOOR.w / 2 + s2 * DOOR.w * 0.2, DOOR.h * 0.27, side * 0.05);
+  }
+  box(leaf, DOOR.w + 0.1, 0.08, 0.1, M.white, -DOOR.w / 2, DOOR.h + 0.04, 0);
+  for (const side of [-1, 1]) mesh(new THREE.SphereGeometry(0.045, 8, 6), dark, -DOOR.w + 0.16, DOOR.h * 0.46, side * 0.09, leaf);
+  for (const hy of [0.35, DOOR.h - 0.35]) box(leaf, 0.12, 0.2, 0.09, dark, -0.04, hy, 0);   // hinges
+  const doorDir = new THREE.Vector3(Math.cos(swing + Math.PI), 0, -Math.sin(swing + Math.PI)); // along the leaf, from the hinge
+
+  // upper floor: a slab with the stairwell left open
+  const slab = (x0, x1, z0, z1) => { box(upper, x1 - x0, 0.3, z1 - z0, M.floor, (x0 + x1) / 2, F - 0.15, (z0 + z1) / 2).userData.inkId = 424242; };
+  slab(-W / 2, STAIR.x0, -D / 2, D / 2);
+  slab(STAIR.x0, W / 2, -D / 2, STAIR.zTop);
+  slab(STAIR.x0, W / 2, STAIR.zBottom, D / 2);
+  // ceiling beams under the upper floor (hidden in third person so they don't block the view)
+  for (const z of [-3.6, -1.2, 1.2, 3.6]) {
+    const reach = z > STAIR.zTop && z < STAIR.zBottom ? STAIR.x0 : W / 2;
+    box(ceilings, reach + W / 2, 0.26, 0.24, M.planks, (reach - W / 2) / 2, F - 0.43, z); // seen in first person
+  }
+  const upBack = HOLES.back.upper, upLeft = HOLES.left.upper, upRight = HOLES.right.upper, upFront = HOLES.front.upper;
+  wall(upper, 'x', bz, -W / 2 - T, W / 2 + T, F, TOP, upBack, M.bricks);
+  wall(upper, 'z', lx, -D / 2, D / 2, F, TOP, upLeft, M.bricks);
+  wall(cutUpper, 'z', rx, -D / 2, D / 2, F, TOP, upRight, M.bricks);
+  wall(cutUpper, 'x', fz, -W / 2 - T, W / 2 + T, F, TOP, upFront, M.bricks);
+  upBack.forEach((h) => windowIn(upper, 'x', bz, h, '+z', panes));
+  upLeft.forEach((h) => windowIn(upper, 'z', lx, h, '+x', panes));
+  upRight.forEach((h) => windowIn(cutUpper, 'z', rx, h, '-x', panes));
+  upFront.forEach((h) => windowIn(cutUpper, 'x', fz, h, '-z', panes));
+  // the railing around the stairwell upstairs
+  box(upper, 0.08, 0.08, STAIR.zBottom - STAIR.zTop, M.planks, STAIR.x0 - 0.05, F + 1.0, (STAIR.zBottom + STAIR.zTop) / 2);
+  box(upper, W / 2 - STAIR.x0, 0.08, 0.08, M.planks, (STAIR.x0 + W / 2) / 2, F + 1.0, STAIR.zBottom + 0.05);
+  for (let z = STAIR.zTop + 0.4; z < STAIR.zBottom; z += 0.5) box(upper, 0.04, 1.0, 0.04, M.white, STAIR.x0 - 0.05, F + 0.5, z);
+  for (let x = STAIR.x0 + 0.4; x < W / 2; x += 0.5) box(upper, 0.04, 1.0, 0.04, M.white, x, F + 0.5, STAIR.zBottom + 0.05);
+  // roof: beams and a skylight (hidden in third person)
+  box(ceilings, W + T * 2, 0.2, D + T * 2, M.white, 0, TOP + 0.1, 0);
+  for (const x of [-4, 0, 4]) box(ceilings, 0.24, 0.3, D, M.planks, x, TOP - 0.15, 0);
+
+  stairs(lower);
+
+  // paneling, rails, baseboards and molding
+  trim(lower, 'x', bz, -W / 2, W / 2, 0, F - 0.3, '+z');
+  trim(lower, 'z', lx, -D / 2, D / 2, 0, F - 0.3, '+x', [[-1.3, 1.5]]); // not behind the fireplace
+  trim(cutLower, 'z', rx, -D / 2, D / 2, 0, F - 0.3, '-x', [[STAIR.zTop - 0.2, STAIR.zBottom + 0.1]]);
+  trim(cutLower, 'x', fz, -W / 2, W / 2, 0, F - 0.3, '-z', [[-(DOOR.w / 2 + 0.3), DOOR.w / 2 + 0.3]]); // around the door
+  trim(upper, 'x', bz, -W / 2, W / 2, F, TOP, '+z');
+  trim(upper, 'z', lx, -D / 2, D / 2, F, TOP, '+x');
+  trim(cutUpper, 'x', fz, -W / 2, W / 2, F, TOP, '-z');
+  return { hinge, doorDir };
 }
