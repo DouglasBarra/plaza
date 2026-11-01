@@ -246,5 +246,33 @@ body.editing .layout-toggle { display: none; }
 .fi-link { background: none; border: 0; padding: 0; font: inherit; color: var(--ink-muted); text-decoration: underline; cursor: pointer; }
 .fi-link:hover { color: var(--ink); }
 @media (max-width: 520px) { .fi-cards { grid-template-columns: 1fr; } .fi-bar { grid-template-columns: 6em 1fr auto; } }
+
+/* ---------- People district ---------- */
+.pe-nets { display: flex; flex-wrap: wrap; gap: var(--space-1); margin: var(--space-2) 0; }
+.pe-nets .td-chip { border-color: var(--line); color: var(--ink); }
+.pe-nets .td-chip.on { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+.pe-hint { margin: var(--space-2) 0; font-size: 16px; }
+.pe-chat { width: 100%; text-align: left; background: none; border-left: 0; border-right: 0; border-top: 0; font: inherit; color: inherit; cursor: pointer; }
+.pe-chat:hover .t { text-decoration: underline; text-decoration-style: wavy; text-decoration-color: var(--line); }
+.pe-chat.unread .t { font-weight: 600; }
+.pe-chat .when { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex: none; }
+.pe-face { position: relative; width: 40px; height: 40px; flex: none; display: grid; place-items: center; border: var(--stroke-ink) solid var(--ink); border-radius: 50%; background: var(--surface); font: 600 14px var(--font-mono); }
+.pe-net { position: absolute; right: -6px; bottom: -4px; min-width: 18px; height: 18px; padding: 0 3px; box-sizing: border-box; display: grid; place-items: center; border: 2px solid var(--ink); border-radius: var(--radius-pill); font: 700 10px/1 var(--font-body); font-style: normal; color: #fff; background: var(--ink); }
+.pe-whatsapp { background: #25d366; color: #0b3d20; }
+.pe-linkedin { background: #0a66c2; }
+.pe-count { min-width: 22px; height: 22px; padding: 0 6px; box-sizing: border-box; display: grid; place-items: center; border-radius: var(--radius-pill); background: var(--people); color: #fff; font: 600 12px var(--font-mono); }
+.pe-top { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); }
+.pe-top .pz-btn { height: 36px; font-size: 16px; }
+.pe-top b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-display); font-weight: 400; font-size: 22px; letter-spacing: 0.03em; }
+.pe-top .when { font: 14px var(--font-mono); color: var(--ink-muted); }
+.pe-thread { display: flex; flex-direction: column; gap: var(--space-2); max-height: min(46vh, 420px); overflow-y: auto; padding: var(--space-2) 2px; margin-bottom: var(--space-3); border-top: 2px dashed var(--line); border-bottom: 2px dashed var(--line); }
+.pe-msg { align-self: flex-start; max-width: 80%; padding: var(--space-2) var(--space-3); border: 2px solid var(--ink); border-radius: 14px 14px 14px 4px; background: var(--surface); }
+.pe-msg.mine { align-self: flex-end; border-radius: 14px 14px 4px 14px; background: var(--pz-a); color: var(--on-accent); }
+.pe-msg p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 22px; }
+.pe-msg small { display: block; font: 600 12px var(--font-body); color: var(--ink-muted); }
+.pe-msg time { display: block; margin-top: 2px; font: 11px var(--font-mono); opacity: 0.7; text-align: right; }
+.pe-file { font-family: var(--font-mono); font-size: 13px; }
+.pe-reply { align-items: flex-end; margin-bottom: 0; }
+.pe-reply textarea { height: 44px; min-height: 44px; padding: 10px var(--space-3); resize: none; line-height: 22px; }
 .fi-foot > span small { display: block; font: 12px var(--font-body); }
 .fi-late { color: var(--alert); }

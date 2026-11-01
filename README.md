@@ -27,6 +27,15 @@ The Finance district (the bank) reads your Brazilian bank accounts through [Banc
 
 Plaza's server does the talking (`server/finance.js`, through `server/mcp.js`): the login is kept in `data/plaza.db` and never reaches the page. It syncs accounts, a year of transactions and card bills into the same file when you press Sync. Every Banco call counts against your mcp.ai plan (the free one has 10 questions), so it doesn't sync on its own; set `FINANCE_SYNC_HOURS` to sync on a timer. Set `BANCO_MCP_URL` to use another Banco address.
 
+## Connect your chats
+
+The People district (the post office) shows your WhatsApp and LinkedIn chats: who's waiting on you, who you talked to lately, and one-on-one chats that have gone quiet for three weeks or more. You can read a chat and answer it from there. It reads them through [Beeper Desktop](https://www.beeper.com), which runs on this Mac and connects to each network.
+
+1. Install Beeper Desktop, add WhatsApp and LinkedIn to it, and turn on **Settings → Developers → Beeper Desktop API**.
+2. Run Plaza and open **People** (press <kbd>6</kbd>). **Connect Beeper** asks you to approve Plaza in Beeper, then comes back.
+
+Beeper has to stay open. Plaza's server does the talking (`server/people.js`, through `server/mcp.js`): the login is kept in `data/plaza.db`, the chats stay in Beeper and aren't copied, Plaza never marks a chat read, and it only sends when you press Send. Set `BEEPER_URL` if Beeper's API isn't at `http://localhost:23373`.
+
 ## Test it
 
 End-to-end tests drive the real app in Chromium with [Playwright](https://playwright.dev). They build the app, serve it with `vite preview`, and play it: the dock and shortcuts, walking into the town hall, the clerk's typewriter, tearing a note off the board, an empty lot, and the ToDos app itself.
@@ -72,8 +81,8 @@ Three.js with Vite, no framework yet.
 | `src/kit.js`, `src/details.js`, `src/decor.js` | Building blocks: materials and shapes, windows, doors and signs, furniture |
 | `src/folks.js`, `src/life.js`, `src/finds.js` | Folks and their poses, small motion (smoke, swaying, lamps), the hidden finds |
 | `src/avatar.js` | You: walking, collisions, doors |
-| `src/districts/` | Each district's app: ToDos (`todos.js`) and Finance (`finance.js`) are real, the rest show sample data |
-| `server/` | Plaza's server on this Mac: serves the page and keeps your data in SQLite (`db.js`), logs in to remote MCP servers (`mcp.js`) and syncs your banks from Banco for Finance (`finance.js`) |
+| `src/districts/` | Each district's app: ToDos (`todos.js`), Finance (`finance.js`) and People (`people.js`) are real, the rest show sample data |
+| `server/` | Plaza's server on this Mac: serves the page and keeps your data in SQLite (`db.js`), logs in to remote MCP servers (`mcp.js`) syncs your banks from Banco for Finance (`finance.js`) and reads your chats from Beeper for People (`people.js`) |
 | `src/store.js` | Saving district data: on the server, with a copy in the browser |
 | `src/layout.js`, `src/layout.json` | Movable pieces and where the layout editor (`src/app/editor.js`) put them |
 | `src/models.js` | Swapping code-built objects for hand-made Blender or Blockbench models (see `public/models/README.md`) |

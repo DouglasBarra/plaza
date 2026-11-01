@@ -10,6 +10,7 @@ import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openDb } from './db.js';
 import { finance } from './finance.js';
+import { people } from './people.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const DEV = !process.argv.includes('--prod');
@@ -18,7 +19,7 @@ const HOST = '127.0.0.1';
 const db = openDb(process.env.PLAZA_DB || join(ROOT, 'data', 'plaza.db'));
 // logins come back to whichever port this server answers on
 const ports = [...new Set([PORT, 5173, 4174])];
-const districts = [finance(db, ports)];
+const districts = [finance(db, ports), people(db, ports)];
 
 // ---------- the API ----------
 const KEY = /^[\w.-]{1,100}$/;
