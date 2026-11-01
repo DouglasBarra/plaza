@@ -6,7 +6,8 @@ import { leaves, animateLife } from '../life.js';
 import { addFolk, animateFigures } from '../folks.js';
 import { updateClocks, animateCranes } from '../details.js';
 import { beams, HALL_SIZE, townHall, bank, library, lighthouse, works, postOffice } from './buildings.js';
-import { roundTree, bench, lamp, fountain, bollards, planter, cafe, stall, bike, noticeboard, mailbox } from './props.js';
+import { roundTree, bench, lamp, fountain, bollards, planter, bike, noticeboard, mailbox } from './props.js';
+import { TRUCK, truckFrame, foodTruck, chalkSign, stringLights, lightPool, barrelPlanter, bistroTable, picnicTable, chairSpot, benchSpot, litterBin } from './foodtruck.js';
 import { cat, pigeon, animateCritters } from './critters.js';
 import { LAMP_TOP, TREE_LOW_BRANCH, KIOSK, bin, drinkingFountain, bikeRack, kiosk, signpost, streetClock, phoneBox, mapBoard, bunting, treeGrate, chalkDrawing, pottedShrub, shrubPlanter } from './props.js';
 import { DISTRICTS } from '../districts/index.js';
@@ -17,7 +18,7 @@ import { piece, placeable } from '../layout.js';
 // where you arrive. The town hall heads it; down the west side stand the
 // post office (People) and the library (Study), down the east side the Works
 // (Projects) and the bank (Finance); the lighthouse (Ideas) marks the
-// south-east corner, and the café and market fill the south-west. Every
+// south-east corner, and a food truck with its tables fills the south-west. Every
 // building faces the middle of the fountain, and every one is real size
 // (see buildings.js).
 //
@@ -168,8 +169,12 @@ export function buildPlaza(scene) {
 
   // ---- street furniture
   const P = {
-    cafe: { x: -15.0, z: 26.0 },
-    stall: { x: -24.5, z: 28.5 },
+    truck: { x: -27.5, z: 27.0, rot: deg(112) },   // the food truck; its hatch faces the fountain
+    tables: { x: -18.8, z: 30.0 },                  // the middle of its seating
+    tableSpots: [{ x: -19.6, z: 27.6, rot: deg(20), r: 1.0 }, { x: -15.8, z: 29.8, rot: deg(-10), r: 1.0 }, { x: -20.6, z: 32.0, rot: deg(112), r: 1.25 }],
+    lightPosts: [[-22.0, 25.0], [-14.4, 27.4], [-17.4, 33.6]],
+    waiter: [[-25.2, 27.0], [-17.6, 30.2]],     // from the truck's counter to the tables
+    bin: { x: -23.6, z: 33.2 },
     flowers: { x: -15.5, z: -21.5 },     // flower boxes between the hall and the post office
     trees: [{ x: 12.5, z: 34.4 }, { x: 15.6, z: 34.8, y: TREE_LOW_BRANCH * 0.85 }],   // a paper plane is stuck in the second, among its lowest limbs
     bikes: [{ x: 12.65, z: 32.45, rot: Math.PI / 2 }, { x: 13.65, z: 32.35, rot: Math.PI / 2 }, { x: 15.15, z: 32.5, rot: -Math.PI / 2 }],
@@ -178,18 +183,48 @@ export function buildPlaza(scene) {
     mailbox: { x: -18.5, z: -6.5 },      // in front of the post office
     owlLamp,
   };
-  // the café and the market stall bring their customers, waiter and vendor
-  piece(world, 'plaza.cafe', [P.cafe.x, P.cafe.z], (g) => {
-    cafe(g, P.cafe.x, P.cafe.z);
-    addFolk(g, { x: P.cafe.x - 2.15, z: P.cafe.z - 0.8, rot: Math.PI / 2, seat: 0.45, pose: 'sit', look: { hair: 'bun' } });
-    addFolk(g, { x: P.cafe.x + 2.15, z: P.cafe.z + 0.6, rot: -Math.PI / 2, seat: 0.45, pose: 'read', look: { glasses: true, item: 'paper' } });
-    addFolk(g, { walk: { path: [[P.cafe.x - 1.2, P.cafe.z + 0.4], [P.cafe.x + 1.2, P.cafe.z - 0.5]], speed: 0.7 }, look: { item: 'tray', hair: 'bun' } });
-  }, [col(P.cafe.x, P.cafe.z, 2.3)]);
-  piece(world, 'plaza.stall', [P.stall.x, P.stall.z], (g) => {
-    stall(g, P.stall.x, P.stall.z, deg(35));
-    addFolk(g, { x: P.stall.x - 0.6, z: P.stall.z - 0.9, rot: deg(35) + Math.PI, pose: 'vendor', look: { hat: 'cone' } });
-    addFolk(g, { x: P.stall.x + 1.2, z: P.stall.z + 1.7, rot: deg(35) + Math.PI, pose: 'chat', look: { hair: 'long', dress: true } });
-  }, [col(P.stall.x, P.stall.z, 2)]);
+  // the food truck in the south-west corner, parked on the paving with its
+  // hatch toward the fountain: the cook inside, a queue at the counter, a
+  // chalk sign, and string lights tied from its roof to posts round the tables
+  const truckAt = truckFrame(P.truck.x, P.truck.z, P.truck.rot);
+  const queue = [
+    [truckAt(0.55, 1.95), Math.PI, 'idle', { hat: 'beanie', backpack: true }],
+    [truckAt(1.25, 2.75), Math.PI - 0.6, 'look', { glasses: true, scarf: true }],
+    [truckAt(0.35, 3.35), Math.PI + 0.3, 'chat', { hair: 'long', dress: true }],
+    [truckAt(0.95, 3.45), Math.PI - 0.2, 'idle', { hat: 'cone', height: 0.7 }],
+  ];
+  const signAt = truckAt(-2.2, 2.4), boxAt = truckAt(0.25, 0), potAt = truckAt(-3.5, 1.2);
+  const truckBox = { x: boxAt.x, z: boxAt.z, hw: 3.25, hd: 1.48, rot: P.truck.rot };   // the truck, its step, crates and gas
+  colliders.push(truckBox);
+  piece(world, 'plaza.food-truck', [P.truck.x, P.truck.z], (g) => {
+    const { x, z, rot } = P.truck;
+    foodTruck(g, x, z, rot);
+    const cook = truckAt(0.25, 0.3);
+    addFolk(g, { x: cook.x, y: 0.55, z: cook.z, rot, pose: 'vendor', look: { hat: 'cap' } });
+    for (const [q, r, pose, look] of queue) addFolk(g, { x: q.x, z: q.z, rot: rot + r, pose, look });
+    chalkSign(g, signAt.x, signAt.z, rot - 0.45);
+    barrelPlanter(g, potAt.x, potAt.z);
+    const posts = P.lightPosts.map(([px, pz]) => barrelPlanter(g, px, pz, true));
+    const tie = ([lx, ly, lz]) => { const q = truckAt(lx, lz); return [q.x, ly, q.z]; };
+    const bulbs = stringLights(g, [tie(TRUCK.lightsRear), ...posts, tie(TRUCK.lightsFront)]);
+    lightPool(g, P.tables.x, P.tables.z, bulbs);
+  }, [truckBox, ...queue.map(([q]) => col(q.x, q.z, 0.3)), col(signAt.x, signAt.z, 0.45), col(potAt.x, potAt.z, 0.4),
+    ...P.lightPosts.map(([px, pz]) => col(px, pz, 0.42))]);
+  // its tables: two bistro tables under umbrellas and a picnic table, with
+  // the waiter going between them and the truck
+  piece(world, 'plaza.food-truck-tables', [P.tables.x, P.tables.z], (g) => {
+    const [b1, b2, pic] = P.tableSpots;
+    bistroTable(g, b1.x, b1.z, b1.rot);
+    bistroTable(g, b2.x, b2.z, b2.rot);
+    picnicTable(g, pic.x, pic.z, pic.rot);
+    addFolk(g, { ...chairSpot(b1.x, b1.z, b1.rot, 0), pose: 'sit', look: { hair: 'bun' } });
+    addFolk(g, { ...chairSpot(b2.x, b2.z, b2.rot, Math.PI), pose: 'read', look: { glasses: true, item: 'paper' } });
+    addFolk(g, { ...benchSpot(pic.x, pic.z, pic.rot, 1, -0.4), pose: 'type', look: { hat: 'cap', height: 0.8 } });
+    addFolk(g, { ...benchSpot(pic.x, pic.z, pic.rot, -1, 0.4), pose: 'sit', look: { hat: 'bowler' } });
+    addFolk(g, { walk: { path: P.waiter, speed: 0.7 }, look: { item: 'tray', hair: 'bun' } });
+    litterBin(g, P.bin.x, P.bin.z);
+    lightPool(g, (b1.x + b2.x) / 2, (b1.z + b2.z) / 2);
+  }, [...P.tableSpots.map((t) => col(t.x, t.z, t.r)), col(P.bin.x, P.bin.z, 0.35)]);
   piece(world, 'plaza.flowers', [P.flowers.x + 1.0, P.flowers.z], (g) => {
     planter(g, P.flowers.x, P.flowers.z, 'ideas'); planter(g, P.flowers.x + 2.0, P.flowers.z);
   }, [col(P.flowers.x + 1.0, P.flowers.z, 1.8), P.flowers]);
@@ -305,8 +340,8 @@ export function buildPlaza(scene) {
   }
   for (const [x, z] of [[1.8, 3.4], [2.3, 3.0], [-3.2, -1.6], [-3.4, -2.2], [3.1, -2.6], [2.2, -3.4]]) pigeon(world, x * 2.2, FZ + z * 2.2);
 
-  // ---- folks, each busy with something (the ones at a bench, the café, the
-  // stall or the notice board belong to that piece, above)
+  // ---- folks, each busy with something (the ones at a bench, the food truck,
+  // its tables or the notice board belong to that piece, above)
   addFolk(world, { x: 0, z: FZ + 2.35 * FS, rot: 0, seat: 0.6 * FSY, pose: 'music', look: { hat: 'cap', item: 'guitar' } });
   addFolk(world, { x: -7.8, z: FZ - 3.0, rot: 2.14, pose: 'feed', look: { hair: 'bun', dress: true, height: 0.95 } });
   addFolk(world, { x: 13.0, z: 15.0, rot: 0.93, pose: 'chat', look: { hair: 'long', scarf: true } });
@@ -320,7 +355,7 @@ export function buildPlaza(scene) {
   addFolk(world, { x: -13.0, z: 17.0, rot: 2.2, pose: 'wave', look: { item: 'balloon', balloon: 'people', height: 0.75 } });
   leaves(world, 30, Math.min(hx, hz) - 2);
   cat(world, 3.6, hz - 8.0, 0.7, true);    // the friendly one, near where you arrive
-  cat(world, -16.5, 21.5, 2.4);            // between the library's garden and the café
+  cat(world, -16.5, 21.5, 2.4);            // between the library's garden and the food truck's tables
 
   placeFinds(world, buildings, P);
 
