@@ -13,13 +13,14 @@ export const DOOR = { w: 1.5, h: 2.5 };
 
 // Window openings per wall: { c: position along the wall, y: height of the
 // center, w, h }. On the front and back walls c is x; on the sides it is z.
+// Every window is the same size, 1.3 by 1.7 m, and sits at the same height on
+// its own floor (its middle 2.2 m above that floor).
+const win = (c, floor) => ({ c, y: (floor ? F : 0) + 2.2, w: 1.3, h: 1.7 });
 export const HOLES = {
-  front: { lower: [{ c: -3.4, y: 2.2, w: 1.3, h: 1.7 }, { c: 3.4, y: 2.2, w: 1.3, h: 1.7 }],
-           upper: [{ c: -3.4, y: F + 2.0, w: 1.3, h: 1.6 }, { c: 3.4, y: F + 2.0, w: 1.3, h: 1.6 }] },
-  back:  { lower: [{ c: -4.4, y: 2.2, w: 1.3, h: 1.7 }], upper: [{ c: 5.1, y: F + 2.0, w: 1.1, h: 1.5 }] },
-  left:  { lower: [{ c: -3.3, y: 2.2, w: 1.3, h: 1.7 }, { c: 3.4, y: 2.2, w: 1.3, h: 1.7 }],
-           upper: [{ c: 3.4, y: F + 2.0, w: 1.3, h: 1.6 }] },
-  right: { lower: [{ c: 3.3, y: 2.2, w: 1.3, h: 1.7 }], upper: [{ c: 0.5, y: F + 2.0, w: 1.3, h: 1.6 }] },
+  front: { lower: [win(-3.4), win(3.4)], upper: [win(-3.4, 1), win(3.4, 1)] },
+  back:  { lower: [win(-4.4)],           upper: [win(5.1, 1)] },
+  left:  { lower: [win(-3.3), win(3.4)], upper: [win(3.4, 1)] },
+  right: { lower: [win(3.3)],            upper: [win(0.5, 1)] },
 };
 
 // The doorway as a hole in the front wall.

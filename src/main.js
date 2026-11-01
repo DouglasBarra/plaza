@@ -700,6 +700,8 @@ if (import.meta.env.DEV) {
   window.__plaza = {
     me, camera, enterBuilding, exitBuilding, setView, openApp, closeApp, openFinds, finds,
     room: () => room,
+    look(y, p) { yaw = y; pitch = p; },   // first-person gaze, for taking screenshots
+    eye: () => camera.position.toArray(),
     // screen position of an object, after settling the camera
     screenPos(obj) {
       if (view === 'third') controls.update();

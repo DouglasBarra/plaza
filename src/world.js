@@ -83,15 +83,16 @@ function townHall() {
   signBoard(g, 0, T0 + DOOR.h + 1.75, frontZ + 0.04, 3.4, 0.6, 'Town Hall');
 
   // windows, exactly where the inside has them
-  const win = (hole, x, y, z, rotY, lower) => fancyWindow(g, x, T0 + y, z, hole.w, hole.h, rotY, lower ? { shutters: true, flowers: 'white' } : { curtains: true });
-  for (const h of HOLES.front.lower) win(h, h.c, h.y, frontZ, 0, true);
-  for (const h of HOLES.front.upper) win(h, h.c, h.y, frontZ, 0, false);
-  for (const h of HOLES.back.lower) win(h, h.c, h.y, -frontZ, Math.PI, true);
-  for (const h of HOLES.back.upper) win(h, h.c, h.y, -frontZ, Math.PI, false);
-  for (const h of HOLES.left.lower) win(h, -OW / 2, h.y, h.c, -Math.PI / 2, true);
-  for (const h of HOLES.left.upper) win(h, -OW / 2, h.y, h.c, -Math.PI / 2, false);
-  for (const h of HOLES.right.lower) win(h, OW / 2, h.y, h.c, Math.PI / 2, true);
-  for (const h of HOLES.right.upper) win(h, OW / 2, h.y, h.c, Math.PI / 2, false);
+  // both floors get the same window: frame, cross bars, shutters and a flower box
+  const win = (hole, x, y, z, rotY) => fancyWindow(g, x, T0 + y, z, hole.w, hole.h, rotY, { shutters: true, flowers: 'white' });
+  for (const h of HOLES.front.lower) win(h, h.c, h.y, frontZ, 0);
+  for (const h of HOLES.front.upper) win(h, h.c, h.y, frontZ, 0);
+  for (const h of HOLES.back.lower) win(h, h.c, h.y, -frontZ, Math.PI);
+  for (const h of HOLES.back.upper) win(h, h.c, h.y, -frontZ, Math.PI);
+  for (const h of HOLES.left.lower) win(h, -OW / 2, h.y, h.c, -Math.PI / 2);
+  for (const h of HOLES.left.upper) win(h, -OW / 2, h.y, h.c, -Math.PI / 2);
+  for (const h of HOLES.right.lower) win(h, OW / 2, h.y, h.c, Math.PI / 2);
+  for (const h of HOLES.right.upper) win(h, OW / 2, h.y, h.c, Math.PI / 2);
 
   // the flag rises to the top when nothing is due (driven from main.js)
   g.userData = {
