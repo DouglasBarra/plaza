@@ -1,7 +1,8 @@
 // Street furniture and plants. Each builder adds one object to parent `p`;
 // most can be swapped for a hand-made model of the same name (models.js).
 import * as THREE from 'three';
-import { M, stamp, mesh, box, cyl } from '../kit.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { M, stamp, mesh, box, cyl, cylGeo } from '../kit.js';
 import { swapModel } from '../models.js';
 import { fountainWater, steam, sway, swingSign, lampLight } from '../life.js';
 import { signBoard } from '../details.js';
@@ -77,6 +78,15 @@ export function fountain(p) {
 export function bollard(p, x, z) {
   cyl(p, 0.14, 0.17, 0.8, M.white, x, 0.4, z, 8);
   mesh(new THREE.SphereGeometry(0.15, 8, 6), M.white, x, 0.82, z, p);
+}
+
+// A whole row of bollards as one mesh: the plaza's edge has well over a
+// hundred, and one draw call is much cheaper than hundreds.
+export function bollards(p, spots) {
+  const post = cylGeo(0.14, 0.17, 0.8, 8).toNonIndexed(), cap = new THREE.SphereGeometry(0.15, 8, 6).toNonIndexed();
+  cap.deleteAttribute('uv'); post.deleteAttribute('uv');
+  const parts = spots.flatMap(([x, z]) => [post.clone().translate(x, 0.4, z), cap.clone().translate(x, 0.82, z)]);
+  return mesh(mergeGeometries(parts), M.white, 0, 0, 0, p);
 }
 
 export function planter(p, x, z, flowers = 'white') {

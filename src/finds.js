@@ -118,16 +118,18 @@ export function placeFinds(world, buildings, P) {
 
   const kid = makeFigure({ hat: 'cap', height: 0.7 });
   poseFigure(kid, 'look', 0);
-  kid.position.set(2.3, T, -2.0);
+  kid.position.set(3.2, T, -4.3);                                    // round the back corner
   kid.rotation.y = 0.3;
   at('study').add(register('hider', 'The kid playing hide-and-seek', 'Behind the library, someone is counting to ten.', kid));
 
   const gull = bird({ gull: true });
-  gull.position.set(-0.6, T + 8.3, -0.4);
+  const tower = at('ideas').userData.tower;
+  gull.position.set(tower.x, tower.top + 0.05, tower.z);            // on the lighthouse's vane
   at('ideas').add(register('gull', 'The lighthouse gull', 'The highest point on the plaza has a visitor.', gull));
 
   const rooster = bird({ rooster: true });
-  rooster.position.set(1.2, T + 2.62, 1.0);
+  const hut = at('ideas').userData.hut;
+  rooster.position.set(hut.x - 0.8, hut.ridge + 0.05, hut.z);       // on the workshop's ridge
   at('ideas').add(register('rooster', 'The morning rooster', 'Before noon, someone crows on the workshop roof.', rooster, () => new Date().getHours() < 12));
 
   const owl = bird({ owl: true });

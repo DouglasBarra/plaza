@@ -6,7 +6,8 @@ import { game } from './state.js';
 import { me } from './plaza.js';
 import { applyRoomView } from './rooms.js';
 
-export const PLAZA_VIEW = { minPolar: 0.5, maxPolar: 1.45, minDist: 14, maxDist: 140, offset: new THREE.Vector3(18, 26, 32) };
+// the camera starts behind you, a little to the east, looking up the square
+export const PLAZA_VIEW = { minPolar: 0.5, maxPolar: 1.45, minDist: 14, maxDist: 140, offset: new THREE.Vector3(8, 40, 36) };
 const ROOM_VIEW = { minPolar: 0.55, maxPolar: 1.15, minDist: 9, maxDist: 26, minAz: 0.05, maxAz: 1.5 };
 
 export function setOrbitLimits() {

@@ -15,6 +15,14 @@ export const test = base.extend({
   },
   plaza: async ({ page, pageErrors }, use) => {
     void pageErrors;
+    // remember every "Task done!" burst: one only shows for a moment, which a
+    // slow (software-rendered) frame can swallow whole
+    await page.addInitScript(() => {
+      window.__rewards = [];
+      addEventListener('DOMContentLoaded', () => new MutationObserver((ms) => {
+        for (const m of ms) for (const n of m.addedNodes) if (n.classList?.contains('reward')) window.__rewards.push(n.textContent.trim());
+      }).observe(document.body, { childList: true }));
+    });
     await page.goto('/?lowpower');
     await expect(page.locator('#dock button')).toHaveCount(6);
     await page.waitForFunction(() => window.__plaza);
@@ -42,3 +50,8 @@ export async function standAt(page, [x, y, z]) {
 
 // The "E …" prompt over your head, once you stand somewhere it applies.
 export const prompt = (page) => page.locator('#labels .prompt:not(.is-hidden)');
+
+// Has the "…!" burst (reward) with this text been shown since the page loaded?
+export async function expectReward(page, text) {
+  await expect.poll(() => page.evaluate(() => window.__rewards), { message: `a "${text}" burst` }).toContain(text);
+}

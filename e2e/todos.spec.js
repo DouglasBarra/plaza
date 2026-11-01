@@ -1,4 +1,4 @@
-import { test, expect, openDistrict } from './fixtures.js';
+import { test, expect, openDistrict, expectReward } from './fixtures.js';
 
 // Pin the calendar so "today", "overdue" and "tomorrow" are stable.
 // Only Date is shifted; timers and animation frames are left alone
@@ -96,7 +96,7 @@ test('complete, undo, edit, delete and clear tasks', async ({ plaza: page }) => 
 
   // complete one
   await panel.getByRole('button', { name: 'Mark done: Write report' }).click();
-  await expect(page.locator('.reward')).toContainText('Task done!');
+  await expectReward(page, 'Task done!');
   await expect(rows(panel)).toHaveText(['Read two books']);
 
   await panel.getByRole('tab', { name: /Done/ }).click();

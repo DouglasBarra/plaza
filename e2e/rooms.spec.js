@@ -1,4 +1,4 @@
-import { test, expect, openDistrict, standAt, prompt } from './fixtures.js';
+import { test, expect, openDistrict, standAt, prompt, expectReward } from './fixtures.js';
 
 const state = (page) => page.evaluate(() => window.__plaza.state());
 const inRoom = (page) => expect(page.locator('body')).toHaveClass(/in-room/);
@@ -34,7 +34,7 @@ test('the clerk types up a task and pins it to the board', async ({ plaza: page 
   await card.getByLabel('Task').fill('Water the plants');
   await card.getByRole('button', { name: 'Type it and pin it' }).click();
 
-  await expect(page.locator('.reward')).toContainText('Pinned!');
+  await expectReward(page, 'Pinned!');
   await expect(page.locator('#overlay')).toBeHidden();
   await expect.poll(() => notes(page)).toBe(1);
   await expect(page.locator('#greeting-line')).toContainText('1 thing needs you today.');
@@ -59,7 +59,7 @@ test('tear a note off the board to finish its task', async ({ plaza: page }) => 
   await expect(card.locator('.paper-note')).toContainText('Call the plumber');
 
   await card.getByRole('button', { name: 'Tear it off: done!' }).click();
-  await expect(page.locator('.reward')).toContainText('Task done!');
+  await expectReward(page, 'Task done!');
   // the note crumples into a ball and flies into the bin, then the task is done
   await expect.poll(() => notes(page)).toBe(0);
   await expect(page.locator('#greeting-line')).toContainText('Nothing due today.');
