@@ -133,7 +133,7 @@ export function placeFinds(world, buildings, P) {
   at('ideas').add(register('rooster', 'The morning rooster', 'Before noon, someone crows on the workshop roof.', rooster, () => new Date().getHours() < 12));
 
   const owl = bird({ owl: true });
-  owl.position.set(P.owlLamp.x, 3.05, P.owlLamp.z); // on top of a street lamp
+  owl.position.set(P.owlLamp.x, P.owlLamp.y ?? 3.05, P.owlLamp.z); // on top of a street lamp
   world.add(register('owl', 'The night owl', 'At night, someone keeps watch from a street lamp.', owl, () => isNight()));
 
   const f = frog();
@@ -147,7 +147,7 @@ export function placeFinds(world, buildings, P) {
   world.add(register('snail', 'The slow snail', 'Someone is climbing the notice board, very slowly.', s));
 
   const plane = paperPlane();
-  plane.position.set(P.trees[1].x - 0.2, 1.6, P.trees[1].z - 0.5);  // caught in a tree
+  plane.position.set(P.trees[1].x - 0.2, P.trees[1].y ?? 1.6, P.trees[1].z - 0.5);  // caught in a tree
   plane.rotation.set(0.3, 0.8, -0.4);
   world.add(register('plane', 'The stuck paper plane', 'A flight that ended in a tree, near the bikes.', plane));
 

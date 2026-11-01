@@ -8,6 +8,8 @@ import { updateClocks, animateCranes } from '../details.js';
 import { beams, HALL_SIZE, townHall, bank, library, lighthouse, works, postOffice } from './buildings.js';
 import { roundTree, bench, lamp, fountain, bollards, planter, cafe, stall, bike, noticeboard, mailbox } from './props.js';
 import { cat, pigeon, animateCritters } from './critters.js';
+import { LAMP_TOP, TREE_LOW_BRANCH, KIOSK, bin, drinkingFountain, bikeRack, kiosk, signpost, streetClock, phoneBox, mapBoard, bunting, treeGrate, chalkDrawing, pottedShrub, shrubPlanter } from './props.js';
+import { DISTRICTS } from '../districts/index.js';
 import { piece, placeable } from '../layout.js';
 
 // ---------- the plaza ----------
@@ -133,7 +135,7 @@ export function buildPlaza(scene) {
     piece(world, `plaza.fountain-bench-${i + 1}`, [x, z], (g) => {
       bench(g, x, z, a + Math.PI);
       for (const f of sitters[i]) addFolk(g, f);
-    });
+    }, [col(x, z, 0.75)]);
   }
 
   // ---- lamps: around the ring (clear of the walks), at the street mouths, at the hall's steps
@@ -143,7 +145,7 @@ export function buildPlaza(scene) {
     const a = deg(22.5) + (i / 16) * Math.PI * 2;
     if (clearOfWalks(a)) LAMPS.push([Math.sin(a) * (RING + 1.0), FZ + Math.cos(a) * (RING + 1.0)]);
   }
-  const owlLamp = { x: LAMPS[0][0], z: LAMPS[0][1] };   // the night owl sits on this one (finds.js)
+  const owlLamp = { x: LAMPS[0][0], z: LAMPS[0][1], y: LAMP_TOP };   // the night owl sits on this one (finds.js)
   LAMPS.push([-3.0, hz - 1.6], [3.0, hz - 1.6], [hx - 1.6, -3.0], [hx - 1.6, 3.0], [-hx + 1.6, -3.0], [-hx + 1.6, 3.0], [-3.2, hallSteps + 0.6], [3.2, hallSteps + 0.6]);
   LAMPS.forEach(([x, z], i) => {
     piece(world, `plaza.lamp-${i + 1}`, [x, z], (g) => lamp(g, x, z), [col(x, z, 0.35), i === 0 && owlLamp]);
@@ -169,8 +171,8 @@ export function buildPlaza(scene) {
     cafe: { x: -15.0, z: 26.0 },
     stall: { x: -24.5, z: 28.5 },
     flowers: { x: -15.5, z: -21.5 },     // flower boxes between the hall and the post office
-    trees: [{ x: 12.5, z: 34.4 }, { x: 15.6, z: 34.8 }],
-    bikes: [{ x: 13.6, z: 32.6 }, { x: 14.2, z: 32.2 }],
+    trees: [{ x: 12.5, z: 34.4 }, { x: 15.6, z: 34.8, y: TREE_LOW_BRANCH * 0.85 }],   // a paper plane is stuck in the second, among its lowest limbs
+    bikes: [{ x: 12.65, z: 32.45, rot: Math.PI / 2 }, { x: 13.65, z: 32.35, rot: Math.PI / 2 }, { x: 15.15, z: 32.5, rot: -Math.PI / 2 }],
     board: { x: -5.6, z: 33.2 },         // the notice board greeting you as you arrive
     bench: { x: -10.5, z: 30.0 },
     mailbox: { x: -18.5, z: -6.5 },      // in front of the post office
@@ -195,11 +197,13 @@ export function buildPlaza(scene) {
     planter(g, 15.5, -21.5, 'todo'); planter(g, 17.5, -21.5);
   }, [col(16.5, -21.5, 1.8)]);
   piece(world, 'plaza.trees-south', [14.05, 34.6], (g) => {
-    for (const t of P.trees) roundTree(g, t.x, t.z, 0.85);
+    for (const t of P.trees) { roundTree(g, t.x, t.z, 0.85); treeGrate(g, t.x, t.z); }
   }, [col(12.5, 34.4, 1.0), col(15.6, 34.8, 1.0), ...P.trees]);
+  // bikes parked at a row of stands, by the trees
   piece(world, 'plaza.bikes', [13.9, 32.4], (g) => {
-    for (const [i, b] of P.bikes.entries()) bike(g, b.x, b.z, 0.2 + i * 0.3);
-  });
+    bikeRack(g, 13.9, 32.4, Math.PI / 2, 3);
+    for (const b of P.bikes) bike(g, b.x, b.z, b.rot);
+  }, [col(13.15, 32.4, 0.75), col(14.65, 32.4, 0.75)]);
   piece(world, 'plaza.noticeboard', [P.board.x, P.board.z], (g) => {
     noticeboard(g, P.board.x, P.board.z, 0);
     addFolk(g, { x: P.board.x, z: P.board.z + 1.0, rot: Math.PI, pose: 'look', look: { hat: 'top' } });
@@ -208,7 +212,7 @@ export function buildPlaza(scene) {
     bench(g, P.bench.x, P.bench.z, Math.PI);
     addFolk(g, { x: P.bench.x, z: P.bench.z, rot: Math.PI, seat: 0.5, pose: 'read', look: { hair: 'long', item: 'paper' } });
   });
-  piece(world, 'plaza.mailbox', [P.mailbox.x, P.mailbox.z], (g) => mailbox(g, P.mailbox.x, P.mailbox.z, deg(-115)));
+  piece(world, 'plaza.mailbox', [P.mailbox.x, P.mailbox.z], (g) => mailbox(g, P.mailbox.x, P.mailbox.z, deg(-115)), [col(P.mailbox.x, P.mailbox.z, 0.35)]);
   // trees in planters along both sides of the hall's forecourt
   for (const sx of [-1, 1]) for (const tz of [hallSteps + 1.2, hallSteps + 5.2]) {
     const tx = sx * 8.6;
@@ -221,7 +225,83 @@ export function buildPlaza(scene) {
   // a pair of trees at the south entrance, and trees in the corners behind the buildings
   for (const [name, x, z, s] of [['entrance-west', -8.9, 34.2, 0.9], ['entrance-east', 8.6, 34.4, 0.85],
     ['north-west', -33.0, -33.5, 0.8], ['north-east', 33.0, -33.5, 0.8], ['south-west', -33.0, 33.5, 0.75]]) {
-    piece(world, `plaza.tree-${name}`, [x, z], (g) => roundTree(g, x, z, s), [col(x, z, 1.0)]);
+    piece(world, `plaza.tree-${name}`, [x, z], (g) => { roundTree(g, x, z, s); treeGrate(g, x, z); }, [col(x, z, 1.0)]);
+  }
+
+  // ---- more street furniture
+  // `off` finds a spot beside something turned by `rot`: lx to its right, lz in front
+  const off = (x, z, rot, lx, lz) => [x + lx * Math.cos(rot) + lz * Math.sin(rot), z - lx * Math.sin(rot) + lz * Math.cos(rot)];
+  const doors = buildings.map((b) => ({ id: b.userData.district, door: b.userData.door, b }));
+  // a finger signpost where you come in from the south, one arm per district
+  const SIGN = { x: 2.9, z: 12.8 };
+  piece(world, 'plaza.signpost', [SIGN.x, SIGN.z], (g) => signpost(g, SIGN.x, SIGN.z, doors.map(({ id, door }) => ({
+    text: DISTRICTS[id].name, district: id, angle: Math.atan2(-(door.z - SIGN.z), door.x - SIGN.x),
+  }))), [col(SIGN.x, SIGN.z, 0.3)]);
+  // the plaza's map at the south entrance, drawn from where everything really stands
+  const MAP = { x: 4.6, z: 32.3 };
+  const NAMES = { todo: 'Town Hall', finance: 'Bank', study: 'Library', ideas: 'Lighthouse', projects: 'Works', people: 'Post Office' };
+  const plan = {
+    hx, hz, ring: RING, basin: 2.4 * FS,
+    walks: [[0, hz, 0, FZ + RING, 3.2], [hx, 0, RING, 0, 3.2], [-hx, 0, -RING, 0, 3.2], [0, FZ - RING, 0, hallSteps - 0.2, 3.2],
+      ...doors.filter(({ b }) => !b.userData.hall).map(({ door }) => {
+        const a = Math.atan2(door.x, door.z - FZ);
+        return [Math.sin(a) * RING, FZ + Math.cos(a) * RING, door.x, door.z, 2.6];
+      })],
+    places: doors.map(({ id, b }, i) => ({
+      n: i + 1, label: NAMES[id], district: DISTRICTS[id].name, x: b.position.x, z: b.position.z, rot: b.rotation.y,
+      ...(b.userData.hall ? { w: HALL_SIZE.w, d: HALL_SIZE.d } : b.userData.footprint),
+    })),
+  };
+  piece(world, 'plaza.map-board', [MAP.x, MAP.z], (g) => mapBoard(g, MAP.x, MAP.z, -0.3, plan), [col(MAP.x, MAP.z, 0.9)]);
+  // bunting and festoon lights across the walk in from the south
+  piece(world, 'plaza.bunting', [0, 27.0], (g) => bunting(g, 0, 27.0, 0, 6, 3.5), [col(-3, 27.0, 0.2), col(3, 27.0, 0.2)]);
+  // litter bins: by the entrance, the notice board, the hall's steps and the east street
+  for (const [name, x, z] of [['south', 2.6, 30.4], ['noticeboard', -7.0, 32.4], ['forecourt', -4.6, hallSteps + 0.9], ['east', 31.6, 2.7]]) {
+    piece(world, `plaza.bin-${name}`, [x, z], (g) => bin(g, x, z, facingFountain(x, z)), [col(x, z, 0.3)]);
+  }
+  // a newspaper and flower kiosk, with its vendor behind the counter and a bin beside it
+  const KI = { x: 14.2, z: -16.2 }, kRot = facingFountain(KI.x, KI.z);
+  const kBin = off(KI.x, KI.z, kRot, -1.95, 0.5);
+  piece(world, 'plaza.kiosk', [KI.x, KI.z], (g) => {
+    kiosk(g, KI.x, KI.z, kRot);
+    const [vx, vz] = off(KI.x, KI.z, kRot, 0, KIOSK.inside);
+    addFolk(g, { x: vx, z: vz, rot: kRot, pose: 'vendor', look: { hat: 'cap', glasses: true } });
+    bin(g, kBin[0], kBin[1], kRot);
+  }, [col(KI.x, KI.z, 1.6), col(kBin[0], kBin[1], 0.3)]);
+  // a drinking fountain beside the east walk
+  piece(world, 'plaza.drinking-fountain', [12.6, -3.2], (g) => drinkingFountain(g, 12.6, -3.2, 0), [col(12.6, -3.2, 0.5)]);
+  // a street clock in the hall's forecourt, its faces toward the fountain and the hall
+  piece(world, 'plaza.street-clock', [-3.0, -14.6], (g) => streetClock(g, -3.0, -14.6, 0), [col(-3.0, -14.6, 0.3)]);
+  // a telephone box near the post office, its door toward the fountain
+  piece(world, 'plaza.phone-box', [-19.8, -4.0], (g) => phoneBox(g, -19.8, -4.0, facingFountain(-19.8, -4.0)), [col(-19.8, -4.0, 0.75)]);
+  // a little garden between the fountain and the library: two benches, a bin, hedges behind
+  const GA = { x: -11.6, z: 13.2 }, gRot = facingFountain(GA.x, GA.z);
+  const gBench = [off(GA.x, GA.z, gRot, -1.2, 0), off(GA.x, GA.z, gRot, 1.2, 0)];
+  const gHedge = [off(GA.x, GA.z, gRot, -1.3, -1.6), off(GA.x, GA.z, gRot, 1.3, -1.6)];
+  piece(world, 'plaza.garden', [GA.x, GA.z], (g) => {
+    for (const [x, z] of gBench) bench(g, x, z, gRot);
+    bin(g, GA.x, GA.z, gRot);
+    for (const [x, z] of gHedge) shrubPlanter(g, x, z, gRot, 2.4);
+    addFolk(g, { x: gBench[1][0], z: gBench[1][1], rot: gRot, seat: 0.5, pose: 'read', look: { hat: 'beanie', scarf: true, item: 'paper' } });
+  }, [...gBench.map(([x, z]) => col(x, z, 0.8)), col(GA.x, GA.z, 0.3),
+    ...gHedge.flatMap(([x, z]) => [-0.6, 0.6].map((s) => col(...off(x, z, gRot, s, 0), 0.55)))]);
+  // bike stands by the library
+  const LR = { x: -18.6, z: 14.2 }, lrRot = facingFountain(LR.x, LR.z) + Math.PI / 2;
+  piece(world, 'plaza.bikes-library', [LR.x, LR.z], (g) => {
+    bikeRack(g, LR.x, LR.z, lrRot, 2);
+    bike(g, ...off(LR.x, LR.z, lrRot, 0, -0.75), lrRot);
+  }, [col(LR.x, LR.z, 1.1)]);
+  // a hopscotch chalked on the paving, near the kid with the kite
+  piece(world, 'plaza.hopscotch', [4.4, 17.6], (g) => chalkDrawing(g, 4.4, 17.6, 0.15));
+  // potted shrubs either side of each door
+  const POTS = { finance: 'ball', study: 'ball', people: 'ball', projects: 'cone', ideas: 'bush' };
+  for (const { id, door, b } of doors) {
+    if (!POTS[id]) continue;
+    const r = b.rotation.y;
+    for (const [side, lx] of [['left', -1.95], ['right', 1.95]]) {
+      const [x, z] = off(door.x, door.z, r, lx, -0.3);
+      piece(world, `plaza.pot-${id}-${side}`, [x, z], (g) => pottedShrub(g, x, z, POTS[id]), [col(x, z, 0.35)]);
+    }
   }
   for (const [x, z] of [[1.8, 3.4], [2.3, 3.0], [-3.2, -1.6], [-3.4, -2.2], [3.1, -2.6], [2.2, -3.4]]) pigeon(world, x * 2.2, FZ + z * 2.2);
 
