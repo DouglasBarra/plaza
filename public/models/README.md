@@ -1,6 +1,6 @@
 # Models
 
-Drop hand-made models here (exported from Blockbench as **glTF binary, `.glb`**) and list them in `manifest.json`. A listed model replaces the code-built object with the same name everywhere it appears in Plaza, and gets the ink look (stepped shading and outlines) automatically.
+Drop hand-made models here (exported from Blender or Blockbench as **glTF binary, `.glb`**) and list them in `manifest.json`. A listed model replaces the code-built object with the same name everywhere it appears in Plaza, and gets the ink look (stepped shading and outlines) automatically.
 
 ```json
 {
@@ -15,7 +15,7 @@ Reload the page after adding a model. Remove its line from the manifest to go ba
 
 ## Names you can replace today
 
-Every name has a starter project in [`/blockbench`](../../blockbench), blocked out from the shapes Plaza draws in code, at the right scale and facing. Start from those rather than an empty file.
+Every name has a starter, blocked out from the shapes Plaza draws in code, at the right scale and facing: a Blender one (made by the Plaza script, below) and a Blockbench one in [`/blockbench`](../../blockbench). Start from those rather than an empty file.
 
 | Name | Where it appears | Notes |
 |---|---|---|
@@ -37,6 +37,33 @@ Every name has a starter project in [`/blockbench`](../../blockbench), blocked o
 
 The town's hundreds of houses and trees outside the plaza, the folks and the buildings are still drawn in code.
 
+## Making a model in Blender
+
+Blender suits detailed models and rooms. The Plaza script (`tools/blender/plaza.py`) adds the starters and does the export, so the scale, facing and file settings are always right.
+
+1. In Blender, open the **Scripting** tab, then **Open** `tools/blender/plaza.py` from this repo and press **Run Script**. A **Plaza** tab appears in the 3D view's sidebar (press **N** to show the sidebar).
+2. Pick a name (for example `bench`) and press **Add starter**. You get a collection called `bench` with one box per part (`seat`, `back`, `leg_left`…).
+3. Model it. Everything in the collection is the model, so add, join or delete objects freely, and use modifiers (they're applied on export).
+4. Paint it in the Plaza style: white or light gray surfaces with black ink detail lines, as a base color texture or plain base colors. Leave shading out, because Plaza adds it. Use a district's stamp color only for one small accent.
+5. Select any object in the model and press **Export to Plaza**. It writes `public/models/bench.glb` and lists it in `manifest.json`. Reload Plaza.
+6. Save the `.blend` somewhere you keep your source files, for later edits.
+
+Rules the starters already follow, for models made from scratch:
+
+- **Scale:** 1 Blender unit = 1 meter. A bench seat is about 0.45 m off the ground; a door is about 2.5 m tall.
+- **Origin:** the model's base stands on the ground at the world origin.
+- **Facing:** the front faces Blender's **Front** view (numpad 1, looking at the −Y side).
+- **One collection per model,** named after the object it replaces. For a lamp, name the part that lights up at night **`glow`**.
+
+From a terminal, without opening Blender's window (`blender` is `/Applications/Blender.app/Contents/MacOS/Blender` on a Mac):
+
+```bash
+blender --background --python tools/blender/plaza.py -- starter all --save ~/plaza-models.blend
+blender --background ~/plaza-models.blend --python tools/blender/plaza.py -- export bench lamp
+```
+
+`export` with no names exports every collection named after a replaceable object. To refresh the starters after changing `tools/starters.mjs`: `node tools/blender/make-starters.mjs`.
+
 ## Making a model in Blockbench
 
 1. Open the starter, for example `blockbench/bench.bbmodel` (File → Open Model).
@@ -52,4 +79,4 @@ Rules the starters already follow, for models made from scratch:
 - **Origin:** the model's base at the center of the grid, standing on the ground.
 - **Facing:** the front faces **south** in Blockbench (toward +Z).
 
-To regenerate the starters (it overwrites them): `node tools/make-bbmodels.mjs`.
+To regenerate the Blockbench starters (it overwrites them): `node tools/make-bbmodels.mjs`. Both kinds of starter come from the same list, `tools/starters.mjs`.

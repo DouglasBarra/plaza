@@ -54,4 +54,5 @@ Three.js with Vite, no framework yet.
 | `src/avatar.js` | You: walking, collisions, doors |
 | `src/districts/` | Each district's app (`todos.js` is the first real one) |
 | `src/store.js` | Saving district data on this computer |
-| `src/models.js` | Swapping code-built objects for Blockbench models (see `public/models/README.md`) |
+| `src/models.js` | Swapping code-built objects for hand-made Blender or Blockbench models (see `public/models/README.md`) |
+| `tools/` | Model starters and the Blender script (`tools/blender/plaza.py`) |
