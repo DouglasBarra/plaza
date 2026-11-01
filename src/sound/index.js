@@ -1,5 +1,5 @@
 // Sound for Plaza, a quiet storybook: paper and pencil for the interface,
-// footsteps, the birds, the weather and the town outside, each building's own room
+// the birds, the weather and the town outside, each building's own room
 // inside. The rest of the app calls `sfx('name', { at })`; main.js calls
 // `stepSound()` once a frame.
 //
@@ -9,21 +9,20 @@ import * as THREE from 'three';
 import { A, settings, saveSettings, whenReady, listen, spot, gain } from './engine.js';
 import { VOICES } from './voices.js';
 import { buildBeds, buildRoom, dropRoom, stepBeds } from './beds.js';
-import { stepFeet } from './steps.js';
 import { game } from '../app/state.js';
 
 let beds = null, roomParts = null, roomOf = null;
 whenReady(() => { beds = buildBeds(); });
 
 const last = new Map();   // name -> when it last played, for `gap`
-export function sfx(name, { at = null, room = null, gap = 0, vol = 1, dry = false, steps = false, ...opts } = {}) {
+export function sfx(name, { at = null, room = null, gap = 0, vol = 1, dry = false, ...opts } = {}) {
   if (!A.ctx || !settings.on || !VOICES[name]) return;
   const t = A.ctx.currentTime;
   if (gap && t - (last.get(name) ?? -1e9) < gap) return;
   last.set(name, t);
   const here = game.room?.id ?? null;
   let out;
-  if (!at) out = gain(vol, steps ? A.steps : dry ? A.dry : A.fx);
+  if (!at) out = gain(vol, dry ? A.dry : A.fx);
   else if (room === here) out = gain(vol, spot(at, room ? A.room : dry ? A.dry : A.fx, { ref: room ? 1.5 : 2.5, max: room ? 14 : 20 }));
   else if (room === null) out = gain(vol * 0.12, A.plaza);   // out on the plaza, faint through the walls
   else return;                                               // inside a building you're not in
@@ -36,7 +35,6 @@ export function stepSound(t, dt, { camera, me, hour, night, weather, hall }) {
   if (!A.ctx || !beds) return;
   camera.getWorldDirection(fwd);
   listen(me.position, fwd.setY(0).normalize());
-  if (!game.appOpen) stepFeet(me, game.room, sfx);
   // walked into a building, or out of one
   const id = game.room?.id ?? null;
   if (id !== roomOf) {
@@ -85,17 +83,10 @@ export function soundCard(showCard) {
     ${row('volume', 'Volume')}
     ${row('amb', 'Ambience: birds, the weather, the town, the rooms')}
     ${row('fx', 'Effects: paper, creatures, the rooms')}
-    <label class="snd-row"><span>Footsteps</span>
-      <select data-key="steps" class="td-input">
-        ${[['everywhere', 'Everywhere'], ['indoors', 'Indoors only (outside, just setting off and stopping)'], ['off', 'Off']]
-          .map(([v, l]) => `<option value="${v}"${settings.steps === v ? ' selected' : ''}>${l}</option>`).join('')}
-      </select>
-    </label>
-    ${row('stepVol', 'Footsteps volume')}
-    <p class="snd-note">Drawn in code, like the town (all but the dog and your steps, recordings).</p>` });
+    <p class="snd-note">Drawn in code, like the town (all but the dog, a recording).</p>` });
   body.addEventListener('input', (e) => {
     const k = e.target.dataset.key;
-    if (k) settings[k] = k === 'steps' ? e.target.value : Number(e.target.value);
+    if (k) settings[k] = Number(e.target.value);
     if (e.target.matches('[data-on]')) settings.on = e.target.checked;
     saveSettings();
     show();
