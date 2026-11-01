@@ -33,8 +33,8 @@ export const DISTRICTS = {
     items: [['Cloud Computing, ch. 4', '40%'], ['TCC draft: methodology', 'Fri'], ['Japanese flashcards', '20 left']] }),
   ideas: sample({ id: 'ideas', name: 'Ideas', key: '4', title: 'Idea box', status: '12 ideas',
     items: [['A plaza where my life lives', 'Today'], ['Postcard club with friends', 'Oct 28'], ['Learn to draw like Hidden Folks', 'Oct 12']] }),
-  projects: sample({ id: 'projects', name: 'Projects', key: '5', title: 'Projects', status: 'Coming soon',
-    note: 'This lot is waiting. The Projects building goes up here later.' }),
-  people: sample({ id: 'people', name: 'People', key: '6', title: 'People', status: 'Coming soon',
-    note: 'This lot is waiting. The People building goes up here later.' }),
+  projects: sample({ id: 'projects', name: 'Projects', key: '5', title: 'On the workbench', status: '3 on the go',
+    items: [['Plaza, this app', 'Town hall'], ['TCC', 'Ch. 3 of 5'], ['A bookshelf for the hall', 'Sanding'], ['Learn Blender', 'Started', 'done']] }),
+  people: sample({ id: 'people', name: 'People', key: '6', title: 'Keeping in touch', status: 'Coffee with Ana', count: 1,
+    items: [['Coffee with Ana', 'Overdue', 'late'], ['Call Grandma', 'Sun'], ["Leo's birthday", 'Nov 12'], ['Postcard to the club', 'Mailed', 'done']] }),
 };

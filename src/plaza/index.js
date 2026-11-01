@@ -5,7 +5,7 @@ import { placeFinds, animateFinds } from '../finds.js';
 import { leaves, animateLife } from '../life.js';
 import { addFolk, animateFigures } from '../folks.js';
 import { updateClocks, animateCranes } from '../details.js';
-import { beams, HALL_SIZE, townHall, bank, library, lighthouse, emptyPlot } from './buildings.js';
+import { beams, HALL_SIZE, townHall, bank, library, lighthouse, works, postOffice } from './buildings.js';
 import { roundTree, bench, lamp, fountain, bollard, planter, cafe, stall, bike, noticeboard, mailbox } from './props.js';
 import { cat, pigeon, animateCritters } from './critters.js';
 import { piece, placeable } from '../layout.js';
@@ -54,6 +54,11 @@ export function buildPlaza(scene) {
       // the town hall is as big as its inside: a box, not a circle
       collider = { x, z, hw: HALL_SIZE.w / 2, hd: HALL_SIZE.d / 2 + 0.05, rot: rotY };
       b.userData.door = new THREE.Vector3(x, 0, z).addScaledVector(front, b.userData.doorDist);
+    } else if (b.userData.footprint) {
+      // a building standing in a yard: a box around the whole yard
+      const { w, d } = b.userData.footprint;
+      collider = { x, z, hw: w / 2 * scale, hd: d / 2 * scale, rot: rotY };
+      b.userData.door = new THREE.Vector3(x, 0, z).addScaledVector(front, d / 2 * scale + 0.8);
     } else {
       collider = { x, z, r: r * scale };
       b.userData.door = new THREE.Vector3(x, 0, z).addScaledVector(front, r * scale + 0.7); // just outside its collider
@@ -69,10 +74,10 @@ export function buildPlaza(scene) {
   place(bank(), hx - 7, -9, -Math.PI / 2, 3.9, BIG);
   place(library(), -hx + 7, -9, Math.PI / 2, 3.9, BIG);
   place(lighthouse(), 19, 14, undefined, 3.9, BIG);
-  // the construction lots in the north corners, either side of the hall,
-  // where the crane is a backdrop rather than in the way of the view
-  place(emptyPlot('projects', true), 13, -18.4, 0, 3.4);
-  place(emptyPlot('people'), -13, -18.4, 0, 3.4);
+  // the Works and the post office in the north corners, either side of the
+  // hall, facing down the square like it does
+  place(works(), 12, -17.8, 0);
+  place(postOffice(), -12, -17.8, 0);
 
   const fountainGroup = fountain(world);
   fountainGroup.position.z = FZ;

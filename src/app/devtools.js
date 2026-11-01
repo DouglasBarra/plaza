@@ -22,7 +22,7 @@ export function installDevtools() {
     eye: () => camera.position.toArray(),
     // the layout editor's pieces: where one stands now and where the code puts it
     piece: (id) => ({ now: whereIs(id), home: homeOf(id), followers: pieceOf(id).followers.map(({ f }) => ({ x: f.x, z: f.z })) }),
-    // where you stand to go into a building (or to visit a lot)
+    // where you stand to go into a building
     door: (id) => buildingFor(id).userData.door.toArray(),
     // screen position of an object, after settling the camera
     screenPos(obj) {

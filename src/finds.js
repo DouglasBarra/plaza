@@ -1,5 +1,5 @@
 // Little things to find, in the spirit of Hidden Folks: a cat asleep on a
-// roof, a kid hiding behind the library, a sock on the crane hook… Click one
+// roof, a kid hiding behind the library, a sock on the hoist at the Works… Click one
 // (or look at it in first person and click) to find it. Some only show up at
 // certain times: the owl at night, the rooster in the morning.
 import * as THREE from 'three';
@@ -149,11 +149,11 @@ export function placeFinds(world, buildings, P) {
   plane.rotation.set(0.3, 0.8, -0.4);
   world.add(register('plane', 'The stuck paper plane', 'A flight that ended in a tree, near the bikes.', plane));
 
-  const craneTop = world.getObjectByName('craneTop');
-  if (craneTop) {
+  const hook = world.getObjectByName('hoistHook');
+  if (hook) {
     const k = sock();
-    k.position.set(4.5, -2.52, 0);
-    craneTop.add(register('sock', 'The odd sock', 'Something is dangling from the crane hook.', k));
+    k.position.set(0, -0.22, 0);
+    hook.add(register('sock', 'The odd sock', 'Something is dangling from the hoist at the Works.', k));
   }
 
   // a lost balloon drifting high over the town

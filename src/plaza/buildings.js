@@ -1,12 +1,15 @@
 // The plaza's buildings, each built around its own origin with its front
 // facing +z: the town hall (outside), the bank, the library, the lighthouse
-// workshop and the construction lots. plaza/index.js places them.
+// workshop, the Works and the post office. plaza/index.js places them.
 import * as THREE from 'three';
 import { M, stamp, glow, mesh, box, cyl, slab, gable } from '../kit.js';
-import { skipND, nightOnly } from '../life.js';
+import { skipND, nightOnly, smoke } from '../life.js';
 import { W, D, T, F, TOP, DOOR, HOLES } from '../interiors/townhall/dims.js';
-import { fancyWindow, door, signBoard, clockHands, ridge, chimney, statue, scaffold, crane, billboard } from '../details.js';
-import { bench, crate } from './props.js';
+import { fancyWindow, door, signBoard, hangingSign, clockHands, ridge, chimney, statue } from '../details.js';
+import { folk } from '../folks.js';
+import { ladder } from '../decor.js';
+import { toon } from '../ink.js';
+import { bench, crate, bike } from './props.js';
 
 export const beams = [];
 
@@ -208,25 +211,146 @@ export function lighthouse() {
   return g;
 }
 
-export function emptyPlot(district, big) {
+const dark = toon('#3a3a3a'); // iron: rails, pulleys, hooks
+
+// A wedge: a right triangle in z/y (the tall side at +z) extruded along x,
+// for sawtooth roofs. UVs in meters, like the kit's shapes.
+function wedgeGeo(w, h, d) {
+  const s = new THREE.Shape();
+  s.moveTo(-d / 2, 0); s.lineTo(d / 2, 0); s.lineTo(d / 2, h); s.closePath();
+  const g = new THREE.ExtrudeGeometry(s, { depth: w, bevelEnabled: false });
+  g.translate(0, 0, -w / 2);
+  g.rotateY(-Math.PI / 2);
+  return g;
+}
+
+// Projects: "The Works", a brick workshop where things get built. A sawtooth
+// roof with its glazing toward the plaza, a smokestack, a sliding door, a
+// loading hoist over the yard, and in the yard a boat on trestles.
+export function works() {
   const g = new THREE.Group();
-  groundTile(g, 5, M.dirt);
-  const T = TILE;
-  const posts = [[-2, -2], [2, -2], [2, 2], [-2, 2]];
-  for (const [x, z] of posts) box(g, 0.14, 0.8, 0.14, M.white, x, T + 0.4, z);
-  for (let i = 0; i < 4; i++) {
-    const [x1, z1] = posts[i], [x2, z2] = posts[(i + 1) % 4];
-    if (i === 3) continue; // open side, the way in
-    box(g, Math.abs(x2 - x1) + 0.1 || 0.06, 0.08, Math.abs(z2 - z1) + 0.1 || 0.06, M.white, (x1 + x2) / 2, T + 0.6, (z1 + z2) / 2);
+  groundTile(g, 7, M.paving);
+  const T = TILE, W = 5.6, D = 4.4, H = 4.6, bz = -1.0, front = bz + D / 2;
+  box(g, W, H, D, M.bricks, 0, T + H / 2, bz);
+  box(g, W + 0.2, 0.18, D + 0.2, M.white, 0, T + H + 0.02, bz);            // cornice
+  // the sawtooth: three teeth, each glazed on its tall side, facing the plaza
+  const n = 3, tooth = D / n, th = 1.0;
+  for (let i = 0; i < n; i++) {
+    const zc = front - (i + 0.5) * tooth;
+    mesh(wedgeGeo(W, th, tooth), M.bricks, 0, T + H + 0.1, zc, g);
+    const len = Math.hypot(tooth, th);
+    const roof = box(g, W + 0.2, 0.08, len + 0.06, M.shingles, 0, T + H + 0.1 + th / 2 + 0.05, zc);
+    roof.rotation.x = -Math.atan2(th, tooth);                              // high at the glazing, low behind
+    const glass = box(g, W - 0.3, th - 0.14, 0.06, M.deep, 0, T + H + 0.1 + th / 2, zc + tooth / 2 + 0.01);
+    glass.castShadow = false;
+    for (let k = 0; k <= 6; k++) box(g, 0.05, th - 0.1, 0.08, M.white, -(W - 0.3) / 2 + k * (W - 0.3) / 6, T + H + 0.1 + th / 2, zc + tooth / 2 + 0.03);
   }
-  // a construction site: scaffolding, a crane on the big lot, a billboard
-  scaffold(g, -0.2, T, -1.0, 2.6, 1.4, big ? 3 : 2);
-  if (big) crane(g, 1.4, T, -1.4, 9, 6);
-  const name = district[0].toUpperCase() + district.slice(1);
-  billboard(g, 0.9, T, 1.6, `${name}: coming soon`, district);
-  crate(g, -1.4, T, 1.0, 0, 0.6);
-  crate(g, -0.9, T, 1.4, 0.4, 0.5);
-  cyl(g, 0.06, 0.06, 1.6, M.white, -1.6, T + 0.08, 0.3, 6).rotation.z = Math.PI / 2;
-  g.userData = { district, labelY: big ? 3.4 : 2.8, plot: true };
+  // a tall round smokestack at the back corner
+  cyl(g, 0.34, 0.46, 7.6, M.bricks, 2.0, T + 3.8, bz - 1.4, 12);
+  cyl(g, 0.42, 0.42, 0.22, M.white, 2.0, T + 7.6, bz - 1.4, 12);
+  smoke(g, 2.0, T + 7.9, bz - 1.4, { n: 5, rise: 2.4, size: 0.3 });
+  // the sliding barn door on its rail, braced in a Z
+  const dx = 0.9;
+  box(g, 2.6, 0.08, 0.1, dark, dx, T + 2.75, front + 0.09);                // rail
+  const leaf = new THREE.Group();
+  leaf.position.set(dx + 0.25, T, front + 0.06);                           // slid a little open
+  g.add(leaf);
+  box(leaf, 2.0, 2.6, 0.08, M.planks, 0, 1.3, 0);
+  for (const y of [0.25, 2.35]) box(leaf, 2.0, 0.14, 0.05, M.white, 0, y, 0.06);
+  box(leaf, 0.14, 2.6, 0.05, M.white, 0, 1.3, 0.06).rotation.z = Math.atan2(1.8, 2.0);
+  box(g, 0.5, 2.6, 0.04, M.deep, dx - 0.95, T + 1.3, front + 0.01).castShadow = false; // the gap it opens on
+  hangingSign(g, dx, T + 3.15, front + 0.12, 'The Works', 'projects', 1.6);
+  // tall factory windows either side, and on the ends
+  fancyWindow(g, -1.7, T + 1.5, front + 0.02, 0.9, 1.5);
+  for (const sx of [-1, 1]) for (const wz of [-2.1, 0.1]) fancyWindow(g, sx * (W / 2 + 0.02), T + 1.6, bz + wz + 1.0, 0.8, 1.4, sx * Math.PI / 2);
+  // the loading hoist: a door up top, a beam over the yard, a rope and hook
+  box(g, 0.9, 1.0, 0.06, M.planks, -1.7, T + H - 0.75, front + 0.02);
+  box(g, 0.12, 0.12, 1.3, M.planks, -1.7, T + H - 0.12, front + 0.62);
+  cyl(g, 0.1, 0.1, 0.08, dark, -1.7, T + H - 0.28, front + 1.15, 10).rotation.z = Math.PI / 2; // pulley
+  cyl(g, 0.012, 0.012, 1.4, M.white, -1.7, T + H - 0.98, front + 1.15, 4);
+  const hook = new THREE.Group();
+  hook.name = 'hoistHook';                                                  // finds.js hangs a sock here
+  hook.position.set(-1.7, T + H - 1.72, front + 1.15);
+  box(hook, 0.16, 0.18, 0.16, dark, 0, 0, 0);
+  g.add(hook);
+  // the yard: a boat on trestles, crates, a ladder and someone sizing it up
+  const yard = new THREE.Group();
+  yard.position.y = T;
+  g.add(yard);
+  const by = 0.95, bxz = [1.2, 2.55];
+  for (const sx of [-0.9, 0.9]) {                                          // trestles
+    box(yard, 0.08, 0.08, 0.8, M.planks, bxz[0] + sx, 0.72, bxz[1]);
+    for (const sz of [-0.3, 0.3]) box(yard, 0.06, 0.75, 0.06, M.white, bxz[0] + sx, 0.36, bxz[1] + sz).rotation.x = sz * 0.5;
+  }
+  const hull = mesh(new THREE.CylinderGeometry(0.55, 0.55, 2.6, 14, 1, true, 0, Math.PI), M.planks, bxz[0], by, bxz[1], yard);
+  hull.rotation.set(0, 0, -Math.PI / 2);                                   // an upturned hull, keel up
+  hull.material = hull.material.clone();
+  hull.material.side = THREE.DoubleSide;
+  box(yard, 2.62, 0.06, 0.04, stamp.projects, bxz[0], by + 0.05, bxz[1] + 0.56); // a fresh stripe of paint
+  for (const rx of [-0.8, 0, 0.8]) mesh(new THREE.TorusGeometry(0.55, 0.03, 4, 14, Math.PI), M.white, bxz[0] + rx, by, bxz[1], yard).rotation.y = Math.PI / 2;
+  crate(yard, -2.3, 0, 2.3, 0.3, 0.6);
+  crate(yard, -2.7, 0, 1.6, -0.2, 0.5);
+  crate(yard, -2.45, 0.6, 2.2, 0.8, 0.4);
+  ladder(yard, -0.4, front + 0.3, 2.8, 0, 0.3);
+  folk(yard, 2.8, 2.6, -Math.PI / 2, { pose: 'look', look: { hat: 'cap', glasses: true } });
+  g.userData = { district: 'projects', labelY: 9.2, footprint: { w: 7, d: 7 } };
+  return g;
+}
+
+// People: the post office, a half-timbered house where letters and parcels
+// come and go. A tiled roof with dormers, a purple door under a canopy, a
+// pillar box, the mail bike, and neighbors catching up on the bench.
+export function postOffice() {
+  const g = new THREE.Group();
+  groundTile(g, 7, M.paving);
+  const T = TILE, W = 5.4, D = 4.0, H = 5.8, F1 = 2.9, bz = -0.9, front = bz + D / 2;
+  box(g, W, H, D, M.white, 0, T + H / 2, bz);                               // plaster walls
+  box(g, W + 0.12, 0.6, D + 0.12, M.stone, 0, T + 0.3, bz);                 // stone base
+  // the timber frame on the front and the ends
+  const beam = (w, h, x, y, z, rotY = 0) => { const b = box(g, w, h, 0.1, M.planks, x, y, z); b.rotation.y = rotY; return b; };
+  for (const y of [T + F1, T + H - 0.06]) beam(W, 0.14, 0, y, front + 0.05);
+  for (const x of [-W / 2 + 0.07, -0.9, 0.9, W / 2 - 0.07]) beam(0.14, H - 0.6, x, T + 0.6 + (H - 0.6) / 2, front + 0.05);
+  for (const sx of [-1, 1]) {
+    const brace = beam(0.12, Math.hypot(0.9, H - F1 - 0.2), sx * (W / 2 - 0.55), T + F1 + (H - F1) / 2, front + 0.06);
+    brace.rotation.z = sx * Math.atan2(0.9, H - F1 - 0.2);
+    for (const y of [T + F1, T + H - 0.06]) beam(D, 0.14, sx * (W / 2 + 0.05), y, bz, Math.PI / 2);
+  }
+  // roof: tiles, the ridge along the front, two dormers and a chimney
+  const RH = 2.3, RD = D + 1.0;
+  gable(g, RD, RH, W + 0.8, M.roofTiles, T + H, bz, Math.PI / 2);
+  ridge(g, 0, T + H + RH, bz, W + 0.9, Math.PI / 2);
+  chimney(g, 1.7, T + H + RH - 0.2, bz - 0.4, 0.55, 1.6);
+  const slopeY = (z) => T + H + RH * (1 - Math.abs(z - bz) / (RD / 2));
+  for (const x of [-1.5, 1.5]) {
+    const zf = bz + 1.45;                                                  // the dormer's face, on the front slope
+    const ys = slopeY(zf);
+    box(g, 1.1, 0.95, 1.4, M.white, x, ys + 0.45, zf - 0.7);
+    gable(g, 1.35, 0.5, 1.55, M.roofTiles, ys + 0.92, zf - 0.7);
+    fancyWindow(g, x, ys + 0.45, zf + 0.01, 0.55, 0.6);
+  }
+  // ground floor: the counter window, the door, the sign; upstairs, three windows
+  fancyWindow(g, -1.75, T + 1.45, front + 0.02, 1.4, 1.2, 0, { curtains: true });
+  door(g, 0.0, T, front + 0.02, 1.0, 2.05, stamp.people, { step: true });
+  const canopy = box(g, 1.7, 0.08, 0.9, M.roofTiles, 0, T + 2.5, front + 0.42);
+  canopy.rotation.x = 0.22;
+  for (const sx of [-0.75, 0.75]) box(g, 0.06, 0.06, 0.6, dark, sx, T + 2.45, front + 0.28);
+  fancyWindow(g, 1.75, T + 1.45, front + 0.02, 0.9, 1.2, 0, { curtains: true });
+  signBoard(g, -1.75, T + 2.5, front + 0.06, 1.5, 0.32, 'Post Office');
+  for (const x of [-1.75, 0, 1.75]) fancyWindow(g, x, T + F1 + 1.15, front + 0.02, 0.7, 0.95, 0, { shutters: true, flowers: 'people' });
+  for (const sx of [-1, 1]) fancyWindow(g, sx * (W / 2 + 0.02), T + F1 + 1.15, bz, 0.7, 0.95, sx * Math.PI / 2, { shutters: true });
+  // out front: the pillar box, the mail bike, a parcel pile, and the bench
+  const yard = new THREE.Group();
+  yard.position.y = T;
+  g.add(yard);
+  cyl(yard, 0.22, 0.24, 1.15, M.white, -2.65, 0.58, 2.55, 14);
+  mesh(new THREE.SphereGeometry(0.23, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), M.white, -2.65, 1.15, 2.55, yard);
+  box(yard, 0.26, 0.05, 0.06, stamp.people, -2.65, 0.95, 2.78);            // the slot
+  bike(yard, 2.75, 1.85, Math.PI / 2 + 0.2);
+  for (const [px, py, s] of [[1.95, 0.15, 0.3], [2.25, 0.12, 0.24], [2.05, 0.4, 0.22]]) box(yard, s * 1.3, s, s, M.planks, px, py, 1.35).rotation.y = px;
+  bench(yard, 1.35, 2.65, 0);
+  folk(yard, 1.0, 2.65, 0, { pose: 'sit', seat: 0.5, look: { hair: 'bun', dress: true, item: 'paper' } });
+  folk(yard, -0.9, 2.9, -0.6, { pose: 'chat', look: { hat: 'cap', backpack: true } });
+  folk(yard, 0.2, 3.1, 0.9 + Math.PI, { pose: 'chat', look: { hair: 'long', scarf: true } });
+  g.userData = { district: 'people', labelY: 9.6, footprint: { w: 7, d: 7 } };
   return g;
 }

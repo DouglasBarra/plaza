@@ -30,9 +30,10 @@ test('the close button closes the card', async ({ plaza: page }) => {
   await expect(page.locator('#overlay')).toBeHidden();
 });
 
-test('placeholder districts say they are coming soon', async ({ plaza: page }) => {
+test('districts without their app yet show sample data', async ({ plaza: page }) => {
   const panel = await openDistrict(page, 'Projects');
-  await expect(panel).toContainText('The Projects building goes up here later.');
+  await expect(panel.locator('.pz-panel-title')).toHaveText('On the workbench');
+  await expect(panel).toContainText('The real Projects app moves in here next.');
 });
 
 test('day/night and wobble toggles', async ({ plaza: page }) => {

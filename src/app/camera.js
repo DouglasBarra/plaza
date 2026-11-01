@@ -1,5 +1,5 @@
 // The camera: orbiting behind you in third person, looking through your eyes
-// in first person, and flying between the two or to an empty lot.
+// in first person, and flying between the two or to a building.
 import * as THREE from 'three';
 import { camera, controls, canvas } from './engine.js';
 import { game } from './state.js';

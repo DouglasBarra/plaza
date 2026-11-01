@@ -1,6 +1,6 @@
 # Plaza
 
-A personal life app shaped like a small hand-drawn town square. Each building on the plaza is a district of life (ToDos, Finance, Study, Ideas, and later Projects and People), and walking into one opens that district's app.
+A personal life app shaped like a small hand-drawn town square. Each building on the plaza is a district of life (ToDos in the town hall, Finance in the bank, Study in the library, Ideas in the lighthouse workshop, Projects at the Works and People at the post office), and walking into one opens that district's app.
 
 The look is ink on paper: dense line-art details in the spirit of Hidden Folks, on shaded 3D dioramas like TOEM. Color is rare and appears only as small stamps where a district speaks. The full visual language lives in the Plaza design system.
 

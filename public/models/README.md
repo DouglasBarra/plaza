@@ -27,7 +27,7 @@ Every name has a starter, blocked out from the shapes Plaza draws in code, at th
 | `bike` | Bikes by the trees | |
 | `noticeboard` | The notice board on the plaza | |
 | `mailbox` | The mailbox | |
-| `crate` | Crates on the construction lots | |
+| `crate` | Crates in the Works' yard | |
 | `cat` | Both plaza cats | Still trots after you; a model's tail won't wag |
 | `tree-pine` | Pine trees on the plaza | Still sways in the wind |
 | `tree-round` | Round trees on the plaza and potted plants indoors | Still sways in the wind |

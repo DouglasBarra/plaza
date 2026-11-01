@@ -65,12 +65,12 @@ test('tear a note off the board to finish its task', async ({ plaza: page }) => 
   await expect(page.locator('#greeting-line')).toContainText('Nothing due today.');
 });
 
-test('an empty lot opens its card instead of a room', async ({ plaza: page }) => {
+test('a building without an inside yet opens its card instead', async ({ plaza: page }) => {
   await standAt(page, await page.evaluate(() => window.__plaza.door('projects')));
   await expect(prompt(page)).toContainText('Enter Projects');
   await page.keyboard.press('e');
   await expect(page.locator('#panel .pz-panel-tag')).toHaveText('Projects');
-  await expect(page.locator('#panel')).toContainText('The Projects building goes up here later.');
+  await expect(page.locator('#panel .pz-panel-title')).toHaveText('On the workbench');
   await page.keyboard.press('Escape');
   await expect(page.locator('#overlay')).toBeHidden();
 });

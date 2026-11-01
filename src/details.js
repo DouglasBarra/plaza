@@ -1,6 +1,6 @@
 // Building details: windows with frames and shutters, panelled doors,
 // hand-lettered signs, clock hands that tell the real time, roof ridges,
-// chimneys, and the construction kit for the empty lots.
+// chimneys, and a construction kit (scaffolding, cranes, billboards).
 import * as THREE from 'three';
 import { toon } from './ink.js';
 import { M, stamp, mesh, box, cyl } from './kit.js';

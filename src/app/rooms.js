@@ -59,9 +59,9 @@ export function exitBuilding() {
   seamless(game.room) ? swap() : fadeThrough(swap);
 }
 
-// ---------- empty lots ----------
-// Empty lots have no inside yet: the camera looks at the lot and the card opens.
-let savedOffset = null; // where the camera was before it flew to the lot
+// ---------- buildings without an inside yet ----------
+// The camera looks at the building and its district's card opens.
+let savedOffset = null; // where the camera was before it flew to the building
 function visitLot(id) {
   const b = buildingFor(id);
   if (game.view === 'third') {
@@ -75,7 +75,7 @@ function visitLot(id) {
     setTimeout(() => openApp(id), 520);
   } else openApp(id);
 }
-// When the card closes, the camera flies back from the lot.
+// When the card closes, the camera flies back.
 export function leaveLot() {
   if (!game.focused) return;
   game.focused = null;
