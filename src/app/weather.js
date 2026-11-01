@@ -37,6 +37,25 @@ function mood() {
   return { level, why };
 }
 
+// Or the real sky outside: your location (the browser asks once) and the
+// current weather from Open-Meteo, which needs no key. WMO weather codes:
+// 0–1 clear, 2–3 and fog cloudy, light drizzle and showers a drizzle,
+// everything heavier rain.
+function kindOf(code) {
+  if (code <= 1) return 0;
+  if (code <= 48) return 1;
+  if ([51, 53, 56, 61, 66, 71, 73, 77, 80, 85].includes(code)) return 2;
+  return 3;
+}
+async function outside() {
+  const pos = await new Promise((ok, no) => navigator.geolocation.getCurrentPosition(ok, no, { maximumAge: 3600e3, timeout: 15e3 }));
+  const { latitude: lat, longitude: lon } = pos.coords;
+  const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(2)}&longitude=${lon.toFixed(2)}&current=weather_code,temperature_2m`);
+  if (!r.ok) throw new Error(`Open-Meteo ${r.status}`);
+  const { current } = await r.json();
+  return { level: kindOf(current.weather_code), temp: Math.round(current.temperature_2m) };
+}
+
 const AREA = 46, HIGH = 14;     // the box of rain around you: 46 m across, 14 m tall
 
 export function weather() {
@@ -75,7 +94,28 @@ export function weather() {
 
   const line = document.createElement('p');
   line.id = 'weather-line';
+  line.setAttribute('role', 'button');
+  line.tabIndex = 0;
+  line.title = 'Switch between the weather of your week and the weather outside';
   document.getElementById('greeting-line').after(line);
+
+  // which sky: 'week' (the default) or 'outside', remembered
+  let source = 'week';
+  try { source = localStorage.getItem('plaza.weather') || 'week'; } catch { /* storage blocked */ }
+  let real = null, realAt = -1e9, realNote = '';
+  const fetchOutside = () => {
+    realAt = Date.now();
+    realNote = 'looking outside…';
+    outside().then((w) => { real = w; realNote = ''; }).catch(() => { real = null; realNote = 'couldn’t see outside, so it’s your week'; });
+  };
+  const flip = () => {
+    source = source === 'week' ? 'outside' : 'week';
+    try { localStorage.setItem('plaza.weather', source); } catch { /* not remembered */ }
+    if (source === 'outside' && !real) fetchOutside();
+    checked = -99;
+  };
+  line.addEventListener('click', flip);
+  line.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } });
 
   let kind = KINDS[0], cover = 0, last = 0, checked = -99;
   const o = new THREE.Object3D();
@@ -85,10 +125,16 @@ export function weather() {
     // look at the week every few seconds
     if (time - checked > 3) {
       checked = time;
-      const m = mood();
-      kind = KINDS[m.level];
-      const why = m.why.length ? m.why.join(', ') : 'all clear';
-      line.textContent = `${kind.name}: ${why}.`;
+      if (source === 'outside' && Date.now() - realAt > 15 * 60e3) fetchOutside();   // every quarter hour
+      if (source === 'outside' && real) {
+        kind = KINDS[real.level];
+        line.textContent = `${kind.name} outside, ${real.temp}°.`;
+      } else {
+        const m = mood();
+        kind = KINDS[m.level];
+        const why = m.why.length ? m.why.join(', ') : 'all clear';
+        line.textContent = `${kind.name}: ${why}${source === 'outside' && realNote ? ` (${realNote})` : ''}.`;
+      }
       line.dataset.weather = kind.name.toLowerCase();
     }
     // the clouds gather or clear slowly

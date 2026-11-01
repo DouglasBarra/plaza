@@ -42,7 +42,7 @@ export function dog(world, home) {
   body.add(tail);
   box(tail, 0.05, 0.24, 0.05, M.white, 0, 0.1, 0).rotation.z = -0.6;
 
-  const FOLLOW_FOR = 40, BORED_FOR = 60, NOTICE = 3.5;
+  const FOLLOW_FOR = 40, BORED_FOR = 60, NOTICE = 6;
   let mode = 'nap', until = 0;
   return function update(time, player, dt) {
     const frame = Math.floor(time * 7) % 2;

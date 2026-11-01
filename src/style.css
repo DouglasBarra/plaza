@@ -263,7 +263,8 @@ body.editing .layout-toggle { display: none; }
 .chat-ask { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-3); border: var(--stroke-ink) dashed var(--ink); border-radius: var(--radius-m); }
 .chat-ask p { flex: 1 1 100%; margin: 0; font-family: var(--font-hand); font-size: 19px; }
 .chat-form { display: flex; gap: var(--space-2); }
-.greeting #weather-line { margin-top: 0; font-size: 16px; }
+.greeting #weather-line { margin-top: 0; font-size: 16px; cursor: pointer; pointer-events: auto; width: fit-content; }
+.greeting #weather-line:hover { text-decoration: underline dotted; }
 
 /* ---------- color washes (ui/washes.js) ---------- */
 #wash { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0;

@@ -73,7 +73,7 @@ A piece is anything registered with `piece()` or `placeable()` from `src/layout.
 
 ## The plaza lives
 
-- **Weather follows your week:** sunny when you're on top of things, clouds when something's due, a drizzle of hatched ink when tasks are overdue, money runs out faster than it comes in, or a card bill is close, and rain when it's a lot. The line under the greeting says why.
+- **Weather follows your week:** sunny when you're on top of things, clouds when something's due, a drizzle of hatched ink when tasks are overdue, money runs out faster than it comes in, or a card bill is close, and rain when it's a lot. The line under the greeting says why. Click it for the real weather outside instead (your browser asks for your location once; the forecast comes from [Open-Meteo](https://open-meteo.com), no key needed); click again to go back.
 - **A lamplighter** lights the street lamps one by one at dusk.
 - **Folks keep hours:** the clerk, the teller and the manager walk in and out of the square at the start and end of their day, and the postman walks his rounds from 8 to 4.
 - **Animals:** pigeons scatter as you walk through, a dog follows you for a while, and ducks paddle in the fountain.
