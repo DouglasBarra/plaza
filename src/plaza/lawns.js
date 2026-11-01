@@ -2,7 +2,7 @@
 // wherever the border is clear of props, trees, yards and street mouths.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { M, box, slab, stamp } from '../kit.js';
+import { M, slab, stamp } from '../kit.js';
 import { toon } from '../ink.js';
 import { tex } from '../textures.js';
 import { piece } from '../layout.js';
@@ -83,35 +83,35 @@ export function edgeLawns(world, { hx, hz }, roadClear, isFree, colliders) {
           const t = new THREE.Mesh(tufts(w, DEPTH, id * 31 + 7), blade);
           t.castShadow = t.receiveShadow = true;
           bed.add(t);
-          // a few daisies
+          // a few daisies, and the fence on the inner side and across both ends
+          // (posts and two rails); each kind is merged into one mesh
+          const whites = [], eyes = [];
+          const put = (list, geo, x, y, z, ry = 0) => { if (geo.index) geo = geo.toNonIndexed(); geo.rotateY(ry); geo.translate(x, y, z); list.push(geo); };
           const r = seeded(id * 17 + 3);
           for (let i = 0; i < Math.round(w * DEPTH / 3); i++) {
             const x = (r() - 0.5) * (w - 0.6), z = (r() - 0.5) * (DEPTH - 0.6);
-            const stem = box(bed, 0.012, 0.2, 0.012, M.white, x, BED + 0.1, z);
-            stem.castShadow = false;
-            const head = new THREE.Mesh(new THREE.IcosahedronGeometry(0.055, 0), M.white);
-            head.position.set(x, BED + 0.22, z);
-            const eye = new THREE.Mesh(new THREE.IcosahedronGeometry(0.03, 0), stamp.ideas);
-            eye.position.set(x, BED + 0.26, z);
-            bed.add(head, eye);
+            put(whites, new THREE.BoxGeometry(0.012, 0.2, 0.012), x, BED + 0.1, z);
+            put(whites, new THREE.IcosahedronGeometry(0.055, 0), x, BED + 0.22, z);
+            put(eyes, new THREE.IcosahedronGeometry(0.03, 0), x, BED + 0.26, z);
           }
-          // the fence on the inner side and across both ends: posts and two rails
           const fence = (x0, z0, x1, z1) => {
             const len = Math.hypot(x1 - x0, z1 - z0), rot = Math.atan2(-(z1 - z0), x1 - x0);
             const posts = Math.max(1, Math.round(len / 0.9));
             for (let i = 0; i <= posts; i++) {
               const k = i / posts;
-              box(bed, 0.07, 0.58, 0.07, M.white, x0 + (x1 - x0) * k, BED + 0.29, z0 + (z1 - z0) * k);
+              put(whites, new THREE.BoxGeometry(0.07, 0.58, 0.07), x0 + (x1 - x0) * k, BED + 0.29, z0 + (z1 - z0) * k);
             }
-            for (const y of [0.28, 0.5]) {
-              const rail = box(bed, len, 0.035, 0.04, M.white, (x0 + x1) / 2, BED + y, (z0 + z1) / 2);
-              rail.rotation.y = rot;
-            }
+            for (const y of [0.28, 0.5]) put(whites, new THREE.BoxGeometry(len, 0.035, 0.04), (x0 + x1) / 2, BED + y, (z0 + z1) / 2, rot);
           };
           const hw = w / 2, hd = DEPTH / 2;
           fence(-hw, hd, hw, hd);
           fence(-hw, -hd, -hw, hd);
           fence(hw, -hd, hw, hd);
+          for (const [list, mat] of [[whites, M.white], [eyes, stamp.ideas]]) {
+            const m = new THREE.Mesh(mergeGeometries(list), mat);
+            m.castShadow = m.receiveShadow = true;
+            bed.add(m);
+          }
         }, [collider]);
         s0 = end + BREAK;
       }
