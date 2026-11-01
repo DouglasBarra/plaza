@@ -3,11 +3,13 @@ import { buildPlaza, PLAZA, PLAZA_HALF } from '../plaza/index.js';
 import { buildTown } from '../town/index.js';
 import { Avatar } from '../avatar.js';
 import { plazaScene, camera, controls, ink } from './engine.js';
+import { groundSampler } from '../plaza/ground.js';
 import { game } from './state.js';
 
 export const { buildings, colliders } = buildPlaza(plazaScene);
 export const town = buildTown(plazaScene);
 export const me = new Avatar(plazaScene, colliders, PLAZA_HALF);
+me.groundAt = groundSampler(plazaScene);   // so you stand on the paving, not in it
 // inside the bollards of the rectangular square
 me.bounds = { minX: -PLAZA.hx + 1.2, maxX: PLAZA.hx - 1.2, minZ: -PLAZA.hz + 1.2, maxZ: PLAZA.hz - 1.2 };
 export const plazaBounds = { ...me.bounds };
