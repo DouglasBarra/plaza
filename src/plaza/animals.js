@@ -48,7 +48,7 @@ export function dog(world, home) {
   return function update(time, player, dt) {
     const frame = Math.floor(time * 7) % 2;
     let target = null;
-    if (mode === 'nap' && player && time > until && player.distanceTo(g.position) < NOTICE) { mode = 'follow'; until = time + FOLLOW_FOR; sfx('bark', { at: g.position }); }
+    if (mode === 'nap' && player && time > until && player.distanceTo(g.position) < NOTICE) { mode = 'follow'; until = time + FOLLOW_FOR; sfx('bark', { at: g.position, dry: true }); }
     if (mode === 'follow') {
       if (!player || time > until) { mode = 'home'; until = time + BORED_FOR; }
       else {

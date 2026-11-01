@@ -65,8 +65,8 @@ export function stepBeds(b, st) {
   ease(A.plaza.gain, st.inside ? 0.1 : 1, t, 0.15);
   // the bank's echo
   const echo = !!st.room?.echo;
-  ease(A.verbSend.gain, echo ? 0.6 : 0, t, 0.2);
-  ease(A.fxVerb.gain, echo ? 0.35 : 0, t, 0.2);
+  ease(A.verbSend.gain, echo ? 0.3 : 0, t, 0.2);
+  ease(A.fxVerb.gain, echo ? 0.14 : 0, t, 0.2);
 
   // the town, the wind, the rain
   ease(b.wind.gain, st.inside ? 0 : st.cloud * 0.02, t, 1.5);

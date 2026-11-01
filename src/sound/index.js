@@ -23,7 +23,7 @@ export function sfx(name, { at = null, room = null, gap = 0, vol = 1, dry = fals
   const here = game.room?.id ?? null;
   let out;
   if (!at) out = gain(vol, dry ? A.dry : A.fx);
-  else if (room === here) out = gain(vol, spot(at, room ? A.room : A.fx, { ref: room ? 1.5 : 2.5, max: room ? 14 : 20 }));
+  else if (room === here) out = gain(vol, spot(at, room ? A.room : dry ? A.dry : A.fx, { ref: room ? 1.5 : 2.5, max: room ? 14 : 20 }));
   else if (room === null) out = gain(vol * 0.12, A.plaza);   // out on the plaza, faint through the walls
   else return;                                               // inside a building you're not in
   VOICES[name](t + 0.005, out, opts);

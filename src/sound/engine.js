@@ -39,7 +39,7 @@ function start() {
   A.master = gain(0, shelf);
   // and a long, soft, dark echo under everything, like a memory of the place
   A.dream = ctx.createConvolver();
-  A.dream.buffer = impulse(5, 2.4);
+  A.dream.buffer = impulse(2.2, 3);   // short and soft: a hint of space, not a hall
   A.dream.connect(filter('lowpass', 2800, 0.5, gain(0.8, A.master)));
   A.amb = gain(1, A.master);
   A.fx = gain(1, A.master);
@@ -52,15 +52,15 @@ function start() {
   // the room bus, with a send into a soft hall echo
   A.room = gain(1, A.amb);
   A.roomVerb = ctx.createConvolver();
-  A.roomVerb.buffer = impulse(2.6, 2.2);
+  A.roomVerb.buffer = impulse(1.6, 2.6);
   A.verbSend = gain(0, A.roomVerb);
   A.room.connect(A.verbSend);
   A.roomVerb.connect(A.amb);
   A.fxVerb = gain(0, A.roomVerb);   // one-shots echo in the bank too
   A.fx.connect(A.fxVerb);
-  A.plaza.connect(gain(0.32, A.dream));
-  A.fx.connect(gain(0.38, A.dream));
-  A.room.connect(gain(0.12, A.dream));
+  A.plaza.connect(gain(0.1, A.dream));
+  A.fx.connect(gain(0.1, A.dream));
+  A.room.connect(gain(0.04, A.dream));
   A.noise = noiseBuffer('white');
   A.brown = noiseBuffer('brown');
   // the dog's bark: a real recording (public/sounds, credited in the README),
