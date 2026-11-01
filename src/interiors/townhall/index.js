@@ -98,17 +98,19 @@ export function buildTownHall(scene, rand, lights) {
     // torn notes: pull, crumple, toss
     for (let i = flying.length - 1; i >= 0; i--) {
       const f = flying[i], s = (performance.now() - f.t0) / 1000;
+      // the ball appears once the note starts to crumple; a slow frame can jump
+      // past that step, so make it whichever step this frame lands in
+      if (s >= 0.25 && !f.ball) {
+        f.ball = mesh(new THREE.IcosahedronGeometry(0.12, 0), ballMat, 0, 0, 0, scene);
+        f.ball.layers.set(f.layer);
+        f.start = f.note.position.clone();
+      }
       if (s < 0.25) {
         f.note.position.copy(f.from).add(new THREE.Vector3(0, -s * 0.4, s * 1.6));
         f.note.rotation.z += 0.05;
       } else if (s < 0.45) {
         const k = (s - 0.25) / 0.2;
         f.note.scale.setScalar(1 - k * 0.85);
-        if (!f.ball) {
-          f.ball = mesh(new THREE.IcosahedronGeometry(0.12, 0), ballMat, 0, 0, 0, scene);
-          f.ball.layers.set(f.layer);
-          f.start = f.note.position.clone();
-        }
         f.ball.position.copy(f.note.position);
         f.ball.scale.setScalar(k);
       } else if (s < 1.15) {
@@ -118,6 +120,7 @@ export function buildTownHall(scene, rand, lights) {
         f.ball.position.y += Math.sin(k * Math.PI) * 1.3;
         f.ball.rotation.x += 0.2;
       } else {
+        if (f.note.parent) scene.remove(f.note);
         scene.remove(f.ball);
         if (f.bin.y < F) mesh(ballGeo, M.white, binPos.x + (Math.random() - 0.5) * 0.2, 0.5, binPos.z + (Math.random() - 0.5) * 0.2, binBalls).scale.setScalar(1.8);
         flying.splice(i, 1);
