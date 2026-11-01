@@ -6,8 +6,9 @@ import { leaves, animateLife } from '../life.js';
 import { addFolk, animateFigures } from '../folks.js';
 import { updateClocks, animateCranes } from '../details.js';
 import { beams, HALL_SIZE, townHall, bank, library, lighthouse, works, postOffice } from './buildings.js';
-import { roundTree, bench, lamp, fountain, bollards, planter, cafe, stall, bike, noticeboard, mailbox } from './props.js';
+import { roundTree, bench, lamp, bollards, planter, cafe, stall, bike, noticeboard, mailbox } from './props.js';
 import { cat, pigeon, animateCritters } from './critters.js';
+import { fountain, animateFountain, FOUNTAIN } from './fountain.js';
 import { piece, placeable } from '../layout.js';
 
 // ---------- the plaza ----------
@@ -26,7 +27,6 @@ export const PLAZA = { hx: 36, hz: 37 };
 export const PLAZA_HALF = PLAZA.hx; // the larger half, for anything that needs one number
 const ROAD_CLEAR = 3.0;      // half the width kept clear where a street comes in
 const FZ = 0;                // the fountain's z: the middle of the square
-const FS = 1.8, FSY = 1.25;  // the fountain's scale (wide, not much taller)
 const RING = 9.6;            // the stone ring around the fountain
 const deg = THREE.MathUtils.degToRad;
 // [x, z, facing] of each building; side buildings turn toward the south opening
@@ -111,8 +111,7 @@ export function buildPlaza(scene) {
   // ---- the fountain, and the bench ring around it; each bench brings the folks on it
   const fountainGroup = fountain(world);
   fountainGroup.position.z = FZ;
-  fountainGroup.scale.set(FS, FSY, FS);
-  placeable(fountainGroup, 'plaza.fountain', [col(0, FZ, 2.9 * FS)]);
+  placeable(fountainGroup, 'plaza.fountain', [col(0, FZ, FOUNTAIN.step)]);
   const BR = 8.3;
   const onBench = (i, side = 0) => {
     const a = (i / 4) * Math.PI * 2 + Math.PI / 4, rot = a + Math.PI;
@@ -225,7 +224,7 @@ export function buildPlaza(scene) {
 
   // ---- folks, each busy with something (the ones at a bench, the café, the
   // stall or the notice board belong to that piece, above)
-  addFolk(world, { x: 0, z: FZ + 2.35 * FS, rot: 0, seat: 0.6 * FSY, pose: 'music', look: { hat: 'cap', item: 'guitar' } });
+  addFolk(world, { x: 0, z: FZ + FOUNTAIN.seatR, rot: 0, seat: FOUNTAIN.seat, pose: 'music', look: { hat: 'cap', item: 'guitar' } });
   addFolk(world, { x: -7.8, z: FZ - 3.0, rot: 2.14, pose: 'feed', look: { hair: 'bun', dress: true, height: 0.95 } });
   addFolk(world, { x: 13.0, z: 15.0, rot: 0.93, pose: 'chat', look: { hair: 'long', scarf: true } });
   addFolk(world, { x: 13.8, z: 15.6, rot: 0.93 + Math.PI, pose: 'idle', look: { hat: 'cone', backpack: true } });
@@ -250,6 +249,7 @@ export function buildPlaza(scene) {
 export function animatePlaza(time, player = null, dt = 1 / 60) {
   animateFigures(time);
   animateLife(time);
+  animateFountain(time);
   animateFinds(time);
   updateClocks();
   animateCranes(time);
