@@ -39,16 +39,19 @@ Tests live in `e2e/`. Each one starts from an empty browser (no saved tasks) and
 
 Three.js with Vite, no framework yet.
 
-| File | What it does |
+| Folder / file | What it does |
 |---|---|
+| `src/main.js` | Starts the app and runs the frame loop |
+| `src/app/` | The game shell: renderer and camera (`engine.js`, `camera.js`), going in and out of buildings (`rooms.js`), the plaza through the windows (`window-view.js`), what's under the pointer (`picking.js`), what E does (`actions.js`), mouse and keys (`input.js`), shared state (`state.js`) and the dev console handle (`devtools.js`) |
+| `src/ui/` | Everything drawn in HTML over the scene: the card that districts open in (`card.js`), the town hall's note and typewriter cards (`hall-cards.js`), the finds list, building signs, speech bubbles and the Day/Night and Wobbly lines buttons |
+| `src/plaza/` | The plaza: its layout (`index.js`), buildings, props, and animals |
+| `src/interiors/` | The rooms inside each building: the bank, library and workshop, and the two-story town hall (`townhall/`: walls and stairs, task boards and calendar, fireplace and lamps, and the shared dimensions it has inside and out) |
+| `src/town.js` | Everything outside: the endless town, mountains, clouds, birds |
 | `src/ink.js` | The ink look: stepped gray shading and the hand-drawn outline pass |
 | `src/textures.js` | Line-art textures (bricks, shingles, paving…) drawn on canvas at load |
-| `src/world.js` | The plaza: buildings, props, folks |
-| `src/town.js` | Everything outside: the endless town, mountains, clouds, birds |
-| `src/interiors.js` | The rooms inside each building |
-| `src/townhall.js` | The two-story town hall: task boards, stairs, fireplace, calendar, archive |
+| `src/kit.js`, `src/details.js`, `src/decor.js` | Building blocks: materials and shapes, windows, doors and signs, furniture |
+| `src/folks.js`, `src/life.js`, `src/finds.js` | Folks and their poses, small motion (smoke, swaying, lamps), the hidden finds |
 | `src/avatar.js` | You: walking, collisions, doors |
 | `src/districts/` | Each district's app (`todos.js` is the first real one) |
 | `src/store.js` | Saving district data on this computer |
 | `src/models.js` | Swapping code-built objects for Blockbench models (see `public/models/README.md`) |
-| `src/main.js` | Camera, first person, labels, entering rooms, input |

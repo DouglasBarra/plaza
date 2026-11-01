@@ -1,5 +1,5 @@
-// The town hall's shared dimensions. The outside (world.js) and the inside
-// (townhall.js) are both built from these, so what you see from the plaza is
+// The town hall's shared dimensions. The outside (plaza/buildings.js) and the
+// inside (interiors/townhall/) are both built from these, so what you see from the plaza is
 // exactly what you walk into: the same size, two floors, the same windows
 // in the same places, and one door size.
 //

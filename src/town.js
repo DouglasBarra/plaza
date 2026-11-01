@@ -5,7 +5,8 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { toon } from './ink.js';
 import { tex } from './textures.js';
-import { boxGeo, prismGeo, PLAZA, M } from './world.js';
+import { boxGeo, prismGeo, M } from './kit.js';
+import { PLAZA } from './plaza/index.js';
 import { smoke } from './life.js';
 
 const ROAD_PITCH = 40;   // a street every 40m, plus the two through the plaza

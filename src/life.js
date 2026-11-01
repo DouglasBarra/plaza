@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { M, mesh } from './kit.js';
 
 // See-through things that the outline pass should skip, and things that only
-// exist at night. main.js wires both up.
+// exist at night. app/engine.js and ui/toggles.js wire both up.
 export const skipND = [];
 export const nightOnly = [];
 
