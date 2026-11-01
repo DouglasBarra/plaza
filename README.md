@@ -25,6 +25,12 @@ npm run test:e2e:ui               # watch and debug in Playwright's UI
 
 Tests live in `e2e/`. Each one starts from an empty browser (no saved tasks) and fails on any page error. They build with `--mode test`, which keeps the `window.__plaza` dev handle (left out of real builds) so a test can put you at a door or a desk instead of walking there. Headless Chromium has no GPU, so the scene is software-rendered: tests open the app with `?lowpower` (smaller shadow map, no MSAA) and run one at a time. CI runs them on every pull request (`.github/workflows/e2e.yml`) and keeps the HTML report as an artifact.
 
+## Arrange things
+
+In development (`npm run dev`), press <kbd>`</kbd> or click **Layout** (bottom left) for the layout editor. Click a piece of furniture or a building and drag it over the floor, nudge it with the arrow keys (Shift for 50 cm, Alt for 1 cm), turn it with <kbd>[</kbd> <kbd>]</kbd>, raise it with Page Up/Down, and press <kbd>R</kbd> to put it back. Ctrl/⌘+S saves to `src/layout.json`, which the game reads, so commit that file. A piece takes its collider and the spot where you use it along, so you never bump into where it used to be.
+
+A piece is anything registered with `piece()` or `placeable()` from `src/layout.js`; its id (like `hall.clock`) is shown in the editor.
+
 ## Controls
 
 - **WASD / arrow keys** or **click the ground** to walk
@@ -54,5 +60,6 @@ Three.js with Vite, no framework yet.
 | `src/avatar.js` | You: walking, collisions, doors |
 | `src/districts/` | Each district's app (`todos.js` is the first real one) |
 | `src/store.js` | Saving district data on this computer |
+| `src/layout.js`, `src/layout.json` | Movable pieces and where the layout editor (`src/app/editor.js`) put them |
 | `src/models.js` | Swapping code-built objects for hand-made Blender or Blockbench models (see `public/models/README.md`) |
 | `tools/` | Model starters and the Blender script (`tools/blender/plaza.py`) |

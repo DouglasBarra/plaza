@@ -39,8 +39,10 @@ export function buildTownHall(scene, rand, lights) {
   scene.add(lower, upper, ceilings, cutLower, cutUpper);
 
   const { hinge, doorDir } = buildHouse({ lower, upper, ceilings, cutLower, cutUpper, panes });
-  const { board, binPos, binBalls, clerk, fire, progressJar, setPlaque, lamps, chand } = furnishGroundFloor(lower, rand);
-  const { U, later, calTex, upBin, stack, upLamps } = furnishUpstairs(upper, rand);
+  const ground = furnishGroundFloor(lower, rand);
+  const { board, binPos, binBalls, clerk, fire, progressJar, setPlaque, lamps, chand } = ground;
+  const upstairs = furnishUpstairs(upper, rand);
+  const { U, later, calTex, upBin, stack, upLamps } = upstairs;
 
   // ---------- layers ----------
   onLayer(upper, LAYER_UPPER);
@@ -180,15 +182,10 @@ export function buildTownHall(scene, rand, lights) {
   }
 
   const colliders = [
-    { x: 2.2, z: 0.4, r: 1.35 }, { x: -W / 2 + 0.7, z: 0.1, r: 1.0 }, { x: -3.3, z: -1.75, r: 0.6 }, { x: -3.3, z: 1.95, r: 0.6 },
-    { x: -4.5, z: 0.1, r: 0.55 }, { x: -2.7, z: 0.1, r: 0.3 }, { x: 5.1, z: -4.5, r: 0.9 }, { x: -2.5, z: 4.25, r: 0.35 },
-    { x: -3.15, z: 4.45, r: 0.2 }, { x: -4.4, z: 4.55, r: 0.75 }, { x: -W / 2 + 0.85, z: -2.45, r: 0.5 }, { x: -W / 2 + 0.55, z: 1.75, r: 0.2 },
-    { x: 3.15, z: -4.72, r: 0.45 }, { x: -5.3, z: -4.3, r: 0.5 }, { x: 5.35, z: 4.3, r: 0.5 }, { x: 2.45, z: -4.35, r: 0.4 },
+    ...ground.colliders,
+    ...upstairs.colliders,
     // the open door
     ...[0.35, 0.8, 1.25].map((t) => ({ x: hinge.x + doorDir.x * t, z: hinge.z + doorDir.z * t, r: 0.2 })),
-    { x: -2.4, z: -3.3, r: 1.0, level: 1 }, { x: -2.4, z: -2.2, r: 0.35, level: 1 }, { x: -5.6, z: 0, r: 1.6, level: 1 },
-    { x: -5.5, z: -3.25, r: 0.8, level: 1 }, { x: -3.6, z: 0.6, r: 0.9, level: 1 }, { x: -3.4, z: 4.55, r: 0.95, level: 1 },
-    { x: 1.0, z: 4.4, r: 0.5, level: 1 }, { x: 3.0, z: 3.6, r: 0.6, level: 1 }, { x: 4.0, z: -4.4, r: 0.35, level: 1 },
   ];
 
   return {
@@ -201,10 +198,10 @@ export function buildTownHall(scene, rand, lights) {
     update,
     speakers: [{ object: clerk, height: 1.9, range: 3.0, level: 0, text: clerkLine }],
     stations: [
-      { point: new THREE.Vector3(-0.5, 0, -3.5), level: 0, label: 'Open the task board', app: 'todo', tab: 'today' },
-      { point: new THREE.Vector3(2.2, 0, 1.95), level: 0, label: 'Ask the clerk to type a task', typewriter: true },
-      { point: new THREE.Vector3(1.8, 0, -3.4), level: 1, label: 'Plan ahead', app: 'todo', tab: 'upcoming' },
-      { point: new THREE.Vector3(-2.4, 0, 0.6), level: 1, label: 'Look through the archive', app: 'todo', tab: 'done' },
+      { point: ground.spots.board, level: 0, label: 'Open the task board', app: 'todo', tab: 'today' },
+      { point: ground.spots.clerk, level: 0, label: 'Ask the clerk to type a task', typewriter: true },
+      { point: upstairs.spots.later, level: 1, label: 'Plan ahead', app: 'todo', tab: 'upcoming' },
+      { point: upstairs.spots.archive, level: 1, label: 'Look through the archive', app: 'todo', tab: 'done' },
     ],
     spawn: new THREE.Vector3(0, 0, D / 2 - 2.4),
     exit: new THREE.Vector3(0, 0, D / 2 - 0.6),

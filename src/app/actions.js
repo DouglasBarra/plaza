@@ -9,7 +9,7 @@ import { openTypewriter } from '../ui/hall-cards.js';
 
 // { label, run } or null.
 export function findAction() {
-  if (game.appOpen || game.transitioning) return null;
+  if (game.appOpen || game.transitioning || game.editing) return null;
   const { room } = game;
   const at = me.position.clone().setY(0);
   if (!room) {

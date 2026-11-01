@@ -8,6 +8,7 @@ import { updateClocks, animateCranes } from '../details.js';
 import { beams, HALL_SIZE, townHall, bank, library, lighthouse, emptyPlot } from './buildings.js';
 import { roundTree, bench, lamp, fountain, bollard, planter, cafe, stall, bike, noticeboard, mailbox } from './props.js';
 import { cat, pigeon, animateCritters } from './critters.js';
+import { piece, placeable } from '../layout.js';
 
 // ---------- the plaza ----------
 // The plaza is a civic square, wider than it is deep, laid out around the
@@ -48,15 +49,19 @@ export function buildPlaza(scene) {
     world.add(b);
     buildings.push(b);
     const front = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), rotY);
+    let collider;
     if (b.userData.hall) {
       // the town hall is as big as its inside: a box, not a circle
-      colliders.push({ x, z, hw: HALL_SIZE.w / 2, hd: HALL_SIZE.d / 2 + 0.05, rot: rotY });
+      collider = { x, z, hw: HALL_SIZE.w / 2, hd: HALL_SIZE.d / 2 + 0.05, rot: rotY };
       b.userData.door = new THREE.Vector3(x, 0, z).addScaledVector(front, b.userData.doorDist);
     } else {
-      colliders.push({ x, z, r: r * scale });
+      collider = { x, z, r: r * scale };
       b.userData.door = new THREE.Vector3(x, 0, z).addScaledVector(front, r * scale + 0.7); // just outside its collider
     }
+    colliders.push(collider);
+    placeable(b, `plaza.${b.userData.district}`, [collider, b.userData.door]);
   };
+  const col = (x, z, r) => { const c = { x, z, r }; colliders.push(c); return c; };
 
   // ---- the buildings
   const HALL = { x: 0, z: -hz + (HALL_SIZE.d + 1) / 2 };
@@ -72,15 +77,31 @@ export function buildPlaza(scene) {
   const fountainGroup = fountain(world);
   fountainGroup.position.z = FZ;
   fountainGroup.scale.set(FS, FSY, FS);
-  colliders.push({ x: 0, z: FZ, r: 2.9 * FS });
-  const BR = 8.3; // the bench ring around the fountain
+  placeable(fountainGroup, 'plaza.fountain', [col(0, FZ, 2.9 * FS)]);
+  // the bench ring around the fountain; each bench brings the folks sitting on it
+  const BR = 8.3;
+  const onBench = (i, side = 0) => {
+    const a = (i / 4) * Math.PI * 2 + Math.PI / 4, rot = a + Math.PI;
+    return { x: Math.sin(a) * BR + Math.cos(rot) * side, z: FZ + Math.cos(a) * BR - Math.sin(rot) * side, rot, seat: 0.5 };
+  };
+  const sitters = [
+    [{ ...onBench(0, -0.4), pose: 'read', look: { hat: 'bowler', glasses: true, item: 'paper' } },
+      { ...onBench(0, 0.45), pose: 'sit', look: { hair: 'bun', dress: true, height: 0.95 } }],
+    [{ ...onBench(1), pose: 'nap', look: { hat: 'cap' } }],
+    [],
+    [{ ...onBench(3, 0.3), pose: 'sit', look: { hat: 'top', glasses: true, height: 1.08 } }],
+  ];
   for (let i = 0; i < 4; i++) {
     const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
-    bench(world, Math.sin(a) * BR, FZ + Math.cos(a) * BR, a + Math.PI);
+    const x = Math.sin(a) * BR, z = FZ + Math.cos(a) * BR;
+    piece(world, `plaza.fountain-bench-${i + 1}`, [x, z], (g) => {
+      bench(g, x, z, a + Math.PI);
+      for (const f of sitters[i]) addFolk(g, f);
+    });
   }
   const hallSteps = HALL.z + HALL_SIZE.d / 2 + 0.9;               // just in front of the town hall's steps
   const LAMPS = [[11.5, FZ], [-11.5, FZ], [2.6, FZ + 11.5], [-2.6, FZ + 11.5], [5.5, FZ - 11.5], [-5.5, FZ - 11.5], [-hx + 2.5, 8], [hx - 2.5, 8], [-hx + 2.5, -3.6], [hx - 2.5, -3.6]];
-  for (const [x, z] of LAMPS) { lamp(world, x, z); colliders.push({ x, z, r: 0.35 }); }
+  const owlLamp = { x: 11.5, z: FZ };  // the night owl sits on this one (finds.js)
 
   // bollards along the edge: the plaza ends here, the town goes on. Gaps at
   // the three street mouths, and none behind the town hall.
@@ -105,39 +126,60 @@ export function buildPlaza(scene) {
     board: { x: -4.6, z: 20.8 },
     bench: { x: -14.0, z: 20.6 },
     mailbox: { x: 4.6, z: 20.4 },
-    owlLamp: { x: 11.5, z: FZ },
+    owlLamp,
   };
-  cafe(world, P.cafe.x, P.cafe.z); colliders.push({ x: P.cafe.x, z: P.cafe.z, r: 2.3 });
-  stall(world, P.stall.x, P.stall.z, Math.PI / 2); colliders.push({ x: P.stall.x, z: P.stall.z, r: 2 });
-  planter(world, P.flowers.x, P.flowers.z, 'ideas'); planter(world, P.flowers.x + 2.0, P.flowers.z);
-  colliders.push({ x: P.flowers.x + 1.0, z: P.flowers.z, r: 1.8 });
-  for (const t of P.trees) roundTree(world, t.x, t.z, 0.85);
-  colliders.push({ x: 22.5, z: 8.9, r: 1.8 });
-  for (const [i, b] of P.bikes.entries()) bike(world, b.x, b.z, 0.2 + i * 0.3);
-  noticeboard(world, P.board.x, P.board.z, Math.PI); colliders.push({ x: P.board.x, z: P.board.z, r: 1.2 });
-  bench(world, P.bench.x, P.bench.z, Math.PI);
-  mailbox(world, P.mailbox.x, P.mailbox.z, Math.PI);
-  planter(world, -12.4, -3.0, 'todo'); planter(world, -14.4, -3.0); colliders.push({ x: -13.4, z: -3.0, r: 1.8 });
+  LAMPS.forEach(([x, z], i) => {
+    piece(world, `plaza.lamp-${i + 1}`, [x, z], (g) => lamp(g, x, z), [col(x, z, 0.35), x === owlLamp.x && z === owlLamp.z && owlLamp]);
+  });
+  // the café and the stall bring their customers, waiter and vendor
+  piece(world, 'plaza.cafe', [P.cafe.x, P.cafe.z], (g) => {
+    cafe(g, P.cafe.x, P.cafe.z);
+    addFolk(g, { x: P.cafe.x - 2.15, z: P.cafe.z - 0.8, rot: Math.PI / 2, seat: 0.45, pose: 'sit', look: { hair: 'bun' } });
+    addFolk(g, { x: P.cafe.x + 2.15, z: P.cafe.z + 0.6, rot: -Math.PI / 2, seat: 0.45, pose: 'read', look: { glasses: true, item: 'paper' } });
+    addFolk(g, { walk: { path: [[P.cafe.x - 1.2, P.cafe.z + 0.4], [P.cafe.x + 1.2, P.cafe.z - 0.5]], speed: 0.7 }, look: { item: 'tray', hair: 'bun' } });
+  }, [col(P.cafe.x, P.cafe.z, 2.3)]);
+  piece(world, 'plaza.stall', [P.stall.x, P.stall.z], (g) => {
+    stall(g, P.stall.x, P.stall.z, Math.PI / 2);
+    addFolk(g, { x: P.stall.x - 1.1, z: P.stall.z, rot: Math.PI / 2, pose: 'vendor', look: { hat: 'cone' } });
+    addFolk(g, { x: P.stall.x + 1.6, z: P.stall.z - 0.5, rot: -Math.PI / 2, pose: 'chat', look: { hair: 'long', dress: true } });
+  }, [col(P.stall.x, P.stall.z, 2)]);
+  piece(world, 'plaza.flowers', [P.flowers.x + 1.0, P.flowers.z], (g) => {
+    planter(g, P.flowers.x, P.flowers.z, 'ideas'); planter(g, P.flowers.x + 2.0, P.flowers.z);
+  }, [col(P.flowers.x + 1.0, P.flowers.z, 1.8), P.flowers]);
+  piece(world, 'plaza.trees-east', [22.5, 8.9], (g) => {
+    for (const t of P.trees) roundTree(g, t.x, t.z, 0.85);
+  }, [col(22.5, 8.9, 1.8), ...P.trees]);
+  piece(world, 'plaza.bikes', [21.0, 6.35], (g) => {
+    for (const [i, b] of P.bikes.entries()) bike(g, b.x, b.z, 0.2 + i * 0.3);
+  });
+  piece(world, 'plaza.noticeboard', [P.board.x, P.board.z], (g) => {
+    noticeboard(g, P.board.x, P.board.z, Math.PI);
+    addFolk(g, { x: P.board.x, z: P.board.z - 1.0, rot: 0, pose: 'look', look: { hat: 'top' } });
+  }, [col(P.board.x, P.board.z, 1.2), P.board]);
+  piece(world, 'plaza.bench-south', [P.bench.x, P.bench.z], (g) => {
+    bench(g, P.bench.x, P.bench.z, Math.PI);
+    addFolk(g, { x: P.bench.x, z: P.bench.z, rot: Math.PI, seat: 0.5, pose: 'read', look: { hair: 'long', item: 'paper' } });
+  });
+  piece(world, 'plaza.mailbox', [P.mailbox.x, P.mailbox.z], (g) => mailbox(g, P.mailbox.x, P.mailbox.z, Math.PI));
+  piece(world, 'plaza.planters-west', [-13.4, -3.0], (g) => {
+    planter(g, -12.4, -3.0, 'todo'); planter(g, -14.4, -3.0);
+  }, [col(-13.4, -3.0, 1.8)]);
   // a row of trees in planters along each side of the hall's forecourt
   for (const sx of [-1, 1]) for (const tz of [-12.5, -8.5]) {
     const tx = sx * 9.2;
-    box(world, 1.6, 0.5, 1.6, M.stone, tx, 0.25, tz);
-    roundTree(world, tx, tz, 0.95).position.y = 0.5;
-    colliders.push({ x: tx, z: tz, r: 1.1 });
+    const side = sx < 0 ? 'west' : 'east', row = tz < -10 ? 'back' : 'front';
+    piece(world, `plaza.forecourt-tree-${side}-${row}`, [tx, tz], (g) => {
+      box(g, 1.6, 0.5, 1.6, M.stone, tx, 0.25, tz);
+      roundTree(g, tx, tz, 0.95).position.y = 0.5;
+    }, [col(tx, tz, 1.1)]);
   }
-  roundTree(world, -22.6, 8.4, 0.8); roundTree(world, -22.4, -6.8, 0.75); roundTree(world, 22.6, -6.8, 0.75);
+  for (const [name, x, z, s] of [['west', -22.6, 8.4, 0.8], ['north-west', -22.4, -6.8, 0.75], ['north-east', 22.6, -6.8, 0.75]]) {
+    piece(world, `plaza.tree-${name}`, [x, z], (g) => roundTree(g, x, z, s));
+  }
   for (const [x, z] of [[1.8, 3.4], [2.3, 3.0], [-3.2, -1.6], [-3.4, -2.2], [3.1, -2.6], [2.2, -3.4]]) pigeon(world, x * 2.2, FZ + z * 2.2);
 
-  // ---- folks, each busy with something
-  const onBench = (i, side = 0) => {
-    const a = (i / 4) * Math.PI * 2 + Math.PI / 4, rot = a + Math.PI;
-    return { x: Math.sin(a) * BR + Math.cos(rot) * side, z: FZ + Math.cos(a) * BR - Math.sin(rot) * side, rot, seat: 0.5 };
-  };
-  addFolk(world, { ...onBench(0, -0.4), pose: 'read', look: { hat: 'bowler', glasses: true, item: 'paper' } });
-  addFolk(world, { ...onBench(0, 0.45), pose: 'sit', look: { hair: 'bun', dress: true, height: 0.95 } });
-  addFolk(world, { ...onBench(1), pose: 'nap', look: { hat: 'cap' } });
-  addFolk(world, { ...onBench(3, 0.3), pose: 'sit', look: { hat: 'top', glasses: true, height: 1.08 } });
-  addFolk(world, { x: P.bench.x, z: P.bench.z, rot: Math.PI, seat: 0.5, pose: 'read', look: { hair: 'long', item: 'paper' } });
+  // ---- folks, each busy with something (the ones at a bench, the café, the
+  // stall or the notice board belong to that piece, above)
   addFolk(world, { x: 0, z: FZ + 2.35 * FS, rot: 0, seat: 0.6 * FSY, pose: 'music', look: { hat: 'cap', item: 'guitar' } });
   addFolk(world, { x: -7.8, z: FZ - 3.0, rot: 2.14, pose: 'feed', look: { hair: 'bun', dress: true, height: 0.95 } });
   addFolk(world, { x: 12.0, z: 11.0, rot: 0.93, pose: 'chat', look: { hair: 'long', scarf: true } });
@@ -147,12 +189,6 @@ export function buildPlaza(scene) {
   addFolk(world, { pose: 'walk', walk: { path: [[-7, -7.6], [7, -7.6]], speed: 0.8 }, look: { glasses: true, backpack: true } });
   addFolk(world, { x: HALL.x + 4.0, z: hallSteps + 1.4, rot: 0.8, pose: 'sweep', look: { hat: 'bowler', item: 'broom' } });
   addFolk(world, { x: 6.5, z: 14.0, rot: 2.45, pose: 'kite', kite: true, look: { hat: 'cap', height: 0.72 } });
-  addFolk(world, { x: P.stall.x - 1.1, z: P.stall.z, rot: Math.PI / 2, pose: 'vendor', look: { hat: 'cone' } });
-  addFolk(world, { x: P.stall.x + 1.6, z: P.stall.z - 0.5, rot: -Math.PI / 2, pose: 'chat', look: { hair: 'long', dress: true } });
-  addFolk(world, { x: P.cafe.x - 2.15, z: P.cafe.z - 0.8, rot: Math.PI / 2, seat: 0.45, pose: 'sit', look: { hair: 'bun' } });
-  addFolk(world, { x: P.cafe.x + 2.15, z: P.cafe.z + 0.6, rot: -Math.PI / 2, seat: 0.45, pose: 'read', look: { glasses: true, item: 'paper' } });
-  addFolk(world, { walk: { path: [[P.cafe.x - 1.2, P.cafe.z + 0.4], [P.cafe.x + 1.2, P.cafe.z - 0.5]], speed: 0.7 }, look: { item: 'tray', hair: 'bun' } });
-  addFolk(world, { x: P.board.x, z: P.board.z - 1.0, rot: 0, pose: 'look', look: { hat: 'top' } });
   addFolk(world, { x: -15.0, z: 12.0, rot: 2.2, pose: 'wave', look: { item: 'balloon', balloon: 'people', height: 0.75 } });
   leaves(world, 26, hz - 2);
   cat(world, 3.6, FZ + 7.0, 0.7, true);

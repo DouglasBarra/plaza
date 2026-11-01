@@ -10,6 +10,7 @@ import { setView, look } from './camera.js';
 import { enterBuilding, exitBuilding, currentScene } from './rooms.js';
 import { ray, setPointer, tryFind, shownInScene } from './picking.js';
 import { findAction } from './actions.js';
+import { whereIs, homeOf, pieceOf } from '../layout.js';
 import { openApp, closeApp } from '../ui/card.js';
 import { openFinds } from '../ui/finds-card.js';
 
@@ -19,6 +20,8 @@ export function installDevtools() {
     room: () => game.room,
     look,                                   // first-person gaze, for taking screenshots
     eye: () => camera.position.toArray(),
+    // the layout editor's pieces: where one stands now and where the code puts it
+    piece: (id) => ({ now: whereIs(id), home: homeOf(id), followers: pieceOf(id).followers.map(({ f }) => ({ x: f.x, z: f.z })) }),
     // where you stand to go into a building (or to visit a lot)
     door: (id) => buildingFor(id).userData.door.toArray(),
     // screen position of an object, after settling the camera

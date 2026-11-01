@@ -11,6 +11,7 @@ import { renderWindowView } from './app/window-view.js';
 import { findAction } from './app/actions.js';
 import { pickNote } from './app/picking.js';
 import { installDevtools } from './app/devtools.js';
+import { installEditor } from './app/editor.js';
 import './app/input.js';
 import { animatePlaza } from './plaza/index.js';
 import { DISTRICTS } from './districts/index.js';
@@ -30,7 +31,10 @@ refreshFinds();
 setInterval(refreshSigns, 60_000);
 
 // the dev handle exists in development and in the end-to-end tests' build (--mode test)
-if (import.meta.env.DEV || import.meta.env.MODE === 'test') installDevtools();
+if (import.meta.env.DEV || import.meta.env.MODE === 'test') {
+  installDevtools();
+  installEditor();   // the layout editor: press ` (saving needs the dev server)
+}
 
 const clock = new THREE.Clock();
 renderer.setAnimationLoop((now) => {

@@ -8,4 +8,5 @@ export const game = {
   focused: null,         // the empty lot the camera is looking at, if any
   transitioning: false,  // fading into or out of a building
   action: null,          // what pressing E would do right now: { label, run }
+  editing: false,        // the layout editor is on (development only)
 };

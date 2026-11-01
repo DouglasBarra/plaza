@@ -19,7 +19,7 @@ let hovered = null;
 let downAt = null;
 
 canvas.addEventListener('pointermove', (e) => {
-  if (game.view === 'first') return;
+  if (game.view === 'first' || game.editing) return;
   setPointer(e);
   if (game.room) {
     const note = game.appOpen ? null : pickNote();
@@ -36,6 +36,7 @@ canvas.addEventListener('pointermove', (e) => {
 });
 canvas.addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; });
 canvas.addEventListener('pointerup', (e) => {
+  if (game.editing) return; // the layout editor has the mouse
   if (game.view === 'first') {
     if (game.appOpen) return closeApp();
     if (document.pointerLockElement !== canvas) {
@@ -70,6 +71,7 @@ const SHORTCUTS = {
   n: () => document.getElementById('toggle-theme').click(),
 };
 window.addEventListener('keydown', (e) => {
+  if (game.editing) return; // the layout editor has the keys
   const k = e.key.toLowerCase();
   me.running = e.shiftKey;
   if (k === 'escape' && game.appOpen) return closeApp();
