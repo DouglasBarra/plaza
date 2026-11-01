@@ -105,12 +105,21 @@ export function applyTheme(theme, lights) {
 const ndMaterial = new THREE.ShaderMaterial({
   side: THREE.DoubleSide, // open shapes (a lamp dome) must be seen from below too
   uniforms: { objId: { value: 0 } },
+  // skinned meshes (the Blender cat) are posed here too, or their lines
+  // would stay behind in the rest pose
   vertexShader: /* glsl */ `
+    #include <common>
+    #include <skinning_pars_vertex>
     varying vec3 vN;
     varying float vZ;
     void main() {
-      vec4 p = vec4(position, 1.0);
-      vec3 n = normal;
+      vec3 objectNormal = normal;
+      vec3 transformed = position;
+      #include <skinbase_vertex>
+      #include <skinnormal_vertex>
+      #include <skinning_vertex>
+      vec4 p = vec4(transformed, 1.0);
+      vec3 n = objectNormal;
       #ifdef USE_INSTANCING
         p = instanceMatrix * p;
         n = mat3(instanceMatrix) * n;

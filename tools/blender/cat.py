@@ -318,11 +318,11 @@ def tail_sway(P, t, amount, cycles=1, lag=0.12):
 def sit_base(P):
     # upright on the haunches, front legs straight, the tail wrapped round to the right
     P.loc('hips', (0, 0, -0.13)).pitch('hips', -0.75)
-    P.pitch('chest', 0.1).pitch('neck', 0.25).pitch('head', 0.4)
-    P.both(lambda s: P.pitch(f'arm.{s}', 0.68).pitch(f'forearm.{s}', -0.03))
-    P.both(lambda s: P.pitch(f'thigh.{s}', -0.7).pitch(f'shin.{s}', 1.75))
-    P.pitch('tail1', -1.0).side('tail1', -0.5).side('tail2', -1.0).side('tail3', -1.0).side('tail4', -0.8)
-    P.pitch('tail2', -0.3).pitch('tail3', -0.4).pitch('tail4', -0.3)
+    P.pitch('chest', 0.35).pitch('neck', 0.25).pitch('head', 0.15)
+    P.both(lambda s: P.pitch(f'arm.{s}', 0.33).pitch(f'forearm.{s}', -0.03))
+    P.both(lambda s: P.pitch(f'thigh.{s}', -1.5).pitch(f'shin.{s}', 2.2))   # haunches: shins folded flat under
+    P.pitch('tail1', -0.35).side('tail1', -0.5).side('tail2', -1.0).side('tail3', -1.0).side('tail4', -0.8)
+    P.pitch('tail2', 0.15).pitch('tail3', 0.15).pitch('tail4', 0.15)
     return P
 
 
@@ -389,7 +389,7 @@ def groom(t, k):
     # sitting, licking the raised right paw
     P = sit_base(Pose())
     lick = k % 2
-    P.rot('arm.R', Y, -1.9).rot('forearm.R', Y, 0.9 + 0.15 * lick).roll('arm.R', 0.25)
+    P.rot('arm.R', Y, -1.55).rot('forearm.R', Y, 0.9 + 0.15 * lick).roll('arm.R', 0.25)
     P.pitch('head', 0.55 + 0.14 * lick).yaw('head', -0.35).roll('head', -0.2)
     P.pitch('neck', 0.2)
     blink(P, k, (0, 1, 2, 3, 12, 13, 14, 15))   # eyes half shut while licking

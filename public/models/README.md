@@ -32,7 +32,7 @@ Every name has a starter, blocked out from the shapes Plaza draws in code, at th
 | `noticeboard` | The notice board on the plaza | |
 | `mailbox` | The mailbox | |
 | `crate` | Crates in the Works' yard | |
-| `cat` | Both plaza cats | Still trots after you; a model's tail won't wag |
+| `cat` | Both plaza cats | Built and animated by `tools/blender/cat.py`: clips named `idle`, `walk`, `trot`, `sit`, `groom` and `nap` play on the 12 fps drawing clock |
 | `tree-pine` | Pine trees on the plaza | Still sways in the wind |
 | `tree-round` | Round trees on the plaza and potted plants indoors | Still sways in the wind |
 | `desk` | The desk in the town hall office | |
