@@ -7,3 +7,4 @@ playwright-report/
 playwright/.cache/
 __pycache__/
 *.blend1
+.claude/worktrees/
