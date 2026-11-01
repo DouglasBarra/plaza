@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en" data-theme="day">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plaza</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Figtree:wght@400;500;600;700&family=Patrick+Hand&family=Patrick+Hand+SC&display=swap">
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <canvas id="scene"></canvas>
+  <div id="labels"></div>
+  <div id="crosshair" aria-hidden="true"></div>
+  <div id="fade" aria-hidden="true"></div>
+
+  <header class="hud-top">
+    <div class="greeting">
+      <h1>Plaza</h1>
+      <p id="greeting-line">Good evening. 4 things need you today.</p>
+    </div>
+    <div class="hud-actions">
+      <button class="pz-btn" id="finds-btn" data-key="F" aria-keyshortcuts="F">Finds</button>
+      <button class="pz-btn" id="toggle-view" data-key="V" aria-keyshortcuts="V" aria-pressed="false">First person</button>
+      <button class="pz-btn" id="toggle-wobble" data-key="L" aria-keyshortcuts="L" aria-pressed="true">Wobbly lines</button>
+      <button class="pz-btn" id="toggle-theme" data-key="N" aria-keyshortcuts="N">Night</button>
+    </div>
+  </header>
+
+  <nav class="dock" id="dock" aria-label="Jump to a district"></nav>
+
+  <div class="overlay" id="overlay" hidden>
+    <section class="pz-panel" id="panel" aria-live="polite"></section>
+  </div>
+
+  <p class="hint hint-third">WASD or click to walk · Shift to run · drag to look · scroll to zoom · E to go in</p>
+  <p class="hint hint-first">WASD to walk · Shift to run · mouse to look · E or click to use · Esc frees the mouse</p>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
