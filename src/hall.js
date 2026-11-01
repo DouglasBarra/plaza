@@ -16,11 +16,14 @@ export const DOOR = { w: 1.5, h: 2.5 };
 // Every window is the same size, 1.3 by 1.7 m, and sits at the same height on
 // its own floor (its middle 2.2 m above that floor).
 const win = (c, floor) => ({ c, y: (floor ? F : 0) + 2.2, w: 1.3, h: 1.7 });
+// Laid out symmetrically, so each side of the building reads as one
+// composed façade: a pair on every floor of every side, and a third window
+// upstairs on the front, right above the door. 17 windows, inside and out.
 export const HOLES = {
-  front: { lower: [win(-3.4), win(3.4)], upper: [win(-3.4, 1), win(3.4, 1)] },
-  back:  { lower: [win(-4.4)],           upper: [win(5.1, 1)] },
-  left:  { lower: [win(-3.3), win(3.4)], upper: [win(3.4, 1)] },
-  right: { lower: [win(3.3)],            upper: [win(0.5, 1)] },
+  front: { lower: [win(-3.4), win(3.4)],  upper: [win(-3.4, 1), win(0, 1), win(3.4, 1)] },
+  back:  { lower: [win(-4.6), win(4.6)],  upper: [win(-4.6, 1), win(4.6, 1)] },
+  left:  { lower: [win(-3.4), win(3.4)],  upper: [win(-3.4, 1), win(3.4, 1)] },
+  right: { lower: [win(-3.4), win(3.4)],  upper: [win(-3.4, 1), win(3.4, 1)] },
 };
 
 // The doorway as a hole in the front wall.

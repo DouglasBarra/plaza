@@ -475,7 +475,7 @@ export function buildTownHall(scene, rand, lights) {
   const board = taskBoard(lower, -0.5, 2.25, -D / 2 + 0.1, 5.0, 2.3, 5, 2, stamp.todo);
   signBoard(lower, -0.5, 3.75, -D / 2 + 0.14, 1.6, 0.36, 'Today');
   // wastebasket by the board
-  const binPos = new THREE.Vector3(2.75, 0, -4.35);
+  const binPos = new THREE.Vector3(2.45, 0, -4.35);
   cyl(lower, 0.28, 0.22, 0.55, M.planks, binPos.x, 0.275, binPos.z, 14);
   mesh(new THREE.TorusGeometry(0.28, 0.025, 4, 20), M.white, binPos.x, 0.55, binPos.z, lower).rotation.x = Math.PI / 2;
   const binBalls = new THREE.Group();
@@ -538,7 +538,7 @@ export function buildTownHall(scene, rand, lights) {
 
   // the tall clock against the back wall: a case, a face with slim hands, and a
   // pendulum swinging side to side behind a glass window
-  const CZ = -D / 2 + 0.28, CX = 3.7;
+  const CZ = -D / 2 + 0.28, CX = 3.15; // clear of the back window at x 4.6
   box(lower, 0.7, 0.14, 0.52, M.planks, CX, 0.07, CZ);                    // plinth
   box(lower, 0.6, 2.2, 0.44, M.planks, CX, 1.24, CZ);                      // case
   box(lower, 0.72, 0.12, 0.54, M.planks, CX, 2.4, CZ);                     // hood
@@ -566,11 +566,11 @@ export function buildTownHall(scene, rand, lights) {
   const up = new THREE.Group();
   up.position.y = U;
   upper.add(up);
-  const later = taskBoard(up, 1.8, 2.15, -D / 2 + 0.1, 4.2, 2.2, 4, 2, stamp.todo);
-  signBoard(up, 1.8, 3.6, -D / 2 + 0.14, 1.6, 0.36, 'Coming up');
+  const later = taskBoard(up, 1.6, 2.15, -D / 2 + 0.1, 3.9, 2.2, 4, 2, stamp.todo);
+  signBoard(up, 1.6, 3.6, -D / 2 + 0.14, 1.6, 0.36, 'Coming up');
   const calTex = calendarTexture();
-  box(up, 2.9, 2.5, 0.08, M.planks, -2.6, 2.2, -D / 2 + 0.06);
-  mesh(new THREE.PlaneGeometry(2.7, 2.3), toon('#ffffff', calTex), -2.6, 2.2, -D / 2 + 0.11, up);
+  box(up, 2.9, 2.5, 0.08, M.planks, -2.4, 2.2, -D / 2 + 0.06);
+  mesh(new THREE.PlaneGeometry(2.7, 2.3), toon('#ffffff', calTex), -2.4, 2.2, -D / 2 + 0.11, up);
   // a drafting table and stool in front of the planning wall
   const draft = box(up, 1.6, 0.06, 1.0, M.planks, -2.4, 1.0, -3.3);
   draft.rotation.x = 0.2;
@@ -584,8 +584,8 @@ export function buildTownHall(scene, rand, lights) {
   bookshelf(up, -W / 2 + 0.35, 1.2, Math.PI / 2, rand);
   bookshelf(up, -W / 2 + 0.35, -1.2, Math.PI / 2, rand);
   for (const z of [-2.9, -3.6]) {
-    box(up, 0.7, 1.4, 0.65, M.white, -5.5, 0.7, z);
-    for (const y of [0.35, 0.8, 1.2]) box(up, 0.04, 0.05, 0.25, dark, -5.13, y, z);
+    box(up, 0.7, 1.15, 0.65, M.white, -5.5, 0.575, z); // below the window sill
+    for (const y of [0.3, 0.65, 0.98]) box(up, 0.04, 0.05, 0.25, dark, -5.13, y, z);
   }
   box(up, 1.4, 0.06, 0.8, M.planks, -3.6, 0.78, 0.6);
   for (const [x, z] of [[-4.2, 0.3], [-3.0, 0.3], [-4.2, 0.9], [-3.0, 0.9]]) box(up, 0.06, 0.78, 0.06, M.white, x, 0.39, z);
@@ -605,7 +605,6 @@ export function buildTownHall(scene, rand, lights) {
   plant(up, 1.0, 4.3, 1.0);
   cyl(up, 0.05, 0.12, 0.9, M.white, 3.0, 0.45, 3.6, 8);
   mesh(new THREE.IcosahedronGeometry(0.45, 1), M.white, 3.0, 1.3, 3.6, up);
-  picture(up, -W / 2 + 0.06, 2.3, -3.25, 1.0, 0.8, Math.PI / 2, 'mountains');
   rug(up, 0, 1.0, 4.2, 3.0, 0, 0);
   const upLamps = [pendant(up, -2.4, 2.7, -3.0, TOP - U - 0.3), pendant(up, -3.6, 2.6, 0.6, TOP - U - 0.3)];
 
@@ -747,7 +746,7 @@ export function buildTownHall(scene, rand, lights) {
     { x: 2.2, z: 0.4, r: 1.35 }, { x: -W / 2 + 0.7, z: 0.1, r: 1.0 }, { x: -3.3, z: -1.75, r: 0.6 }, { x: -3.3, z: 1.95, r: 0.6 },
     { x: -4.5, z: 0.1, r: 0.55 }, { x: -2.7, z: 0.1, r: 0.3 }, { x: 5.1, z: -4.5, r: 0.9 }, { x: -2.5, z: 4.25, r: 0.35 },
     { x: -3.15, z: 4.45, r: 0.2 }, { x: -4.4, z: 4.55, r: 0.75 }, { x: -W / 2 + 0.85, z: -2.45, r: 0.5 }, { x: -W / 2 + 0.55, z: 1.75, r: 0.2 },
-    { x: 3.7, z: -4.72, r: 0.45 }, { x: -5.3, z: -4.3, r: 0.5 }, { x: 5.35, z: 4.3, r: 0.5 }, { x: 2.75, z: -4.35, r: 0.4 },
+    { x: 3.15, z: -4.72, r: 0.45 }, { x: -5.3, z: -4.3, r: 0.5 }, { x: 5.35, z: 4.3, r: 0.5 }, { x: 2.45, z: -4.35, r: 0.4 },
     // the open door
     ...[0.35, 0.8, 1.25].map((t) => ({ x: hinge.x + doorDir.x * t, z: hinge.z + doorDir.z * t, r: 0.2 })),
     { x: -2.4, z: -3.3, r: 1.0, level: 1 }, { x: -2.4, z: -2.2, r: 0.35, level: 1 }, { x: -5.6, z: 0, r: 1.6, level: 1 },
