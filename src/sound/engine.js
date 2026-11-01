@@ -31,7 +31,14 @@ function start() {
   const comp = ctx.createDynamicsCompressor();
   comp.threshold.value = -18; comp.ratio.value = 3;
   comp.connect(ctx.destination);
-  A.master = gain(0, comp);
+  // dreamy: the top end rounded off, nothing sharp
+  const shelf = filter('highshelf', 4200, 0.7, filter('lowpass', 9000, 0.5, comp));
+  shelf.gain.value = -8;
+  A.master = gain(0, shelf);
+  // and a long, soft, dark echo under everything, like a memory of the place
+  A.dream = ctx.createConvolver();
+  A.dream.buffer = impulse(5, 2.4);
+  A.dream.connect(filter('lowpass', 2800, 0.5, gain(0.8, A.master)));
   A.amb = gain(1, A.master);
   A.fx = gain(1, A.master);
   // the plaza bus: open outdoors, through a closed window when you're in
@@ -48,8 +55,12 @@ function start() {
   A.roomVerb.connect(A.amb);
   A.fxVerb = gain(0, A.roomVerb);   // one-shots echo in the bank too
   A.fx.connect(A.fxVerb);
+  A.plaza.connect(gain(0.32, A.dream));
+  A.fx.connect(gain(0.38, A.dream));
+  A.room.connect(gain(0.12, A.dream));
   A.noise = noiseBuffer('white');
   A.brown = noiseBuffer('brown');
+  A.water = waterBuffer();
   apply();
   starters.splice(0).forEach((fn) => fn(A));
 }
@@ -95,6 +106,35 @@ function noiseBuffer(kind) {
   }
   return b;
 }
+// Water, drawn as bubbles: a falling stream is thousands of tiny bubbles,
+// each ringing at a pitch set by its size and gliding up as it bursts. Six
+// seconds of them, wrapped round so the loop has no seam, over a soft hush.
+function waterBuffer() {
+  const r = A.ctx.sampleRate, n = r * 6, b = A.ctx.createBuffer(2, n, r);
+  for (let c = 0; c < 2; c++) {
+    const d = b.getChannelData(c);
+    // the hush of the sheet of water: noise, smoothed twice
+    let l1 = 0, l2 = 0;
+    for (let i = 0; i < n; i++) { l1 += 0.12 * (Math.random() * 2 - 1 - l1); l2 += 0.12 * (l1 - l2); d[i] = l2 * 0.35; }
+    for (let k = 0; k < 6 * 240; k++) {
+      const big = Math.random() ** 2.2;                 // mostly small bubbles, a few big ones
+      const f0 = 2600 - big * 2100;                     // 500 Hz (big) to 2600 Hz (small)
+      const tau = 0.003 + 0.018 * (500 / f0);           // small ones ring shorter
+      const amp = (0.05 + Math.random() * 0.12) * (0.6 + big);
+      const start = Math.floor(Math.random() * n), len = Math.floor(tau * 5 * r);
+      let ph = 0;
+      for (let i = 0; i < len; i++) {
+        const t = i / r;
+        ph += (2 * Math.PI * f0 * (1 + 0.12 * t / tau)) / r;
+        d[(start + i) % n] += Math.sin(ph) * Math.exp(-t / tau) * amp;
+      }
+    }
+    let peak = 0;
+    for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(d[i]));
+    for (let i = 0; i < n; i++) d[i] *= 0.7 / peak;
+  }
+  return b;
+}
 function impulse(seconds, decay) {
   const r = A.ctx.sampleRate, n = r * seconds, b = A.ctx.createBuffer(2, n, r);
   for (let c = 0; c < 2; c++) {
@@ -118,12 +158,13 @@ export function listen(pos, forward) {
     L.setOrientation(forward.x, 0, forward.z, 0, 1, 0);
   }
 }
-// A panner at a spot in the world, feeding `to`.
-export function spot(at, to, { ref = 3, max = 60, roll = 1.2 } = {}) {
+// A panner at a spot in the world, feeding `to`: full within `ref` meters,
+// fading to silence at `max`, so things are only heard once you're near.
+export function spot(at, to, { ref = 2, max = 18 } = {}) {
   const p = A.ctx.createPanner();
   p.panningModel = 'equalpower';
-  p.distanceModel = 'inverse';
-  p.refDistance = ref; p.maxDistance = max; p.rolloffFactor = roll;
+  p.distanceModel = 'linear';
+  p.refDistance = ref; p.maxDistance = max; p.rolloffFactor = 1;
   if (p.positionX) { p.positionX.value = at.x; p.positionY.value = at.y; p.positionZ.value = at.z; } else p.setPosition(at.x, at.y, at.z);
   p.connect(to);
   return p;

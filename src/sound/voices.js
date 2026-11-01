@@ -33,41 +33,44 @@ function tone(t, out, { f, dur = 0.5, vol = 0.2, type = 'sine', attack = 0.004, 
   o.start(t);
   o.stop(t + dur + 0.05);
 }
-// a little bell: a few inharmonic partials, like a glockenspiel
-function bell(t, out, f, vol = 0.12, dur = 1.4) {
-  [[1, 1], [2.76, 0.35], [5.4, 0.12]].forEach(([r, v]) => tone(t, out, { f: f * r, vol: vol * v, dur: dur / r ** 0.4 }));
+// a little bell, like a music box: soft partials, each doubled a hair out
+// of tune so it shimmers as it rings away
+function bell(t, out, f, vol = 0.12, dur = 2.4) {
+  [[1, 1], [2.76, 0.22], [5.4, 0.06]].forEach(([r, v]) => {
+    for (const d of [0.997, 1.003]) tone(t, out, { f: f * r * d, vol: vol * v * 0.6, dur: dur / r ** 0.4, attack: 0.008 });
+  });
 }
 
 export const VOICES = {
   // ---------- the interface: paper, pencil and wood ----------
-  click(t, out) {   // a wooden button
-    tone(t, out, { f: rnd(820, 900), to: 500, dur: 0.06, vol: 0.12 });
-    hiss(t, out, { f: 1800, q: 2, dur: 0.03, vol: 0.12 });
+  click(t, out) {   // a soft wooden tap
+    tone(t, out, { f: rnd(520, 580), to: 380, dur: 0.07, vol: 0.07, attack: 0.004 });
+    hiss(t, out, { f: 1100, q: 1.5, dur: 0.03, vol: 0.04 });
   },
   rustle(t, out) {  // a card opening: paper unfolding
-    for (let i = 0; i < 6; i++) hiss(t + i * rnd(0.025, 0.05), out, { f: rnd(2500, 5500), q: 1.2, dur: rnd(0.04, 0.09), vol: rnd(0.06, 0.13) });
+    for (let i = 0; i < 6; i++) hiss(t + i * rnd(0.03, 0.06), out, { f: rnd(1800, 3800), q: 1, dur: rnd(0.06, 0.12), vol: rnd(0.03, 0.06), attack: 0.015 });
   },
   slide(t, out) {   // a card closing: paper sliding away
     hiss(t, out, { f: 2600, to: 900, q: 0.9, dur: 0.22, vol: 0.09, attack: 0.04 });
   },
   pencil(t, out) {  // typing: a pencil stroke
-    hiss(t, out, { f: rnd(4500, 7000), q: 2.5, dur: rnd(0.02, 0.045), vol: rnd(0.03, 0.06), type: 'bandpass' });
+    hiss(t, out, { f: rnd(3000, 4500), q: 2, dur: rnd(0.025, 0.05), vol: rnd(0.015, 0.03), attack: 0.006 });
   },
   chime(t, out) {   // something done: two notes up
-    bell(t, out, 1046.5, 0.13);
-    bell(t + 0.11, out, 1568, 0.11);
+    bell(t, out, 784, 0.12);
+    bell(t + 0.16, out, 1175, 0.1);
   },
   done(t, out) {    // a task done: torn off, crumpled, a chime
     hiss(t, out, { f: 5000, to: 1800, q: 1.4, dur: 0.18, vol: 0.14, attack: 0.01 });     // the tear
     for (let i = 0; i < 12; i++) hiss(t + 0.2 + i * rnd(0.02, 0.04), out, { f: rnd(1200, 6000), q: 3, dur: rnd(0.015, 0.05), vol: rnd(0.05, 0.14) });
-    bell(t + 0.62, out, 1046.5, 0.12);
-    bell(t + 0.72, out, 1318.5, 0.1);
-    bell(t + 0.82, out, 1568, 0.1, 1.8);
+    bell(t + 0.62, out, 784, 0.11);
+    bell(t + 0.78, out, 988, 0.1);
+    bell(t + 0.94, out, 1175, 0.1, 3.2);
   },
   pin(t, out) {     // a note pinned to the board
     tone(t, out, { f: 2400, to: 1600, dur: 0.05, vol: 0.08 });
     hiss(t, out, { f: 1200, q: 1, dur: 0.04, vol: 0.1 });
-    bell(t + 0.12, out, 1318.5, 0.09);
+    bell(t + 0.14, out, 988, 0.09);
   },
   swish(t, out) {   // the ink wipe: a brush stroke across the page
     hiss(t, out, { f: 500, to: 2600, q: 1.6, dur: 0.26, vol: 0.12, attack: 0.08 });
@@ -80,7 +83,7 @@ export const VOICES = {
 
   // ---------- underfoot ----------
   step(t, out, { surface = 'stone' } = {}) {
-    const v = rnd(0.8, 1.1);
+    const v = rnd(0.8, 1.1) * 0.55;
     if (surface === 'wood') {
       tone(t, out, { f: rnd(120, 150), to: 80, dur: 0.09, vol: 0.12 * v });
       hiss(t, out, { f: 900, q: 1.5, dur: 0.06, vol: 0.07 * v });
@@ -90,8 +93,7 @@ export const VOICES = {
     } else if (surface === 'grass') {
       hiss(t, out, { f: 3500, q: 0.8, dur: 0.1, vol: 0.05 * v, attack: 0.02, type: 'highpass' });
     } else {
-      hiss(t, out, { f: rnd(500, 700), q: 1.2, dur: 0.06, vol: 0.11 * v });   // stone: a soft scuff
-      hiss(t + 0.015, out, { f: 2400, q: 1, dur: 0.035, vol: 0.03 * v });
+      hiss(t, out, { f: rnd(380, 520), q: 1, dur: 0.08, vol: 0.11 * v, attack: 0.008 });   // stone: a soft scuff
     }
   },
 
@@ -137,8 +139,8 @@ export const VOICES = {
     hiss(t + 0.25, out, { f: 3200, q: 6, dur: 0.05, vol: 0.18 });
   },
   tram(t, out) {    // far off in the town: ding-ding
-    bell(t, out, 1760, 0.05, 0.8);
-    bell(t + 0.22, out, 1760, 0.05, 0.9);
+    bell(t, out, 1175, 0.06, 1.4);
+    bell(t + 0.3, out, 1175, 0.06, 1.6);
   },
   hour(t, out, { strikes = 1 } = {}) {   // the town hall bell, once per hour
     for (let i = 0; i < strikes; i++) {
@@ -155,7 +157,7 @@ export const VOICES = {
     tone(t + 0.01, out, { f: 160, dur: 0.04, vol: 0.08 });
   },
   ding(t, out) {    // the carriage return
-    bell(t, out, 2093, 0.08, 1.2);
+    bell(t, out, 1568, 0.07, 1.8);
     hiss(t + 0.08, out, { f: 1600, to: 900, q: 2, dur: 0.25, vol: 0.06, attack: 0.02 });
   },
   flaps(t, out) {   // the split-flap board, a patter of cards

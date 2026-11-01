@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { renderer, ink, camera, canvas, lowPower } from './app/engine.js';
 import { game } from './app/state.js';
-import { me, town, updatePlaza } from './app/plaza.js';
+import { me, town, townHall, updatePlaza } from './app/plaza.js';
 import { setOrbitLimits, placeCameraBehindMe, stepTween, updateCamera } from './app/camera.js';
 import { currentScene, applyRoomView, levelChanged } from './app/rooms.js';
 import { renderWindowView } from './app/window-view.js';
@@ -82,7 +82,7 @@ renderer.setAnimationLoop((now) => {
   town.animate(t);
   stepWeather(t, dt);
   stepWashes(dt);
-  stepSound(t, dt, { camera, me, hour: hourNow(), night: isNight(), weather: game.weather });
+  stepSound(t, dt, { camera, me, hour: hourNow(), night: isNight(), weather: game.weather, hall: townHall.position });
 
   animatePlaza(t, room ? null : me.position, dt);
   if (now - drawnAt >= DRAW_EVERY) {

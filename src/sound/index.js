@@ -23,15 +23,15 @@ export function sfx(name, { at = null, room = null, gap = 0, vol = 1, ...opts } 
   const here = game.room?.id ?? null;
   let out;
   if (!at) out = gain(vol, A.fx);
-  else if (room === here) out = gain(vol, spot(at, room ? A.room : A.fx, { ref: 2.5 }));
-  else if (room === null) out = gain(vol * 0.35, A.plaza);   // out on the plaza, heard from inside
+  else if (room === here) out = gain(vol, spot(at, room ? A.room : A.fx, { ref: room ? 1.5 : 2.5, max: room ? 14 : 20 }));
+  else if (room === null) out = gain(vol * 0.12, A.plaza);   // out on the plaza, faint through the walls
   else return;                                               // inside a building you're not in
   VOICES[name](t + 0.005, out, opts);
 }
 
 // ---------- once a frame ----------
 const fwd = new THREE.Vector3();
-export function stepSound(t, dt, { camera, me, hour, night, weather }) {
+export function stepSound(t, dt, { camera, me, hour, night, weather, hall }) {
   if (!A.ctx || !beds) return;
   camera.getWorldDirection(fwd);
   listen(me.position, fwd.setY(0).normalize());
@@ -44,7 +44,7 @@ export function stepSound(t, dt, { camera, me, hour, night, weather }) {
     const e = game.room?.enterSound;
     if (e) setTimeout(() => sfx(e.name, { at: e.at, room: id }), (e.delay || 0) * 1000);
   }
-  stepBeds(beds, { inside: !!game.room, night, wet: weather?.wet ?? 0, cloud: weather?.cloud ?? 0, hour, room: roomParts, t, dt });
+  stepBeds(beds, { inside: !!game.room, night, wet: weather?.wet ?? 0, cloud: weather?.cloud ?? 0, hour, room: roomParts, t, dt, pos: me.position, hall });
 }
 
 // ---------- the interface makes paper sounds ----------

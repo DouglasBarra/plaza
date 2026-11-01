@@ -23,11 +23,15 @@ function plazaSpot(at, opts) {
 export function buildBeds() {
   const out = {};
 
-  // the fountain: water falling into the basin, with a plink now and then
-  const fount = plazaSpot({ x: 0, y: 1.2, z: 0 }, { ref: 4, roll: 1.4 });
-  const water = gain(0.5, fount.input);
-  noiseSource('white', filter('bandpass', 900, 0.4, filter('highpass', 250, 0.7, water)));
-  noiseSource('white', filter('bandpass', 2600, 0.8, gain(0.18, fount.input)));
+  // the fountain: water bubbling into the basin, heard from a few steps away
+  // and full by the rim; two copies of the loop, out of step, so it never repeats
+  const fount = plazaSpot({ x: 0, y: 1.2, z: 0 }, { ref: 6, max: 26 });
+  for (const [rate, off] of [[1, 0], [0.93, 2.7]]) {
+    const s = A.ctx.createBufferSource();
+    s.buffer = A.water; s.loop = true; s.playbackRate.value = rate;
+    s.connect(filter('lowpass', 3800, 0.5, gain(0.5, fount.input)));
+    s.start(0, off);
+  }
   out.fountain = fount;
 
   // the town: a low murmur of people that drifts up and down
@@ -43,7 +47,7 @@ export function buildBeds() {
 
   // rain on the paving
   const rain = gain(0, A.plaza);
-  noiseSource('white', filter('highpass', 700, 0.5, filter('lowpass', 6500, 0.5, rain)));
+  noiseSource('white', filter('highpass', 500, 0.5, filter('lowpass', 3200, 0.5, rain)));
   out.rain = rain;
 
   // the room you're in, rebuilt each time you go in
@@ -58,11 +62,11 @@ export function buildRoom(room) {
   const parts = { sources: [], ticks: [], kind: room.id, timers: { coin: rnd(4, 9), page: rnd(6, 14), crackle: 0 } };
   for (const s of room.sounds || []) {
     if (s.kind === 'fire') {
-      const p = spot(s.at, A.room, { ref: 1.6, roll: 1.5 });
+      const p = spot(s.at, A.room, { ref: 1.2, max: 10 });
       parts.sources.push(noiseSource('brown', filter('lowpass', 380, 0.7, gain(0.35, p))));
       parts.fire = p;
     } else if (s.kind === 'clock') {
-      parts.clock = spot(s.at, A.room, { ref: 1.4, roll: 1.6 });
+      parts.clock = spot(s.at, A.room, { ref: 1, max: 8 });
     } else if (s.kind === 'hush') {
       parts.sources.push(noiseSource('brown', filter('lowpass', 160, 0.6, gain(0.12, A.room))));
       parts.echo = true;
@@ -82,53 +86,51 @@ export function stepBeds(b, st) {
   const ctx = A.ctx, t = ctx.currentTime, T = b.timers;
   // the door: open air, or the plaza through the walls
   ease(A.plazaLow.frequency, st.inside ? 650 : 20000, t, 0.15);
-  ease(A.plaza.gain, st.inside ? 0.45 : 1, t, 0.15);
+  ease(A.plaza.gain, st.inside ? 0.3 : 1, t, 0.15);
   ease(b.fountain.near.gain, st.inside ? 0 : 1, t, 0.1);
-  ease(b.fountain.far.gain, st.inside ? 0.12 : 0, t, 0.1);
+  ease(b.fountain.far.gain, st.inside ? 0.04 : 0, t, 0.1);
   // the bank's echo
   const echo = !!st.room?.echo;
   ease(A.verbSend.gain, echo ? 0.6 : 0, t, 0.2);
   ease(A.fxVerb.gain, echo ? 0.35 : 0, t, 0.2);
 
   // the town, the wind, the rain
-  const busy = st.night ? 0.02 : 0.07;
+  const busy = st.night ? 0.008 : 0.025;   // barely there: the town is far off
   ease(b.murmur.gain, busy * (0.75 + 0.25 * Math.sin(st.t * 0.13) * Math.sin(st.t * 0.31)) * (1 - st.wet * 0.5), t, 1);
-  ease(b.wind.gain, 0.01 + st.cloud * 0.05, t, 1.5);
+  ease(b.wind.gain, 0.004 + st.cloud * 0.03, t, 1.5);
   ease(b.windF.frequency, 260 + 260 * (0.5 + 0.5 * Math.sin(st.t * 0.21) * Math.sin(st.t * 0.07)), t, 0.8);
-  ease(b.rain.gain, st.wet * 0.32, t, 1.2);
+  ease(b.rain.gain, st.wet * 0.22, t, 1.2);
 
   const dt = st.dt;
-  // the fountain plinks
-  if ((T.plink -= dt) < 0) {
-    T.plink = rnd(0.15, 0.6);
-    const s = ctx.createOscillator(), g = gain(0, b.fountain.input);
-    s.frequency.value = rnd(1400, 3200);
-    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.025, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
-    s.connect(g); s.start(t); s.stop(t + 0.12);
-  }
   // drips when it rains
   if (st.wet > 0.05 && (T.drip -= dt) < 0) {
     T.drip = rnd(0.05, 0.4) / st.wet;
     const s = ctx.createOscillator(), g = gain(0, A.plaza), p = ctx.createStereoPanner();
     p.pan.value = rnd(-0.9, 0.9); p.connect(g);
     s.frequency.setValueAtTime(rnd(1800, 3500), t); s.frequency.exponentialRampToValueAtTime(rnd(900, 1500), t + 0.05);
-    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.03, t + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.018, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
     s.connect(p); s.start(t); s.stop(t + 0.1);
   }
   // birds by day (fewer in the rain), crickets at night
   if (!st.night && (T.bird -= dt) < 0) {
     T.bird = rnd(1.5, 5) * (1 + st.wet * 4);
-    if (st.wet < 0.7) birdSong(t, rnd(-0.9, 0.9));
+    if (st.wet < 0.7) birdSong(t, around(st.pos, 4, 16));
   }
   if (st.night && (T.cricket -= dt) < 0) {
     T.cricket = rnd(0.5, 1.1);
-    cricket(t, rnd(-0.8, 0.8));
+    cricket(t, around(st.pos, 3, 12));
   }
   // a tram bell far off in the town
-  if ((T.tram -= dt) < 0) { T.tram = rnd(40, 100); VOICES.tram(t, gain(0.6, A.plaza)); }
+  // (out on the streets past the square, so you hear it near the edges)
+  if ((T.tram -= dt) < 0) {
+    T.tram = rnd(30, 70);
+    const a = rnd(0, Math.PI * 2);
+    VOICES.tram(t, gain(0.7, spot({ x: Math.cos(a) * 44, y: 2, z: Math.sin(a) * 44 }, A.plaza, { ref: 6, max: 34 })));
+  }
   // the hour, struck on the town hall's bell
   const h = Math.floor(st.hour);
-  if (lastHour != null && h !== lastHour) VOICES.hour(t, gain(0.9, A.plaza), { strikes: h % 12 || 12 });
+  // (the one sound that carries across the whole square)
+  if (lastHour != null && h !== lastHour) VOICES.hour(t, gain(0.9, st.inside ? A.plaza : spot(st.hall, A.plaza, { ref: 14, max: 90 })), { strikes: h % 12 || 12 });
   lastHour = h;
 
   // the room you're in
@@ -151,17 +153,21 @@ export function stepBeds(b, st) {
     }
     if (R.echo && R.spots.length) {
       // the bank at work: coins counted, a page turned, somewhere across the hall
-      if ((R.timers.coin -= dt) < 0) { R.timers.coin = rnd(7, 16); VOICES.coins(t, gain(0.6, spot(pick(R.spots), A.room, { ref: 2 }))); }
-      if ((R.timers.page -= dt) < 0) { R.timers.page = rnd(8, 18); VOICES.pageTurn(t, gain(0.8, spot(pick(R.spots), A.room, { ref: 2 }))); }
+      if ((R.timers.coin -= dt) < 0) { R.timers.coin = rnd(7, 16); VOICES.coins(t, gain(0.6, spot(pick(R.spots), A.room, { ref: 1.5, max: 14 }))); }
+      if ((R.timers.page -= dt) < 0) { R.timers.page = rnd(8, 18); VOICES.pageTurn(t, gain(0.8, spot(pick(R.spots), A.room, { ref: 1.5, max: 14 }))); }
     }
   }
 }
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
+// somewhere in the trees and eaves around you
+function around(pos, near, far) {
+  const a = rnd(0, Math.PI * 2), r = rnd(near, far);
+  return { x: pos.x + Math.cos(a) * r, y: rnd(2, 7), z: pos.z + Math.sin(a) * r };
+}
 
 // a short phrase: a few quick whistles, rising and falling
-function birdSong(t, pan) {
-  const ctx = A.ctx, p = ctx.createStereoPanner(), g = gain(0.5, A.plaza);
-  p.pan.value = pan; p.connect(g);
+function birdSong(t, at) {
+  const ctx = A.ctx, p = gain(0.6, spot(at, A.plaza, { ref: 3, max: 20 }));
   const base = rnd(2600, 4200), n = 2 + Math.floor(Math.random() * 5);
   let s = t;
   for (let i = 0; i < n; i++) {
@@ -174,9 +180,8 @@ function birdSong(t, pan) {
   }
 }
 // three quick chirps, each a buzz of pulses
-function cricket(t, pan) {
-  const ctx = A.ctx, p = ctx.createStereoPanner(), g = gain(0.4, A.plaza);
-  p.pan.value = pan; p.connect(g);
+function cricket(t, at) {
+  const ctx = A.ctx, p = gain(0.5, spot(at, A.plaza, { ref: 2, max: 14 }));
   const f = rnd(4200, 4800);
   for (let c = 0; c < 3; c++) {
     const s = t + c * 0.11, o = ctx.createOscillator(), e = gain(0, p);
