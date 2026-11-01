@@ -38,7 +38,7 @@ export function fountainWater(p) {
     const a = (i / 8) * Math.PI * 2;
     const at = (r, y) => new THREE.Vector3(Math.cos(a) * r, y, Math.sin(a) * r);
     const curve = new THREE.CatmullRomCurve3([at(0.85, 2.08), at(1.15, 2.3), at(1.5, 1.6), at(1.75, 0.56)]);
-    mesh(new THREE.TubeGeometry(curve, 20, 0.03, 5), M.white, 0, 0, 0, p).castShadow = false;
+    mesh(new THREE.TubeGeometry(curve, 20, 0.045, 6), M.white, 0, 0, 0, p).castShadow = false;
     arcs.push(curve);
   }
   const jet = new THREE.CatmullRomCurve3([new THREE.Vector3(0, 2.45, 0), new THREE.Vector3(0, 3.0, 0), new THREE.Vector3(0.05, 3.1, 0)]);

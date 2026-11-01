@@ -131,7 +131,7 @@ export function placeFinds(world, buildings, P) {
   at('ideas').add(register('rooster', 'The morning rooster', 'Before noon, someone crows on the workshop roof.', rooster, () => new Date().getHours() < 12));
 
   const owl = bird({ owl: true });
-  owl.position.set(7, 3.05, 0);
+  owl.position.set(P.owlLamp.x, 3.05, P.owlLamp.z); // on top of a street lamp
   world.add(register('owl', 'The night owl', 'At night, someone keeps watch from a street lamp.', owl, () => isNight()));
 
   const f = frog();

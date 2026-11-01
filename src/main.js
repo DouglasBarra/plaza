@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { InkRenderer, applyTheme, THEMES, portalMaterial } from './ink.js';
-import { buildPlaza, animateFolks, PLAZA_HALF } from './world.js';
+import { buildPlaza, animateFolks, PLAZA_HALF, PLAZA } from './world.js';
 import { skipND, setNight } from './life.js';
 import { buildTown } from './town.js';
 import { Avatar } from './avatar.js';
@@ -44,6 +44,8 @@ const plazaLights = { ambient, sun };
 const { buildings, colliders } = buildPlaza(plazaScene);
 const town = buildTown(plazaScene);
 const me = new Avatar(plazaScene, colliders, PLAZA_HALF);
+// inside the bollards of the rectangular square
+me.bounds = { minX: -PLAZA.hx + 1.2, maxX: PLAZA.hx - 1.2, minZ: -PLAZA.hz + 1.2, maxZ: PLAZA.hz - 1.2 };
 const plazaBounds = { ...me.bounds };
 ink.skipND = skipND;           // one shared list: things built later (a room's glass) join it too
 
