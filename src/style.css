@@ -219,3 +219,30 @@ body { background: var(--ground); color: var(--ink); font-family: var(--font-bod
 body.editing .hint, body.editing .prompt { display: none; }
 .layout-toggle { position: fixed; left: var(--space-6); bottom: 104px; z-index: 4; }
 body.editing .layout-toggle { display: none; }
+
+/* ---------- Finance district ---------- */
+.fi-lead { margin: 0 0 var(--space-4); font-size: 17px; line-height: 26px; }
+.fi-steps { margin: 0 0 var(--space-4); padding-left: 22px; line-height: 24px; }
+.fi-steps li { margin-bottom: var(--space-2); }
+.pz-panel a.pz-btn { text-decoration: none; }
+.fi-error { margin: 0 0 var(--space-3); padding: var(--space-2) var(--space-3); border: 2px dashed var(--alert); border-radius: var(--radius-m); color: var(--alert); font-size: 14px; overflow-wrap: anywhere; }
+.fi-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); margin: var(--space-3) 0; }
+.fi-card { display: flex; flex-direction: column; gap: 4px; padding: var(--space-3); border: var(--stroke-ink) solid var(--ink); border-radius: var(--radius-m); background: var(--surface); }
+.fi-card span { font-family: var(--font-hand); font-size: 16px; color: var(--ink-muted); }
+.fi-card b { font: 600 17px var(--font-mono); overflow-wrap: anywhere; }
+.fi-amt { flex: none; text-align: right; font: 15px var(--font-mono); white-space: nowrap; }
+.fi-amt small, .row .t small { display: block; font: 12px var(--font-mono); color: var(--ink-muted); }
+.row .t small { font-family: var(--font-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fi-in { color: var(--pz-a-ink); }
+.fi-tx .when { width: 52px; flex: none; }
+.fi-bars { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-2); }
+.fi-bar { display: grid; grid-template-columns: 9em 1fr auto; align-items: center; gap: var(--space-2); font-size: 14px; }
+.fi-bar-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fi-bar-track { height: 12px; border: 2px solid var(--ink); border-radius: var(--radius-pill); overflow: hidden; }
+.fi-bar-track span { display: block; height: 100%; background: var(--pz-a); }
+.fi-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: var(--space-4); font-size: 14px; color: var(--ink-muted); }
+.fi-foot > span { flex: 1; min-width: 8em; font-family: var(--font-hand); font-size: 17px; }
+.fi-foot .pz-btn { height: 36px; font-size: 16px; }
+.fi-link { background: none; border: 0; padding: 0; font: inherit; color: var(--ink-muted); text-decoration: underline; cursor: pointer; }
+.fi-link:hover { color: var(--ink); }
+@media (max-width: 520px) { .fi-cards { grid-template-columns: 1fr; } .fi-bar { grid-template-columns: 6em 1fr auto; } }

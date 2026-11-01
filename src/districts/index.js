@@ -5,6 +5,7 @@
 //   mount(el, ctx) -> unmount             draws the district's app in the panel
 // Adding a district = writing one of these and putting it in DISTRICTS.
 import { todos } from './todos.js';
+import { finance } from './finance.js';
 
 // Placeholder district with static sample rows, until its real app exists.
 function sample({ id, name, key, title, status, count = 0, items = [], note }) {
@@ -27,8 +28,7 @@ function sample({ id, name, key, title, status, count = 0, items = [], note }) {
 
 export const DISTRICTS = {
   todo: todos,
-  finance: sample({ id: 'finance', name: 'Finance', key: '2', title: 'This month', status: 'Rent due Nov 3', count: 1,
-    items: [['Rent', '−2.100,00'], ['Groceries', '−486,20'], ['Salary', '+7.900,00'], ['Internet', 'Paid', 'done']] }),
+  finance,
   study: sample({ id: 'study', name: 'Study', key: '3', title: 'Reading list', status: 'Chapter 4 · 40%',
     items: [['Cloud Computing, ch. 4', '40%'], ['TCC draft: methodology', 'Fri'], ['Japanese flashcards', '20 left']] }),
   ideas: sample({ id: 'ideas', name: 'Ideas', key: '4', title: 'Idea box', status: '12 ideas',

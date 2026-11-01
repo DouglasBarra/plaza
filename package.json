@@ -12,6 +12,7 @@
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "three": "^0.170.0"
   },
   "devDependencies": {

@@ -9,12 +9,16 @@ import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openDb } from './db.js';
+import { finance } from './finance.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const DEV = !process.argv.includes('--prod');
 const PORT = Number(process.env.PORT || (DEV ? 5173 : 4174));
 const HOST = '127.0.0.1';
 const db = openDb(process.env.PLAZA_DB || join(ROOT, 'data', 'plaza.db'));
+// logins come back to whichever port this server answers on
+const ports = [...new Set([PORT, 5173, 4174])];
+const districts = [finance(db, ports)];
 
 // ---------- the API ----------
 const KEY = /^[\w.-]{1,100}$/;
@@ -59,6 +63,7 @@ async function api(req, res) {
       return send(res, 400, { error: String(e.message || e) }), true;
     }
   }
+  for (const handle of districts) if (await handle(req, res, url, PORT)) return true;
   return send(res, 404, { error: 'not found' }), true;
 }
 

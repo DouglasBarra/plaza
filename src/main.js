@@ -18,6 +18,7 @@ import { DISTRICTS } from './districts/index.js';
 import { refreshSigns, placeLabels } from './ui/labels.js';
 import { refreshFinds } from './ui/finds-card.js';
 import { showTip } from './ui/hall-cards.js';
+import { openApp } from './ui/card.js';
 import { placeSpeech } from './ui/speech.js';
 import './ui/toggles.js';
 
@@ -29,6 +30,13 @@ refreshSigns();
 refreshFinds();
 // dates roll over at midnight; refresh the signs every minute
 setInterval(refreshSigns, 60_000);
+
+// ?district=finance opens that district's app (the bank login comes back this way)
+const asked = new URLSearchParams(location.search).get('district');
+if (asked && DISTRICTS[asked]) {
+  history.replaceState(null, '', location.pathname + location.search.replace(/[?&]district=[^&]*/, '').replace(/^&/, '?'));
+  openApp(asked);
+}
 
 // the dev handle exists in development and in the end-to-end tests' build (--mode test)
 if (import.meta.env.DEV || import.meta.env.MODE === 'test') {

@@ -17,6 +17,16 @@ Then open http://localhost:5173. This starts Plaza's own small server (`server/`
 
 Your data is the `data/` folder: back it up or copy it to move Plaza to another Mac. Data saved in the browser before the server existed is moved over the first time the page loads with the server running, and the browser keeps a copy of everything as a fallback. Without the server (for example `vite preview`), Plaza still works from that browser copy.
 
+## Connect your banks
+
+The Finance district (the bank) reads your Brazilian bank accounts through [Banco MCP](https://banco.mcp.ai), which uses Open Finance Brasil. It can only read: there's no way to move money from Plaza.
+
+1. Run Plaza (`npm run dev`) and open **Finance** (press <kbd>2</kbd>).
+2. **Log in to Banco** takes you to mcp.ai, then back to Plaza.
+3. **Connect a bank** opens Banco's page, where you give each bank its Open Finance consent. Then press **Sync**.
+
+Plaza's server does the talking (`server/finance.js`, through `server/mcp.js`): the login is kept in `data/plaza.db` and never reaches the page. It syncs accounts, a year of transactions and card bills into the same file when it starts, every six hours, and when you press Sync. Set `BANCO_MCP_URL` to use another Banco address.
+
 ## Test it
 
 End-to-end tests drive the real app in Chromium with [Playwright](https://playwright.dev). They build the app, serve it with `vite preview`, and play it: the dock and shortcuts, walking into the town hall, the clerk's typewriter, tearing a note off the board, an empty lot, and the ToDos app itself.
@@ -62,8 +72,8 @@ Three.js with Vite, no framework yet.
 | `src/kit.js`, `src/details.js`, `src/decor.js` | Building blocks: materials and shapes, windows, doors and signs, furniture |
 | `src/folks.js`, `src/life.js`, `src/finds.js` | Folks and their poses, small motion (smoke, swaying, lamps), the hidden finds |
 | `src/avatar.js` | You: walking, collisions, doors |
-| `src/districts/` | Each district's app (`todos.js` is the first real one) |
-| `server/` | Plaza's server on this Mac: serves the page and keeps your data in SQLite (`db.js`); later, where other apps, MCP servers and Claude connect |
+| `src/districts/` | Each district's app: ToDos (`todos.js`) and Finance (`finance.js`) are real, the rest show sample data |
+| `server/` | Plaza's server on this Mac: serves the page and keeps your data in SQLite (`db.js`), logs in to remote MCP servers (`mcp.js`) and syncs your banks from Banco for Finance (`finance.js`) |
 | `src/store.js` | Saving district data: on the server, with a copy in the browser |
 | `src/layout.js`, `src/layout.json` | Movable pieces and where the layout editor (`src/app/editor.js`) put them |
 | `src/models.js` | Swapping code-built objects for hand-made Blender or Blockbench models (see `public/models/README.md`) |
