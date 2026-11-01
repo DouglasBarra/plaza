@@ -2,6 +2,24 @@
 
 State at handoff: `main` has everything finished in the last session (see `git log`). The session ran out of budget while six helper agents were improving the scenery. Their work is saved, **unreviewed and not merged**, on `wip/*` branches on GitHub. This file is what the next session needs to pick it up. Delete it once everything below is done.
 
+## 0. Quick start (do these in order, one at a time)
+
+Each step: do it, check it, commit, push. Stop and report if a step fails twice.
+
+1. `npm install && npx playwright install chromium && npm run test:e2e`. All 17 must pass.
+2. Reproduce the south-entrance crash (section 3) with `npm run dev` and a Playwright script. Fix it if it's real.
+3. Merge one branch at a time, in this order: `wip/props`, `wip/foodtruck`, `wip/birds`, `wip/mountains`, `wip/urban`, `wip/fountain`:
+   ```bash
+   git fetch origin && git merge origin/wip/props
+   ```
+   - For `wip/fountain`, rebase it onto `main` before merging: `git checkout -b fountain origin/wip/fountain && git rebase main`.
+   - Resolve any conflicts by keeping both sides' blocks in `src/plaza/index.js`.
+   - Then `npx vite build && npm run test:e2e`, and commit.
+4. After merging the fountain and food-truck branches, delete `fountain()`, `cafe()` and `stall()` from `src/plaza/props.js`, plus any imports that become unused.
+5. Push to `main`, then delete this file.
+
+Don't run several browsers at once: the machine overloads and crashes. Keep the ink style: white/gray surfaces, black lines, color only as tiny accents.
+
 ## 1. Last commits on `main` not covered by a test run
 
 These were checked in the browser but the end-to-end suite (`npm run test:e2e`) was not run after them:
