@@ -164,14 +164,14 @@ export function poseFigure(fig, pose, frame, seat = 0.5) {
         arm(s, 0.12, -0.2); arm(o, -0.12, -0.3);
         body.position.y = 0.035;
       }
-      body.rotation.x = 0.05;
-      head.rotation.x = -0.04;
+      body.rotation.x = 0.03;
+      head.rotation.x = -0.02;
       break;
     }
     case 'run': {
       // 0, 2: contact; 1, 3: in the air, one knee driven up, the other heel
       // kicked back. Leaning in, arms bent and pumping.
-      const s = k < 2 ? 0 : 1, o = 1 - s, lean = 0.22;
+      const s = k < 2 ? 0 : 1, o = 1 - s, lean = 0.12;
       if (k % 2 === 0) {
         leg(s, -0.62 - lean, 0.3); leg(o, 0.55 - lean, 0.85);
         arm(s, 0.55, -1.25); arm(o, -0.7, -1.45);

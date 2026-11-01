@@ -152,8 +152,8 @@ export class Avatar {
       let yaw = h - this.prevHeading;
       yaw = Math.atan2(Math.sin(yaw), Math.cos(yaw)) / dt;
       const ease = 1 - Math.exp(-10 * dt);
-      this.lean += (THREE.MathUtils.clamp(accel * 0.02, -0.12, 0.15) - this.lean) * ease;
-      this.bank += (THREE.MathUtils.clamp(-yaw * speed * 0.02, -0.18, 0.18) - this.bank) * ease;
+      this.lean += (THREE.MathUtils.clamp(accel * 0.008, -0.05, 0.05) - this.lean) * ease;
+      this.bank += (THREE.MathUtils.clamp(-yaw * speed * 0.006, -0.06, 0.06) - this.bank) * ease;
       this.prevVel.copy(this.vel);
       this.prevHeading = h;
     }
