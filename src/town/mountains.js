@@ -295,17 +295,35 @@ export function buildMountains(town) {
 
   function buildRange(L) {
     const { rows, cols } = L;
-    const P = [], snow = [];
+    const P = [], snow = [], rhos = [];
+    const at = (i, j) => i * cols + ((j + cols) % cols);
+    const H = new Float32Array((rows + 1) * cols);
     for (let i = 0; i <= rows; i++) {
       const rho = L.r0 + (L.r1 - L.r0) * Math.pow(i / rows, L.bunch);
+      rhos.push(rho);
       for (let j = 0; j < cols; j++) {
         const a = (j / cols) * TAU, x = Math.cos(a) * rho, z = Math.sin(a) * rho;
-        const pr = probe(L, x, z);
-        P.push(x, GROUND_Y - 1.2 + pr.h, z);
-        snow.push(snowAt(L, x, z, pr));
+        H[at(i, j)] = rangeHeight(L, x, z);
+        P.push(x, GROUND_Y - 1.2 + H[at(i, j)], z);
       }
     }
-    const at = (i, j) => i * cols + (j % cols);
+    // slope, facing and hollowness from the neighbours on the grid
+    for (let i = 0; i <= rows; i++) {
+      const i0 = Math.max(0, i - 1), i1 = Math.min(rows, i + 1), ds = (rhos[i] * TAU) / cols;
+      for (let j = 0; j < cols; j++) {
+        const h = H[at(i, j)], hl = H[at(i, j - 1)], hn = H[at(i, j + 1)];
+        const hr = (H[at(i1, j)] - H[at(i0, j)]) / (rhos[i1] - rhos[i0]), ht = (hn - hl) / (2 * ds);
+        let hollow = (hn + hl - 2 * h) / (ds * ds);
+        if (i > 0 && i < rows) {
+          const d0 = rhos[i] - rhos[i - 1], d1 = rhos[i + 1] - rhos[i];
+          hollow += (2 * (d0 * H[at(i + 1, j)] - (d0 + d1) * h + d1 * H[at(i - 1, j)])) / (d0 * d1 * (d0 + d1));
+        }
+        const a = (j / cols) * TAU, ca = Math.cos(a), sa = Math.sin(a);
+        const gx = hr * ca - ht * sa, gz = hr * sa + ht * ca, len = Math.hypot(gx, 1, gz);
+        const pr = { h, ny: 1 / len, sun: (SUN.y - gx * SUN.x - gz * SUN.z) / len, hollow };
+        snow.push(snowAt(L, ca * rhos[i], sa * rhos[i], pr));
+      }
+    }
     const y = (v) => P[v * 3 + 1];
     // where a gully's snow ends: split triangles along the snow line, so the
     // snowfields follow the ground instead of the grid
@@ -334,11 +352,11 @@ export function buildMountains(town) {
       if (n.y < 0) { [b, c] = [c, b]; n.negate(); }
       n.normalize();
       const kind = L.classify(n.y, (y(a) + y(b) + y(c)) / 3 - GROUND_Y + 1.2, n.dot(SUN));
-      const vs = [a, b, c], on = vs.map((v) => snow[v] > 0), count = on.filter(Boolean).length;
+      const sa = snow[a] > 0, sb = snow[b] > 0, sc = snow[c] > 0, count = sa + sb + sc;
       if (count === 0 || count === 3) { emit(a, b, c, count ? 'snow' : kind); return; }
       // the odd one out first, keeping the winding
-      const o = on.findIndex((s) => s === (count === 1));
-      const [v0, v1, v2] = [vs[o], vs[(o + 1) % 3], vs[(o + 2) % 3]];
+      const odd1 = count === 1;
+      const [v0, v1, v2] = sa === odd1 ? [a, b, c] : sb === odd1 ? [b, c, a] : [c, a, b];
       const m01 = edgePoint(v0, v1), m02 = edgePoint(v0, v2);
       const odd = count === 1 ? 'snow' : kind, rest = count === 1 ? kind : 'snow';
       emit(v0, m01, m02, odd);
@@ -358,12 +376,12 @@ export function buildMountains(town) {
     const fn = new Float32Array(nf * 3), fa = new Float32Array(nf * 3);
     const deg = new Uint32Array(nv + 1);
     for (let f = 0; f < nf; f++) {
-      const [a, b, c] = [faces[f * 3], faces[f * 3 + 1], faces[f * 3 + 2]];
+      const a = faces[f * 3], b = faces[f * 3 + 1], c = faces[f * 3 + 2];
       pos(a, n); pos(b, e1).sub(n); pos(c, e2).sub(n);
       n.crossVectors(e1, e2);
-      fa.set([n.x, n.y, n.z], f * 3);
+      fa[f * 3] = n.x; fa[f * 3 + 1] = n.y; fa[f * 3 + 2] = n.z;
       n.normalize();
-      fn.set([n.x, n.y, n.z], f * 3);
+      fn[f * 3] = n.x; fn[f * 3 + 1] = n.y; fn[f * 3 + 2] = n.z;
       deg[a + 1]++; deg[b + 1]++; deg[c + 1]++;
     }
     for (let v = 0; v < nv; v++) deg[v + 1] += deg[v];
@@ -381,7 +399,8 @@ export function buildMountains(town) {
           x += fa[g * 3]; yy += fa[g * 3 + 1]; z += fa[g * 3 + 2];
         }
         n.set(x, yy, z).normalize().addScaledVector(SUN, L.flat).normalize();
-        cornerN.set([n.x, n.y, n.z], (f * 3 + k) * 3);
+        const o = (f * 3 + k) * 3;
+        cornerN[o] = n.x; cornerN[o + 1] = n.y; cornerN[o + 2] = n.z;
       }
     }
 
@@ -389,19 +408,20 @@ export function buildMountains(town) {
     // folds in them; flatter ground is mapped from above
     const circ = Math.round((TAU * L.crest) / 48) * 48;
     const kindsOf = Object.keys(L.mats).filter((k) => k !== 'snow' || !L.snowApart);
+    const facesOf = {};
+    kinds.forEach((kind, f) => (facesOf[kind] ||= []).push(f));
     const build = (wanted) => {
       const p = [], nn = [], uv = [], groups = [];
       wanted.forEach((kind, gi) => {
-        const start = p.length / 3;
-        for (let f = 0; f < nf; f++) {
-          if (kinds[f] !== kind) continue;
+        const start = p.length / 3, strata = /^(rock|cliff)/.test(kind);
+        for (const f of facesOf[kind] || []) {
           const a0 = Math.atan2(P[faces[f * 3] * 3 + 2], P[faces[f * 3] * 3]);
           for (let k = 0; k < 3; k++) {
             const v = faces[f * 3 + k], x = P[v * 3], yv = P[v * 3 + 1], z = P[v * 3 + 2];
             const a = a0 + wrapAngle(Math.atan2(z, x) - a0), u = (a / TAU) * circ;
             p.push(x, yv, z);
             nn.push(cornerN[(f * 3 + k) * 3], cornerN[(f * 3 + k) * 3 + 1], cornerN[(f * 3 + k) * 3 + 2]);
-            uv.push(u, /^(rock|cliff)/.test(kind) ? yv + 0.3 * x + 0.12 * z + 10 * noise(x / 70, z / 70, L.s) : Math.hypot(x, z));
+            uv.push(u, strata ? yv + 0.3 * x + 0.12 * z + 10 * noise(x / 70, z / 70, L.s) : Math.hypot(x, z));
           }
         }
         groups.push([start, p.length / 3 - start, gi]);
