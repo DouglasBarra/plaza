@@ -40,4 +40,6 @@ export default defineConfig({
   plugins: [layoutEditor()],
   // src/store.js waits for the server's data at the top level
   build: { target: 'es2022' },
+  // other sessions' worktrees and the database change all the time: don't reload for them
+  server: { watch: { ignored: ['**/.claude/**', '**/data/**'] } },
 });
