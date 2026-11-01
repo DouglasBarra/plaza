@@ -5,6 +5,7 @@ import { swapModel } from './models.js';
 import { placeFinds, animateFinds } from './finds.js';
 import { fountainWater, steam, sway, swingSign, leaves, lampLight, skipND, nightOnly, animateLife } from './life.js';
 import { addFolk, folk, animateFigures } from './folks.js';
+import { W, D, T, F, TOP, DOOR, HOLES } from './hall.js';
 import { fancyWindow, door, signBoard, clockHands, updateClocks, ridge, chimney, statue, scaffold, crane, animateCranes, billboard } from './details.js';
 
 export const beams = [];
@@ -18,39 +19,85 @@ function groundTile(p, size, top) {
 // ---------- buildings ----------
 // Night-only things (the lighthouse beam); main.js toggles them with the theme.
 
+// The town hall, outside: the same building as the inside (hall.js), two
+// floors tall, with every window where the inside has one and the same door.
+const HALL_BASE = TILE;               // the plinth's top: the ground floor stands here
+export const HALL_SIZE = { w: W + T * 2, d: D + T * 2 }; // outer walls
+
 function townHall() {
   const g = new THREE.Group();
-  groundTile(g, 6, M.grass);
-  const T = TILE;
-  box(g, 5, 3, 3.6, M.bricks, 0, T + 1.5, 0);
-  gable(g, 5.5, 1.6, 4.0, M.shingles, T + 3);
-  ridge(g, 0, T + 4.62, 0, 4.1);
-  chimney(g, 1.6, T + 3.9, -1.1);
-  box(g, 1.6, 3.2, 1.6, M.bricks, 0, T + 3 + 1.6, -0.6);
-  box(g, 1.8, 0.12, 1.8, M.white, 0, T + 6.26, -0.6);
-  const roof = mesh(new THREE.ConeGeometry(1.35, 1.7, 4), M.shingles, 0, T + 6.2 + 0.85, -0.6, g);
-  roof.rotation.y = Math.PI / 4;
-  // the clock tells the real time
-  const clock = mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.06, 24), [M.white, M.clock, M.white], 0, T + 5.3, -0.6 + 0.83, g);
-  clock.rotation.x = Math.PI / 2;
-  cyl(g, 0.6, 0.6, 0.04, M.white, 0, T + 5.3, -0.6 + 0.81, 24).rotation.x = Math.PI / 2;
-  clockHands(g, 0, T + 5.3, -0.6 + 0.88, 0.5);
-  // flag on the tower: the ToDos stamp
-  cyl(g, 0.04, 0.04, 1.3, M.white, 0, T + 7.9 + 0.5, -0.6);
-  const flag = box(g, 0.7, 0.4, 0.04, stamp.todo, 0.37, T + 8.1, -0.6);
-  // door, awning (stamp) and sign
-  door(g, 0, T, 1.82, 0.95, 1.6, M.planks, { step: true });
-  const awning = box(g, 1.7, 0.08, 0.8, stamp.todo, 0, T + 1.95, 2.15);
-  awning.rotation.x = 0.35;
-  signBoard(g, 0, T + 2.6, 1.84, 1.9, 0.42, 'Town Hall');
-  for (const x of [-1.7, 1.7]) fancyWindow(g, x, T + 2.0, 1.82, 0.6, 0.85, 0, { shutters: true, flowers: 'white' });
-  for (const x of [-1.7, -0.6, 0.6, 1.7]) fancyWindow(g, x, T + 2.0, -1.82, 0.5, 0.8, Math.PI);
-  for (const z of [-0.8, 0.8]) {
-    fancyWindow(g, 2.52, T + 1.9, z, 0.5, 0.8, Math.PI / 2, { curtains: true });
-    fancyWindow(g, -2.52, T + 1.9, z, 0.5, 0.8, -Math.PI / 2, { curtains: true });
+  const T0 = HALL_BASE, OW = W + T * 2, OD = D + T * 2;
+  const wallTop = T0 + TOP + 0.2;
+
+  // plinth, with a ring of paving around the walls
+  slab(g, OW + 1.0, T0, OD + 1.0, M.paving, M.stone, 0, T0 / 2, 0);
+
+  // walls: one solid block, banded between the floors, with corner stones
+  box(g, OW, TOP + 0.2, OD, M.bricks, 0, T0 + (TOP + 0.2) / 2, 0);
+  box(g, OW + 0.28, 0.2, OD + 0.28, M.white, 0, T0 + F, 0);               // string course between floors
+  box(g, OW + 0.9, 0.34, OD + 0.9, M.white, 0, wallTop + 0.1, 0);        // cornice
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    box(g, 0.8, TOP + 0.2, 0.8, M.stone, sx * (OW / 2 - 0.2), T0 + (TOP + 0.2) / 2, sz * (OD / 2 - 0.2));
   }
+
+  // roof: a long gable, its ridge running front to back, with chimneys
+  const roofBase = wallTop + 0.27, roofH = 3.7, roofW = OW + 1.5;
+  gable(g, roofW, roofH, OD + 1.5, M.shingles, roofBase);
+  ridge(g, 0, roofBase + roofH, 0, OD + 1.6);
+  const roofY = (x) => roofBase + roofH * (1 - Math.abs(x) / (roofW / 2));
+  for (const [cx, cz] of [[-4.6, -2.6], [4.6, -2.6]]) chimney(g, cx, roofY(cx) + 0.9, cz, 0.7, 2.6);
+
+  // the clock tower, astride the ridge over the entrance
+  const tz = 2.3, tw = 3.4, tBase = roofBase, tH = roofH + 3.9;
+  box(g, tw, tH, tw, M.bricks, 0, tBase + tH / 2, tz);
+  box(g, tw + 0.5, 0.2, tw + 0.5, M.white, 0, tBase + tH + 0.1, tz);       // tower cornice
+  const spire = mesh(new THREE.ConeGeometry(tw * 0.82, 3.3, 4), M.shingles, 0, tBase + tH + 0.2 + 1.65, tz, g);
+  spire.rotation.y = Math.PI / 4;
+  const tip = tBase + tH + 0.2 + 3.3;
+  cyl(g, 0.05, 0.05, 2.0, M.white, 0, tip + 0.9, tz, 6);
+  const flagLow = tip + 0.55, flagHigh = tip + 1.35;
+  const flag = box(g, 1.0, 0.55, 0.05, stamp.todo, 0.52, flagLow, tz);
+  // belfry openings, and clock faces on three sides that tell the real time
+  const cr = 0.95, cy = tBase + tH - 1.5;
+  const clockFace = (x, z, rotZ, rotX, handsRot) => {
+    const f = mesh(new THREE.CylinderGeometry(cr + 0.1, cr + 0.1, 0.08, 28), [M.white, M.clock, M.white], x, cy, z, g);
+    f.rotation.set(rotX, 0, rotZ);
+    cyl(g, cr + 0.16, cr + 0.16, 0.05, M.white, x, cy, z, 28).rotation.set(rotX, 0, rotZ);
+    const hands = new THREE.Group();
+    hands.position.set(x + Math.sin(handsRot) * 0.07, cy, z + Math.cos(handsRot) * 0.07);
+    hands.rotation.y = handsRot;
+    g.add(hands);
+    clockHands(hands, 0, 0, 0, cr);
+  };
+  clockFace(0, tz + tw / 2 + 0.05, 0, Math.PI / 2, 0);
+  clockFace(tw / 2 + 0.05, tz, -Math.PI / 2, 0, Math.PI / 2);
+  clockFace(-tw / 2 - 0.05, tz, Math.PI / 2, 0, -Math.PI / 2);
+
+  // front: the door, its awning and the name; same size as the inside doorway
+  const frontZ = OD / 2;
+  door(g, 0, T0, frontZ - 0.06, DOOR.w, DOOR.h, M.planks, { step: true });
+  box(g, DOOR.w + 2.2, 0.16, 0.7, M.stone, 0, T0 + 0.08, frontZ + 0.7);  // a second, wider step
+  const awning = box(g, DOOR.w + 1.4, 0.1, 1.1, stamp.todo, 0, T0 + DOOR.h + 0.55, frontZ + 0.5);
+  awning.rotation.x = 0.32;
+  for (const sx of [-1, 1]) box(g, 0.06, 0.55, 0.06, M.white, sx * (DOOR.w / 2 + 0.55), T0 + DOOR.h + 0.2, frontZ + 0.95); // awning posts
+  signBoard(g, 0, T0 + DOOR.h + 1.75, frontZ + 0.04, 3.4, 0.6, 'Town Hall');
+
+  // windows, exactly where the inside has them
+  const win = (hole, x, y, z, rotY, lower) => fancyWindow(g, x, T0 + y, z, hole.w, hole.h, rotY, lower ? { shutters: true, flowers: 'white' } : { curtains: true });
+  for (const h of HOLES.front.lower) win(h, h.c, h.y, frontZ, 0, true);
+  for (const h of HOLES.front.upper) win(h, h.c, h.y, frontZ, 0, false);
+  for (const h of HOLES.back.lower) win(h, h.c, h.y, -frontZ, Math.PI, true);
+  for (const h of HOLES.back.upper) win(h, h.c, h.y, -frontZ, Math.PI, false);
+  for (const h of HOLES.left.lower) win(h, -OW / 2, h.y, h.c, -Math.PI / 2, true);
+  for (const h of HOLES.left.upper) win(h, -OW / 2, h.y, h.c, -Math.PI / 2, false);
+  for (const h of HOLES.right.lower) win(h, OW / 2, h.y, h.c, Math.PI / 2, true);
+  for (const h of HOLES.right.upper) win(h, OW / 2, h.y, h.c, Math.PI / 2, false);
+
   // the flag rises to the top when nothing is due (driven from main.js)
-  g.userData = { district: 'todo', labelY: 9.6, flag, flagLow: T + 8.1, flagHigh: T + 8.8, flagUp: false };
+  g.userData = {
+    district: 'todo', labelY: tip + 2.6, flag, flagLow, flagHigh, flagUp: false,
+    hall: true, roofBase, roofH, roofW, doorDist: OD / 2 + 1.9,
+  };
   return g;
 }
 
@@ -372,7 +419,10 @@ function pigeon(p, x, z) {
 }
 
 // ---------- the plaza ----------
-export const PLAZA_HALF = 16;
+export const PLAZA_HALF = 20;
+// The streets enter the plaza at the middle of each side (x = 0 on the north and
+// south, z = 0 on the east and west), 5 m wide. Nothing may block them.
+const ROAD_CLEAR = 3.4;
 
 export function buildPlaza(scene) {
   const world = new THREE.Group();
@@ -391,17 +441,28 @@ export function buildPlaza(scene) {
     b.rotation.y = rotY; // front faces the fountain
     world.add(b);
     buildings.push(b);
-    colliders.push({ x, z, r });
     const front = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), rotY);
-    b.userData.door = new THREE.Vector3(x, 0, z).addScaledVector(front, r + 0.7); // just outside its collider
+    if (b.userData.hall) {
+      // the town hall is as big as its inside: a box, not a circle
+      colliders.push({ x, z, hw: HALL_SIZE.w / 2, hd: HALL_SIZE.d / 2 + 0.05, rot: rotY });
+      b.userData.door = new THREE.Vector3(x, 0, z).addScaledVector(front, b.userData.doorDist);
+    } else {
+      colliders.push({ x, z, r });
+      b.userData.door = new THREE.Vector3(x, 0, z).addScaledVector(front, r + 0.7); // just outside its collider
+    }
   };
-  const C = 11.2;
-  place(townHall(), -C, -C);
+
+  // ---- the buildings
+  // The town hall fills the north-west, its back wall on the plaza's edge and
+  // its east end stopping short of the north street.
+  const HALL = { x: -(ROAD_CLEAR + (HALL_SIZE.w + 1) / 2), z: -H + (HALL_SIZE.d + 1) / 2 };
+  place(townHall(), HALL.x, HALL.z, 0);
+  const C = 14;
   place(bank(), C, -C);
   place(library(), -C, C);
   place(lighthouse(), C, C);
-  place(emptyPlot('projects', true), -4.8, -12.6, 0, 3.4);
-  place(emptyPlot('people'), -12.6, 4.8, Math.PI / 2, 3.4);
+  place(emptyPlot('projects', true), 5.9, -16.0, 0, 3.4);        // beside the north street
+  place(emptyPlot('people'), -17.2, 5.8, Math.PI / 2, 3.4);      // beside the west street
 
   fountain(world);
   colliders.push({ x: 0, z: 0, r: 2.9 });
@@ -409,28 +470,48 @@ export function buildPlaza(scene) {
     const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
     bench(world, Math.sin(a) * 4.6, Math.cos(a) * 4.6, a + Math.PI);
   }
-  for (const [x, z] of [[7, 0], [-7, 0], [0, 7], [0, -7]]) { lamp(world, x, z); colliders.push({ x, z, r: 0.35 }); }
-
-  // bollards along the edge: the plaza ends here, the town goes on
-  for (let s = -H + 0.6; s <= H - 0.5; s += 2.1) {
-    bollard(world, s, -H + 0.4); bollard(world, s, H - 0.4);
-    bollard(world, -H + 0.4, s); bollard(world, H - 0.4, s);
+  const hallSteps = HALL.z + HALL_SIZE.d / 2 + 0.9;               // just in front of the town hall's steps
+  for (const [x, z] of [[7, 0], [-7, 0], [0, 7], [0, -7], [HALL.x - 3.2, hallSteps], [HALL.x + 3.2, hallSteps]]) {
+    lamp(world, x, z); colliders.push({ x, z, r: 0.35 });
   }
 
-  // the free lots along the edges, waiting for future districts
-  cafe(world, 4.8, -12.6); colliders.push({ x: 4.8, z: -12.6, r: 2.3 });
-  stall(world, 12.8, -4.8, -Math.PI / 2); colliders.push({ x: 12.8, z: -4.8, r: 2 });
-  planter(world, 12.6, 3.6, 'ideas'); planter(world, 12.6, 6.2); colliders.push({ x: 12.6, z: 4.9, r: 2.2 });
-  roundTree(world, 4.2, 13, 0.9); roundTree(world, 6.3, 12.2, 0.75); colliders.push({ x: 5.2, z: 12.6, r: 1.8 });
-  bike(world, 2.8, 11.4, 0.2); bike(world, 3.4, 11.0, 0.5);
-  noticeboard(world, -4.8, 13.2, Math.PI); colliders.push({ x: -4.8, z: 13.2, r: 1.2 });
-  bench(world, -6.6, 11.6, Math.PI * 0.85);
-  mailbox(world, -2.8, 12.4, Math.PI);
-  planter(world, -13.2, -4.8, 'todo'); colliders.push({ x: -13.2, z: -4.8, r: 1.2 });
-  roundTree(world, -12.2, -7.0, 0.7);
+  // bollards along the edge: the plaza ends here, the town goes on. Gaps at the
+  // four street mouths, and none where the town hall stands on the edge.
+  const hallEdge = [HALL.x - HALL_SIZE.w / 2 - 1.2, HALL.x + HALL_SIZE.w / 2 + 1.2];
+  for (let s = -H + 0.6; s <= H - 0.5; s += 2.1) {
+    const atStreet = Math.abs(s) < ROAD_CLEAR - 0.2;
+    if (!atStreet && !(s > hallEdge[0] && s < hallEdge[1])) bollard(world, s, -H + 0.4);
+    if (!atStreet) { bollard(world, s, H - 0.4); bollard(world, -H + 0.4, s); bollard(world, H - 0.4, s); }
+  }
+
+  // ---- street furniture, kept clear of the four streets
+  const P = {
+    cafe: { x: 15.4, z: -7.4 },
+    stall: { x: 16.8, z: 7.0 },
+    flowers: { x: -17.8, z: -3.9 },
+    trees: [{ x: 6.8, z: 16.8 }, { x: 9.0, z: 16.0 }],
+    bikes: [{ x: 4.9, z: 16.2 }, { x: 5.5, z: 15.8 }],
+    board: { x: -7.6, z: 17.4 },
+    bench: { x: -10.6, z: 16.0 },
+    mailbox: { x: -4.6, z: 16.8 },
+  };
+  cafe(world, P.cafe.x, P.cafe.z); colliders.push({ x: P.cafe.x, z: P.cafe.z, r: 2.3 });
+  stall(world, P.stall.x, P.stall.z, -Math.PI / 2); colliders.push({ x: P.stall.x, z: P.stall.z, r: 2 });
+  planter(world, P.flowers.x, P.flowers.z, 'ideas'); planter(world, P.flowers.x, P.flowers.z - 1.9);
+  colliders.push({ x: P.flowers.x, z: P.flowers.z - 0.95, r: 1.7 });
+  for (const t of P.trees) roundTree(world, t.x, t.z, 0.85);
+  colliders.push({ x: 7.9, z: 16.4, r: 1.8 });
+  for (const [i, b] of P.bikes.entries()) bike(world, b.x, b.z, 0.2 + i * 0.3);
+  noticeboard(world, P.board.x, P.board.z, Math.PI); colliders.push({ x: P.board.x, z: P.board.z, r: 1.2 });
+  bench(world, P.bench.x, P.bench.z, Math.PI * 0.85);
+  mailbox(world, P.mailbox.x, P.mailbox.z, Math.PI);
+  planter(world, -17.6, -1.0 - 6.0, 'todo'); colliders.push({ x: -17.6, z: -7.0, r: 1.2 });
+  roundTree(world, HALL.x + 8.6, hallSteps + 0.6, 0.8);            // a tree by the town hall's east end
+  // a few trees to soften the open middle of the bigger plaza
+  roundTree(world, 9.6, 9.4, 0.8); roundTree(world, -9.4, 8.6, 0.75);
   for (const [x, z] of [[1.8, 3.4], [2.3, 3.0], [-3.2, -1.6], [-3.4, -2.2], [3.1, -2.6], [2.2, -3.4]]) pigeon(world, x, z);
 
-  // folks, each busy with something
+  // ---- folks, each busy with something
   const onBench = (i, side = 0) => {
     const a = (i / 4) * Math.PI * 2 + Math.PI / 4, rot = a + Math.PI;
     return { x: Math.sin(a) * 4.6 + Math.cos(rot) * side, z: Math.cos(a) * 4.6 - Math.sin(rot) * side, rot, seat: 0.5 };
@@ -439,27 +520,28 @@ export function buildPlaza(scene) {
   addFolk(world, { ...onBench(0, 0.45), pose: 'sit', look: { hair: 'bun', dress: true, height: 0.95 } });
   addFolk(world, { ...onBench(1), pose: 'nap', look: { hat: 'cap' } });
   addFolk(world, { ...onBench(3, 0.3), pose: 'sit', look: { hat: 'top', glasses: true, height: 1.08 } });
-  addFolk(world, { x: -6.6, z: 11.6, rot: Math.PI * 0.85, seat: 0.5, pose: 'read', look: { hair: 'long', item: 'paper' } });
+  addFolk(world, { x: P.bench.x, z: P.bench.z, rot: Math.PI * 0.85, seat: 0.5, pose: 'read', look: { hair: 'long', item: 'paper' } });
   addFolk(world, { x: 0, z: 2.3, rot: 0, seat: 0.6, pose: 'music', look: { hat: 'cap', item: 'guitar' } });
   addFolk(world, { x: -4.4, z: -1.2, rot: 2.14, pose: 'feed', look: { hair: 'bun', dress: true, height: 0.95 } });
-  addFolk(world, { x: 8.5, z: -8.0, rot: 0.93, pose: 'chat', look: { hair: 'long', scarf: true } });
-  addFolk(world, { x: 9.3, z: -7.4, rot: 0.93 + Math.PI, pose: 'idle', look: { hat: 'cone', backpack: true } });
-  addFolk(world, { pose: 'walk', walk: { r: 9.5, speed: 0.09 }, dog: true, look: { hat: 'cap', scarf: true } });
-  addFolk(world, { pose: 'walk', walk: { r: 7.8, speed: -0.07, offset: 2 }, look: { glasses: true, backpack: true } });
-  addFolk(world, { x: -6.5, z: -5.5, rot: 0.8, pose: 'sweep', look: { hat: 'bowler', item: 'broom' } });
-  addFolk(world, { x: 6.5, z: 9.0, rot: 2.45, pose: 'kite', kite: true, look: { hat: 'cap', height: 0.72 } });
-  addFolk(world, { x: 13.9, z: -4.8, rot: -Math.PI / 2, pose: 'vendor', look: { hat: 'cone' } });
-  addFolk(world, { x: 11.2, z: -4.3, rot: Math.PI / 2, pose: 'chat', look: { hair: 'long', dress: true } });
-  addFolk(world, { x: 2.65, z: -13.4, rot: Math.PI / 2, seat: 0.45, pose: 'sit', look: { hair: 'bun' } });
-  addFolk(world, { x: 6.95, z: -12.0, rot: -Math.PI / 2, seat: 0.45, pose: 'read', look: { glasses: true, item: 'paper' } });
-  addFolk(world, { x: -4.8, z: 12.2, rot: 0, pose: 'look', look: { hat: 'top' } });
-  addFolk(world, { x: -10.2, z: 7.6, rot: 2.2, pose: 'wave', look: { item: 'balloon', balloon: 'people', height: 0.75 } });
-  addFolk(world, { walk: { path: [[3.6, -12.2], [6.0, -13.1]], speed: 0.7 }, look: { item: 'tray', hair: 'bun' } });
-  leaves(world, 14, H - 2);
+  addFolk(world, { x: 8.5, z: -6.0, rot: 0.93, pose: 'chat', look: { hair: 'long', scarf: true } });
+  addFolk(world, { x: 9.3, z: -5.4, rot: 0.93 + Math.PI, pose: 'idle', look: { hat: 'cone', backpack: true } });
+  // walkers keep to the open ground between the fountain, the town hall and the south side
+  addFolk(world, { pose: 'walk', walk: { r: 7.0, cx: 0, cz: 3.5, speed: 0.09 }, dog: true, look: { hat: 'cap', scarf: true } });
+  addFolk(world, { pose: 'walk', walk: { path: [[-7, 9.4], [5, 9.4]], speed: 0.8 }, look: { glasses: true, backpack: true } });
+  addFolk(world, { x: HALL.x + 3.4, z: hallSteps + 1.4, rot: 0.8, pose: 'sweep', look: { hat: 'bowler', item: 'broom' } });
+  addFolk(world, { x: 6.5, z: 11.0, rot: 2.45, pose: 'kite', kite: true, look: { hat: 'cap', height: 0.72 } });
+  addFolk(world, { x: P.stall.x + 1.1, z: P.stall.z, rot: -Math.PI / 2, pose: 'vendor', look: { hat: 'cone' } });
+  addFolk(world, { x: P.stall.x - 1.6, z: P.stall.z + 0.5, rot: Math.PI / 2, pose: 'chat', look: { hair: 'long', dress: true } });
+  addFolk(world, { x: P.cafe.x - 2.15, z: P.cafe.z - 0.8, rot: Math.PI / 2, seat: 0.45, pose: 'sit', look: { hair: 'bun' } });
+  addFolk(world, { x: P.cafe.x + 2.15, z: P.cafe.z + 0.6, rot: -Math.PI / 2, seat: 0.45, pose: 'read', look: { glasses: true, item: 'paper' } });
+  addFolk(world, { walk: { path: [[P.cafe.x - 1.2, P.cafe.z + 0.4], [P.cafe.x + 1.2, P.cafe.z - 0.5]], speed: 0.7 }, look: { item: 'tray', hair: 'bun' } });
+  addFolk(world, { x: P.board.x, z: P.board.z - 1.0, rot: 0, pose: 'look', look: { hat: 'top' } });
+  addFolk(world, { x: -15.0, z: 9.6, rot: 2.2, pose: 'wave', look: { item: 'balloon', balloon: 'people', height: 0.75 } });
+  leaves(world, 20, H - 2);
   cat(world, 2.1, 3.9, 0.7, true);
-  cat(world, -12.2, 2.0, 2.4);
+  cat(world, -12.2, 3.0, 2.4);
 
-  placeFinds(world, buildings);
+  placeFinds(world, buildings, P);
 
   return { world, buildings, colliders };
 }

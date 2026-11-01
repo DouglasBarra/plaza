@@ -104,13 +104,16 @@ function mouse() {
 
 // ---------- the plaza's finds ----------
 let balloon = null;
-export function placeFinds(world, buildings) {
+export function placeFinds(world, buildings, P) {
   const at = (id) => buildings.find((b) => b.userData.district === id);
   const T = 0.4;
 
   const cat = sleepingCat();
-  cat.position.set(0, T + 4.69, 1.4);
-  cat.rotation.y = 0.4;
+  // asleep on the sunny slope of the town hall's roof, tilted to lie along it
+  const hall = at('todo').userData;
+  const slope = Math.atan2(hall.roofH, hall.roofW / 2);
+  cat.position.set(3.0, hall.roofBase + hall.roofH * (1 - 3.0 / (hall.roofW / 2)) + 0.03, -1.5);
+  cat.rotation.set(0, 0.4, -slope);
   at('todo').add(register('roofcat', 'The rooftop cat', 'Someone is napping up high, on the town hall.', cat));
 
   const kid = makeFigure({ hat: 'cap', height: 0.7 });
@@ -132,17 +135,17 @@ export function placeFinds(world, buildings) {
   world.add(register('owl', 'The night owl', 'At night, someone keeps watch from a street lamp.', owl, () => isNight()));
 
   const f = frog();
-  f.position.set(12.9, 0.6, 3.3);
+  f.position.set(P.flowers.x + 0.3, 0.6, P.flowers.z - 0.3);  // in the flower box
   f.rotation.y = 2.5;
   world.add(register('frog', 'The frog in the flowers', 'Someone green-hearted sits among the flower boxes.', f));
 
   const s = snail();
-  s.position.set(-5.7, 1.1, 13.08);
+  s.position.set(P.board.x - 0.9, 1.1, P.board.z - 0.12);      // on the notice board's post
   s.rotation.set(0, Math.PI, Math.PI / 2);
   world.add(register('snail', 'The slow snail', 'Someone is climbing the notice board, very slowly.', s));
 
   const plane = paperPlane();
-  plane.position.set(6.1, 1.6, 11.7);
+  plane.position.set(P.trees[1].x - 0.2, 1.6, P.trees[1].z - 0.5);  // caught in a tree
   plane.rotation.set(0.3, 0.8, -0.4);
   world.add(register('plane', 'The stuck paper plane', 'A flight that ended in a tree, near the bikes.', plane));
 

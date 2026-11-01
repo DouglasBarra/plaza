@@ -133,6 +133,19 @@ export class Avatar {
     for (const c of this.colliders) {
       if ((c.level ?? 0) !== this.level) continue;
       const dx = p.x - c.x, dz = p.z - c.z;
+      if (c.hw !== undefined) {
+        // a box (hw, hd are half sizes), turned by c.rot like the building it belongs to
+        const cos = Math.cos(c.rot || 0), sin = Math.sin(c.rot || 0);
+        const lx = dx * cos - dz * sin, lz = dx * sin + dz * cos; // into the box's own frame
+        const ex = c.hw + RADIUS, ez = c.hd + RADIUS;
+        if (Math.abs(lx) < ex && Math.abs(lz) < ez) {
+          // inside: leave by the nearest side
+          const px = ex - Math.abs(lx), pz = ez - Math.abs(lz);
+          const nx = px < pz ? Math.sign(lx || 1) * ex : lx, nz = px < pz ? lz : Math.sign(lz || 1) * ez;
+          p.x = c.x + nx * cos + nz * sin; p.z = c.z - nx * sin + nz * cos;
+        }
+        continue;
+      }
       const d = Math.hypot(dx, dz), min = c.r + RADIUS;
       if (d < min && d > 1e-4) { p.x = c.x + (dx / d) * min; p.z = c.z + (dz / d) * min; }
     }

@@ -18,11 +18,11 @@ import { M, stamp, mesh, box, cyl } from './kit.js';
 import { tex } from './textures.js';
 import { folk } from './folks.js';
 import { clockHands, signBoard } from './details.js';
-import { steam, swingSign, isNight } from './life.js';
-import { picture, wallShelf, rug, coatRack, typewriter, chair, desk, plant, bookshelf } from './decor.js';
+import { steam, swingSign, isNight, skipND } from './life.js';
+import { picture, wallShelf, rug, coatRack, typewriter, chair, desk, plant, bookshelf, armchair, lowTable, logPile, toolStand } from './decor.js';
 import { DISTRICTS } from './districts/index.js';
 
-export const W = 12, D = 10, T = 0.3, F = 4.4, TOP = 8.6;
+import { W, D, T, F, TOP, DOOR, DOOR_HOLE, HOLES } from './hall.js';
 export const LAYER_CEILING = 1, LAYER_UPPER = 2;
 
 const todos = () => DISTRICTS.todo.api;
@@ -85,14 +85,16 @@ function windowIn(p, axis, at, hole, inward, panes, door = false) {
     box(g, hole.w, 0.04, 0.04, M.white, 0, hole.h * 0.1, f - 0.02).castShadow = false;
     box(g, hole.w + 0.34, 0.06, 0.28, M.white, 0, -hole.h / 2 - 0.1, f + 0.08);
     // curtains on a rod, gathered to each side
-    box(g, hole.w + 1.0, 0.04, 0.04, dark, 0, hole.h / 2 + 0.28, f + 0.12);
+    box(g, hole.w + 0.7, 0.035, 0.035, dark, 0, hole.h / 2 + 0.22, f + 0.12);
     for (const k of [-1, 1]) {
       const c = new THREE.Group();
-      c.position.set(k * (hole.w / 2 + 0.26), 0.12, f + 0.1);
-      for (let i = 0; i < 3; i++) box(c, 0.13, hole.h + 0.4, 0.05, M.white, (i - 1) * 0.1, 0, (i % 2) * 0.04);
-      box(c, 0.36, 0.06, 0.09, dark, 0, -0.25, 0.03); // tie-back
+      c.position.set(k * (hole.w / 2 + 0.12), 0.0, f + 0.1);
+      // folds: slats at alternating depths, gathered in the middle by a band
+      for (let i = 0; i < 4; i++) box(c, 0.1, hole.h + 0.18, 0.04, M.white, (i - 1.5) * 0.09, 0, (i % 2) * 0.05);
+      box(c, 0.44, 0.045, 0.12, M.white, 0, -0.1, 0.02);
       g.add(c);
     }
+    for (const k of [-1, 1]) cyl(g, 0.03, 0.03, 0.06, dark, k * (hole.w / 2 + 0.38), hole.h / 2 + 0.22, f + 0.12, 6).rotation.z = Math.PI / 2; // rod ends
   }
   return g;
 }
@@ -259,28 +261,32 @@ function calendarTexture() {
 }
 
 // ---------- the paper-ball jar ----------
-const ballGeo = new THREE.IcosahedronGeometry(0.045, 0);
+const ballGeo = new THREE.IcosahedronGeometry(0.05, 0);
+const glassMat = new THREE.MeshBasicMaterial({ color: '#dfe8ee', transparent: true, opacity: 0.2, depthWrite: false, side: THREE.DoubleSide });
 function jar(p, x, y, z) {
   const g = new THREE.Group();
   g.position.set(x, y, z);
   p.add(g);
-  cyl(g, 0.2, 0.2, 0.03, M.white, 0, 0.015, 0, 16);
-  for (const ry of [0.42, 0.44]) mesh(new THREE.TorusGeometry(0.2, 0.012, 4, 24), M.white, 0, ry, 0, g).rotation.x = Math.PI / 2;
-  for (let i = 0; i < 6; i++) {
-    const a = (i / 6) * Math.PI * 2;
-    box(g, 0.012, 0.42, 0.012, M.white, Math.cos(a) * 0.2, 0.22, Math.sin(a) * 0.2);
-  }
-  cyl(g, 0.22, 0.22, 0.04, M.planks, 0.02, 0.5, 0, 16).rotation.z = 0.25;
+  const R = 0.2, H = 0.46;
+  cyl(g, R + 0.02, R + 0.02, 0.04, M.stone, 0, 0.02, 0, 18);                                    // heavy base
+  const glass = mesh(new THREE.CylinderGeometry(R, R, H, 20, 1, true), glassMat, 0, 0.04 + H / 2, 0, g); // the glass walls
+  glass.castShadow = false;
+  glass.userData.inkSkip = true;
+  skipND.push(glass);
+  for (const ry of [0.04, 0.04 + H]) mesh(new THREE.TorusGeometry(R, 0.012, 5, 24), M.white, 0, ry, 0, g).rotation.x = Math.PI / 2; // base and rim, so you see its shape
+  for (const a of [0.3, 2.2, 4.1]) box(g, 0.01, H * 0.8, 0.012, M.white, Math.cos(a) * R, 0.04 + H / 2, Math.sin(a) * R); // glints
+  cyl(g, R + 0.015, R + 0.015, 0.05, M.planks, 0, 0.04 + H + 0.03, 0, 18);                       // cork lid
+  cyl(g, 0.03, 0.03, 0.05, M.planks, 0, 0.04 + H + 0.08, 0, 8);                                  // its knob
   const balls = new THREE.Group();
   g.add(balls);
   return {
     set(n) {
       balls.clear();
-      const k = Math.min(n, 48);
+      const k = Math.min(n, 60);
       for (let i = 0; i < k; i++) {
-        const layer = Math.floor(i / 8), a = (i % 8) / 8 * Math.PI * 2 + layer;
-        const r = 0.12 * ((i * 37) % 10) / 10;
-        const b = mesh(ballGeo, M.white, Math.cos(a) * r, 0.06 + layer * 0.07, Math.sin(a) * r, balls);
+        const layer = Math.floor(i / 9), a = (i % 9) / 9 * Math.PI * 2 + layer * 0.7;
+        const r = layer % 2 ? 0.07 : 0.13;
+        const b = mesh(ballGeo, M.white, Math.cos(a) * r, 0.1 + layer * 0.075, Math.sin(a) * r, balls);
         b.rotation.set(i, i * 2, 0);
         b.castShadow = false;
       }
@@ -305,7 +311,7 @@ function fireplace(p, x, z) {
   box(g, 2.7, 0.12, 0.8, M.planks, 0, 1.36, 0.08);       // mantel
   box(g, 1.6, 2.9, 0.5, M.bricks, 0, 2.9, -0.05);        // chimney breast
   box(g, 2.6, 0.06, 0.9, M.stone, 0, 0.03, 0.55);        // hearth
-  for (const [lx, r] of [[-0.25, 0.1], [0.2, -0.15]]) { const log = cyl(g, 0.08, 0.08, 0.7, M.planks, lx * 0.3, 0.2, 0.02, 8); log.rotation.set(0, r, Math.PI / 2); }
+  for (const [lx, r] of [[-0.25, 0.1], [0.2, -0.15]]) { const log = cyl(g, 0.08, 0.08, 0.7, M.planks, lx * 0.3, 0.2, 0.02, 8); log.rotation.set(0, r, Math.PI / 2); log.receiveShadow = false; }
   const flames = [];
   for (const [fx, fh, mat] of [[-0.2, 0.42, flameA], [0.05, 0.6, flameA], [0.28, 0.38, flameA], [0, 0.34, flameB], [-0.12, 0.24, flameB]]) {
     const f = mesh(new THREE.ConeGeometry(0.12, 1, 6), mat, fx, 0.28, 0.06, g);
@@ -313,9 +319,6 @@ function fireplace(p, x, z) {
     f.userData = { h: fh, x: fx };
     flames.push(f);
   }
-  // firewood stack and tools
-  for (let i = 0; i < 5; i++) cyl(g, 0.07, 0.07, 0.5, M.planks, 1.55, 0.08 + Math.floor(i / 3) * 0.14, -0.1 + (i % 3) * 0.15 + (i > 2 ? 0.07 : 0), 7).rotation.x = Math.PI / 2;
-  cyl(g, 0.015, 0.015, 0.9, dark, -1.45, 0.45, 0.25, 4).rotation.z = 0.15;
   const light = new THREE.PointLight('#ffb070', 0, 7, 1.5);
   light.position.set(0, 0.55, 0.6);
   g.add(light);
@@ -329,13 +332,15 @@ function pendant(p, x, y, z, ceiling) {
   p.add(g);
   const len = ceiling - y;
   cyl(g, 0.012, 0.012, len, dark, 0, -len / 2, 0, 4).castShadow = false;
-  const shade = mesh(new THREE.ConeGeometry(0.32, 0.26, 14, 1, true), M.white, 0, -len, 0, g);
-  shade.material = M.white;
+  const shadeMat = toon();
+  shadeMat.side = THREE.DoubleSide;
+  const shade = mesh(new THREE.SphereGeometry(0.34, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), shadeMat, 0, -len, 0, g); // a dome, open below
   shade.castShadow = false;
-  const bulb = mesh(new THREE.SphereGeometry(0.08, 8, 6), M.white, 0, -len - 0.08, 0, g);
+  cyl(g, 0.045, 0.045, 0.08, dark, 0, -len + 0.34, 0, 6);
+  const bulb = mesh(new THREE.SphereGeometry(0.09, 10, 8), M.white, 0, -len + 0.08, 0, g);
   bulb.castShadow = false;
   const light = new THREE.PointLight('#ffe6b0', 0, 9, 1.4);
-  light.position.set(0, -len - 0.2, 0);
+  light.position.set(0, -len - 0.15, 0);
   g.add(light);
   return { shade, bulb, light };
 }
@@ -395,10 +400,8 @@ export function buildTownHall(scene, rand, lights) {
 
   // ---- shell: floor, walls with openings, upper floor, roof
   box(lower, W + T * 2, 0.3, D + T * 2, M.floor, 0, -0.15, 0);
-  const backHoles = [{ c: -4.4, y: 2.2, w: 1.3, h: 1.7 }];
-  const leftHoles = [{ c: -3.3, y: 2.2, w: 1.3, h: 1.7 }, { c: 3.4, y: 2.2, w: 1.3, h: 1.7 }];
-  const rightHoles = [{ c: 3.3, y: 2.2, w: 1.3, h: 1.7 }];
-  const frontHoles = [{ c: -3.4, y: 2.2, w: 1.3, h: 1.7 }, { c: 0, y: 1.3, w: 2.0, h: 2.6 }, { c: 3.4, y: 2.2, w: 1.3, h: 1.7 }];
+  const backHoles = HOLES.back.lower, leftHoles = HOLES.left.lower, rightHoles = HOLES.right.lower;
+  const frontHoles = [...HOLES.front.lower, DOOR_HOLE];
   const bz = -D / 2 - T / 2, fz = D / 2 + T / 2, lx = -W / 2 - T / 2, rx = W / 2 + T / 2;
   wall(lower, 'x', bz, -W / 2 - T, W / 2 + T, 0, F, backHoles, M.bricks);
   wall(lower, 'z', lx, -D / 2, D / 2, 0, F, leftHoles, M.bricks);
@@ -407,11 +410,27 @@ export function buildTownHall(scene, rand, lights) {
   backHoles.forEach((h) => windowIn(lower, 'x', bz, h, '+z', panes));
   leftHoles.forEach((h) => windowIn(lower, 'z', lx, h, '+x', panes));
   rightHoles.forEach((h) => windowIn(cutLower, 'z', rx, h, '-x', panes));
-  frontHoles.forEach((h) => windowIn(cutLower, 'x', fz, h, '-z', panes, h.w === 2.0));
+  frontHoles.forEach((h) => windowIn(cutLower, 'x', fz, h, '-z', panes, h === DOOR_HOLE));
   // the door frame and mat stay visible in the cutaway, so you can find the way out
-  for (const x of [-1.08, 1.08]) box(lower, 0.16, 2.6, 0.4, M.white, x, 1.3, fz);
-  box(lower, 2.32, 0.16, 0.4, M.white, 0, 2.6, fz);
-  box(lower, 1.8, 0.04, 1.0, M.dirt, 0, 0.02, D / 2 - 0.7);
+  for (const x of [-1, 1]) box(lower, 0.16, DOOR.h + 0.1, 0.4, M.white, x * (DOOR.w / 2 + 0.08), (DOOR.h + 0.1) / 2, fz);
+  box(lower, DOOR.w + 0.32, 0.16, 0.4, M.white, 0, DOOR.h + 0.08, fz);
+  box(lower, DOOR.w + 0.1, 0.04, 1.0, M.dirt, 0, 0.02, D / 2 - 0.7);
+  // the door itself, hinged on the right and standing open into the room, same size as the one outside
+  const hinge = new THREE.Vector3(DOOR.w / 2, 0, D / 2 - 0.05);
+  const swing = -1.87;                                     // a little past square: the opening stays clear
+  const leaf = new THREE.Group();
+  leaf.position.copy(hinge);
+  leaf.rotation.y = swing;
+  lower.add(leaf);
+  box(leaf, DOOR.w, DOOR.h, 0.07, M.planks, -DOOR.w / 2, DOOR.h / 2, 0);
+  for (const s2 of [-1, 1]) for (const side of [-1, 1]) {
+    box(leaf, DOOR.w * 0.34, DOOR.h * 0.36, 0.03, M.planks, -DOOR.w / 2 + s2 * DOOR.w * 0.2, DOOR.h * 0.72, side * 0.05);
+    box(leaf, DOOR.w * 0.34, DOOR.h * 0.3, 0.03, M.planks, -DOOR.w / 2 + s2 * DOOR.w * 0.2, DOOR.h * 0.27, side * 0.05);
+  }
+  box(leaf, DOOR.w + 0.1, 0.08, 0.1, M.white, -DOOR.w / 2, DOOR.h + 0.04, 0);
+  for (const side of [-1, 1]) mesh(new THREE.SphereGeometry(0.045, 8, 6), dark, -DOOR.w + 0.16, DOOR.h * 0.46, side * 0.09, leaf);
+  for (const hy of [0.35, DOOR.h - 0.35]) box(leaf, 0.12, 0.2, 0.09, dark, -0.04, hy, 0);   // hinges
+  const doorDir = new THREE.Vector3(Math.cos(swing + Math.PI), 0, -Math.sin(swing + Math.PI)); // along the leaf, from the hinge
 
   // upper floor: a slab with the stairwell left open
   const slab = (x0, x1, z0, z1) => { box(upper, x1 - x0, 0.3, z1 - z0, M.floor, (x0 + x1) / 2, F - 0.15, (z0 + z1) / 2).userData.inkId = 424242; };
@@ -423,10 +442,7 @@ export function buildTownHall(scene, rand, lights) {
     const reach = z > STAIR.zTop && z < STAIR.zBottom ? STAIR.x0 : W / 2;
     box(ceilings, reach + W / 2, 0.26, 0.24, M.planks, (reach - W / 2) / 2, F - 0.43, z); // seen in first person
   }
-  const upBack = [{ c: 5.1, y: F + 2.0, w: 1.1, h: 1.5 }];
-  const upLeft = [{ c: 3.4, y: F + 2.0, w: 1.3, h: 1.6 }];
-  const upRight = [{ c: 0.5, y: F + 2.0, w: 1.3, h: 1.6 }];
-  const upFront = [{ c: -3.4, y: F + 2.0, w: 1.3, h: 1.6 }, { c: 3.4, y: F + 2.0, w: 1.3, h: 1.6 }];
+  const upBack = HOLES.back.upper, upLeft = HOLES.left.upper, upRight = HOLES.right.upper, upFront = HOLES.front.upper;
   wall(upper, 'x', bz, -W / 2 - T, W / 2 + T, F, TOP, upBack, M.bricks);
   wall(upper, 'z', lx, -D / 2, D / 2, F, TOP, upLeft, M.bricks);
   wall(cutUpper, 'z', rx, -D / 2, D / 2, F, TOP, upRight, M.bricks);
@@ -450,7 +466,7 @@ export function buildTownHall(scene, rand, lights) {
   trim(lower, 'x', bz, -W / 2, W / 2, 0, F - 0.3, '+z');
   trim(lower, 'z', lx, -D / 2, D / 2, 0, F - 0.3, '+x', [[-1.3, 1.5]]); // not behind the fireplace
   trim(cutLower, 'z', rx, -D / 2, D / 2, 0, F - 0.3, '-x', [[STAIR.zTop - 0.2, STAIR.zBottom + 0.1]]);
-  trim(cutLower, 'x', fz, -W / 2, W / 2, 0, F - 0.3, '-z', [[-1.15, 1.15]]); // around the door
+  trim(cutLower, 'x', fz, -W / 2, W / 2, 0, F - 0.3, '-z', [[-(DOOR.w / 2 + 0.3), DOOR.w / 2 + 0.3]]); // around the door
   trim(upper, 'x', bz, -W / 2, W / 2, F, TOP, '+z');
   trim(upper, 'z', lx, -D / 2, D / 2, F, TOP, '+x');
   trim(cutUpper, 'x', fz, -W / 2, W / 2, F, TOP, '-z');
@@ -490,40 +506,56 @@ export function buildTownHall(scene, rand, lights) {
   };
   for (const zz of [-0.35, 0.5]) { cyl(lower, 0.06, 0.07, 0.05, dark, MX, 1.45, zz, 10); cyl(lower, 0.035, 0.035, 0.24, M.white, MX, 1.6, zz, 8); } // candles
   picture(lower, -W / 2 + 0.6, 2.9, 0.1, 1.0, 1.1, Math.PI / 2, 'portrait');
-  for (const [z, r] of [[-1.4, -Math.PI / 2 - 0.4], [1.6, -Math.PI / 2 + 0.4]]) armchair(lower, -3.6, z, r); // facing the fire
-  box(lower, 0.6, 0.55, 0.6, M.planks, -3.3, 0.28, 0.1);
-  cyl(lower, 0.12, 0.15, 0.25, M.white, -3.3, 0.68, 0.1, 10);
-  rug(lower, -3.9, 0.1, 2.6, 3.8, Math.PI / 2);
+  // two armchairs angled in toward the fire, a low table between them and the hearth
+  const fireSpot = new THREE.Vector3(-W / 2 + 0.6, 0, 0.1);
+  armchair(lower, -3.3, -1.75, fireSpot);
+  armchair(lower, -3.3, 1.95, fireSpot);
+  lowTable(lower, -4.5, 0.1, Math.PI / 2);
+  cyl(lower, 0.16, 0.2, 0.5, M.planks, -2.7, 0.25, 0.1, 10);                     // a side table behind them
+  cyl(lower, 0.1, 0.07, 0.2, M.white, -2.7, 0.6, 0.1, 10);
+  rug(lower, -4.0, 0.1, 3.4, 2.8, Math.PI / 2, 0);
+  // firewood in a pyramid by the chimney, and the fire tools on their stand
+  logPile(lower, -W / 2 + 0.45, -2.45, 4, 0);
+  toolStand(lower, -W / 2 + 0.55, 1.75);
 
   // filing cabinets under the landing, coat rack and bench by the door
   for (const x of [4.75, 5.45]) {
     box(lower, 0.65, 1.4, 0.65, M.white, x, 0.7, -4.5);
     for (const y of [0.35, 0.8, 1.2]) box(lower, 0.25, 0.05, 0.04, dark, x, y, -4.15);
   }
-  coatRack(lower, -1.9, 4.35);
-  cyl(lower, 0.16, 0.14, 0.55, M.planks, -2.5, 0.27, 4.5, 10);
-  cyl(lower, 0.012, 0.012, 0.9, dark, -2.45, 0.6, 4.5, 4).rotation.z = 0.15;
+  coatRack(lower, -2.5, 4.25);
+  // an umbrella stand by the coat rack, with an umbrella in it
+  cyl(lower, 0.15, 0.13, 0.55, M.planks, -3.15, 0.27, 4.45, 10);
+  cyl(lower, 0.012, 0.012, 0.9, dark, -3.1, 0.65, 4.45, 4).rotation.z = 0.12;
+  mesh(new THREE.ConeGeometry(0.17, 0.16, 8), dark, -3.1, 1.13, 4.45, lower).rotation.z = 0.12;
   box(lower, 1.4, 0.08, 0.45, M.planks, -4.4, 0.45, 4.55);
   for (const x of [-4.95, -3.85]) box(lower, 0.08, 0.45, 0.4, M.white, x, 0.22, 4.55);
   folk(lower, -4.6, 4.55, Math.PI, { pose: 'sit', seat: 0.5, look: { hat: 'top', scarf: true } });
-  rug(lower, -0.6, 1.6, 4.6, 3.0);
-  plant(lower, -5.4, -4.4);
-  plant(lower, 5.3, 4.4); // in the corner, clear of the door and the stairs
-  wallShelf(lower, -W / 2 + 0.05, 3.0, -1.95, 1.1, Math.PI / 2, rand);
+  rug(lower, 0.1, 2.5, 3.6, 2.4, 0, 1);
+  plant(lower, -5.3, -4.3, 1.1);
+  plant(lower, 5.35, 4.3, 1.1); // in the corner, clear of the door and the stairs
+  wallShelf(lower, -W / 2 + 0.05, 3.0, -1.7, 0.8, Math.PI / 2, rand);   // clear of the curtains at the window beside it
 
-  // the tall clock against the back wall, with a pendulum
-  const CZ = -D / 2 + 0.28;
-  box(lower, 0.6, 2.3, 0.45, M.planks, 3.7, 1.15, CZ);
-  box(lower, 0.7, 0.12, 0.52, M.planks, 3.7, 2.36, CZ);
-  const face = mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.04, 20), [M.white, M.clock, M.white], 3.7, 1.9, CZ + 0.24, lower);
+  // the tall clock against the back wall: a case, a face with slim hands, and a
+  // pendulum swinging side to side behind a glass window
+  const CZ = -D / 2 + 0.28, CX = 3.7;
+  box(lower, 0.7, 0.14, 0.52, M.planks, CX, 0.07, CZ);                    // plinth
+  box(lower, 0.6, 2.2, 0.44, M.planks, CX, 1.24, CZ);                      // case
+  box(lower, 0.72, 0.12, 0.54, M.planks, CX, 2.4, CZ);                     // hood
+  box(lower, 0.5, 0.2, 0.4, M.white, CX, 2.52, CZ).rotation.z = 0;         // crown
+  const face = mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.04, 24), [M.white, M.clock, M.white], CX, 1.98, CZ + 0.23, lower);
   face.rotation.x = Math.PI / 2;
-  clockHands(lower, 3.7, 1.9, CZ + 0.27, 0.21);
-  const pendulum = new THREE.Group();
-  pendulum.position.set(3.7, 1.6, CZ + 0.26);
-  box(pendulum, 0.02, 0.55, 0.02, M.white, 0, -0.28, 0);
-  mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.03, 14), M.white, 0, -0.58, 0, pendulum).rotation.x = Math.PI / 2;
+  clockHands(lower, CX, 1.98, CZ + 0.26, 0.23);
+  box(lower, 0.44, 1.0, 0.02, M.deep, CX, 1.0, CZ + 0.225).castShadow = false;   // the dark back of the window onto the pendulum
+  for (const dx of [-0.25, 0.25]) box(lower, 0.05, 1.08, 0.05, M.white, CX + dx, 1.0, CZ + 0.235);
+  box(lower, 0.55, 0.05, 0.05, M.white, CX, 1.52, CZ + 0.235);
+  box(lower, 0.55, 0.05, 0.05, M.white, CX, 0.48, CZ + 0.235);
+  const pendulum = new THREE.Group();                                      // pivots at the top of the window
+  pendulum.position.set(CX, 1.48, CZ + 0.255);              // in front of the dark back, so you see it swing
+  box(pendulum, 0.02, 0.78, 0.014, M.white, 0, -0.39, 0);
+  cyl(pendulum, 0.08, 0.08, 0.03, M.white, 0, -0.8, 0, 16).rotation.x = Math.PI / 2;
   lower.add(pendulum);
-  swingSign(pendulum);
+  swingSign(pendulum, 'z', 0.15, 2.4);                                     // about the z axis: side to side
 
   const lamps = [pendant(lower, 2.2, 2.6, 0.6, F - 0.3), pendant(lower, -0.5, 3.15, -3.6, F - 0.3)];
   const chand = chandelier(lower, -0.8, 3.1, 1.6, F - 0.3);
@@ -570,11 +602,11 @@ export function buildTownHall(scene, rand, lights) {
   mesh(new THREE.SphereGeometry(0.11, 8, 6), M.white, 0.2, 0.15, 0.05, cat);
   cat.position.set(-3.2, 0.55, 4.5);
   up.add(cat);
-  plant(up, 1.0, 4.4);
+  plant(up, 1.0, 4.3, 1.0);
   cyl(up, 0.05, 0.12, 0.9, M.white, 3.0, 0.45, 3.6, 8);
   mesh(new THREE.IcosahedronGeometry(0.45, 1), M.white, 3.0, 1.3, 3.6, up);
   picture(up, -W / 2 + 0.06, 2.3, -3.25, 1.0, 0.8, Math.PI / 2, 'mountains');
-  rug(up, 0, 1.0, 4.8, 3.2);
+  rug(up, 0, 1.0, 4.2, 3.0, 0, 0);
   const upLamps = [pendant(up, -2.4, 2.7, -3.0, TOP - U - 0.3), pendant(up, -3.6, 2.6, 0.6, TOP - U - 0.3)];
 
   // ---------- layers ----------
@@ -712,9 +744,12 @@ export function buildTownHall(scene, rand, lights) {
   }
 
   const colliders = [
-    { x: 2.2, z: 0.4, r: 1.35 }, { x: -W / 2 + 0.7, z: 0.1, r: 1.0 }, { x: -3.6, z: -1.4, r: 0.6 }, { x: -3.6, z: 1.6, r: 0.6 },
-    { x: -3.3, z: 0.1, r: 0.45 }, { x: 5.1, z: -4.5, r: 0.9 }, { x: -1.9, z: 4.35, r: 0.4 }, { x: -4.4, z: 4.55, r: 0.75 },
-    { x: 3.7, z: -4.72, r: 0.45 }, { x: -5.4, z: -4.4, r: 0.5 }, { x: 5.3, z: 4.4, r: 0.5 }, { x: 2.75, z: -4.35, r: 0.4 },
+    { x: 2.2, z: 0.4, r: 1.35 }, { x: -W / 2 + 0.7, z: 0.1, r: 1.0 }, { x: -3.3, z: -1.75, r: 0.6 }, { x: -3.3, z: 1.95, r: 0.6 },
+    { x: -4.5, z: 0.1, r: 0.55 }, { x: -2.7, z: 0.1, r: 0.3 }, { x: 5.1, z: -4.5, r: 0.9 }, { x: -2.5, z: 4.25, r: 0.35 },
+    { x: -3.15, z: 4.45, r: 0.2 }, { x: -4.4, z: 4.55, r: 0.75 }, { x: -W / 2 + 0.85, z: -2.45, r: 0.5 }, { x: -W / 2 + 0.55, z: 1.75, r: 0.2 },
+    { x: 3.7, z: -4.72, r: 0.45 }, { x: -5.3, z: -4.3, r: 0.5 }, { x: 5.35, z: 4.3, r: 0.5 }, { x: 2.75, z: -4.35, r: 0.4 },
+    // the open door
+    ...[0.35, 0.8, 1.25].map((t) => ({ x: hinge.x + doorDir.x * t, z: hinge.z + doorDir.z * t, r: 0.2 })),
     { x: -2.4, z: -3.3, r: 1.0, level: 1 }, { x: -2.4, z: -2.2, r: 0.35, level: 1 }, { x: -5.6, z: 0, r: 1.6, level: 1 },
     { x: -5.5, z: -3.25, r: 0.8, level: 1 }, { x: -3.6, z: 0.6, r: 0.9, level: 1 }, { x: -3.4, z: 4.55, r: 0.95, level: 1 },
     { x: 1.0, z: 4.4, r: 0.5, level: 1 }, { x: 3.0, z: 3.6, r: 0.6, level: 1 }, { x: 4.0, z: -4.4, r: 0.35, level: 1 },
@@ -739,20 +774,8 @@ export function buildTownHall(scene, rand, lights) {
     exit: new THREE.Vector3(0, 0, D / 2 - 0.6),
     bounds: { minX: -W / 2 + 0.5, maxX: W / 2 - 0.5, minZ: -D / 2 + 0.6, maxZ: D / 2 - 0.4 },
     cameraOffset: new THREE.Vector3(10, 15, 17),
-    // where this room sits inside the town hall on the plaza (for the window views):
-    // the front wall lines up with the building's front, the floor with its ground tile
-    plazaOffset: new THREE.Vector3(0, 0.4, 1.82 - D / 2),
+    // the room is the building: the same walls, so the window views are exact;
+    // only the plinth (0.4 m) lifts the ground floor off the plaza
+    plazaOffset: new THREE.Vector3(0, 0.4, 0),
   };
-}
-
-function armchair(p, x, z, rotY) {
-  const g = new THREE.Group();
-  box(g, 0.9, 0.4, 0.8, M.white, 0, 0.3, 0);
-  box(g, 0.9, 0.7, 0.18, M.white, 0, 0.75, -0.32);
-  for (const s of [-1, 1]) box(g, 0.16, 0.55, 0.8, M.white, s * 0.45, 0.48, 0);
-  box(g, 0.72, 0.1, 0.6, M.planks, 0, 0.55, 0.05);
-  for (const sx of [-0.38, 0.38]) for (const sz of [-0.32, 0.32]) box(g, 0.06, 0.12, 0.06, dark, sx, 0.06, sz);
-  g.position.set(x, 0, z);
-  g.rotation.y = rotY;
-  p.add(g);
 }

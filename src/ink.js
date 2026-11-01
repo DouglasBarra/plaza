@@ -103,6 +103,7 @@ export function applyTheme(theme, lights) {
 // Objects can share an id (userData.inkId) so pieces of one wall don't get
 // seams, and userData.inkCrisp keeps far scenery (mountains) from fading.
 const ndMaterial = new THREE.ShaderMaterial({
+  side: THREE.DoubleSide, // open shapes (a lamp dome) must be seen from below too
   uniforms: { objId: { value: 0 } },
   vertexShader: /* glsl */ `
     varying vec3 vN;

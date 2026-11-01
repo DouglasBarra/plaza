@@ -128,11 +128,13 @@ export function clockHands(p, x, y, z, r) {
   const mk = (len, wid) => {
     const pivot = new THREE.Group();
     pivot.position.set(x, y, z);
-    box(pivot, wid, len, 0.03, dark, 0, len / 2 - 0.04, 0);
+    box(pivot, wid, len, 0.03, dark, 0, len / 2 - wid, 0);
+    mesh(new THREE.CylinderGeometry(wid * 0.9, wid * 0.9, 0.035, 10), dark, 0, 0, 0, pivot).rotation.x = Math.PI / 2; // hub
     p.add(pivot);
     return pivot;
   };
-  const hour = mk(r * 0.5, 0.07), minute = mk(r * 0.78, 0.05);
+  // slim hands, in proportion to the face: the hour hand shorter and a little broader
+  const hour = mk(r * 0.52, Math.max(0.028, r * 0.085)), minute = mk(r * 0.82, Math.max(0.02, r * 0.055));
   minute.position.z += 0.02;
   clocks.push({ hour, minute });
 }

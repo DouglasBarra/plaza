@@ -45,7 +45,7 @@ const { buildings, colliders } = buildPlaza(plazaScene);
 const town = buildTown(plazaScene);
 const me = new Avatar(plazaScene, colliders, PLAZA_HALF);
 const plazaBounds = { ...me.bounds };
-ink.skipND.push(...skipND);
+ink.skipND = skipND;           // one shared list: things built later (a room's glass) join it too
 
 let theme = 'day';
 applyTheme(theme, plazaLights);
@@ -737,7 +737,7 @@ if (import.meta.env.DEV) {
 // A second ink renderer draws the plaza from where your eye would be if the
 // room sat inside the town hall; the window panes sample it at their pixel.
 const plazaInk = new InkRenderer(renderer, { samples: 0, scale: 0.75 });
-plazaInk.skipND.push(...skipND);
+plazaInk.skipND = skipND;
 const portalRT = new THREE.WebGLRenderTarget(1, 1);
 const viewCam = new THREE.PerspectiveCamera();
 const mapM = new THREE.Matrix4();

@@ -69,8 +69,11 @@ export function spin(obj, speed, axis = 'y') {
   spinners.push({ obj, speed, axis });
 }
 
-export function swingSign(pivot) {
-  swings.push({ pivot, phase: Math.random() * 6 });
+// `axis` is the axis it turns about: 'x' swings it toward and away from a
+// viewer facing +z (a sign on an awning); 'z' swings it side to side (a
+// pendulum seen from the front); `amount` is the angle in radians.
+export function swingSign(pivot, axis = 'x', amount = 0.14, speed = 1.6) {
+  swings.push({ pivot, axis, amount, speed, phase: Math.random() * 6 });
 }
 
 const leafGeo = new THREE.BoxGeometry(0.16, 0.012, 0.09);
@@ -131,7 +134,7 @@ export function animateLife(time) {
     s.g.rotation.z = s.rz + Math.cos(time * 0.9 + s.phase) * s.amount;
   }
   for (const s of spinners) s.obj.rotation[s.axis] = time * s.speed;
-  for (const s of swings) s.pivot.rotation.x = Math.sin(time * 1.6 + s.phase) * 0.14;
+  for (const s of swings) s.pivot.rotation[s.axis] = Math.sin(time * s.speed + s.phase) * s.amount;
   for (const f of fountains) {
     for (const d of f.drops) d.d.position.copy(d.curve.getPoint((time * 0.7 + d.k) % 1));
     for (const r of f.ripples) {
