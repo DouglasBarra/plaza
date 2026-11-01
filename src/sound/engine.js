@@ -3,24 +3,25 @@
 //   master ── compressor ── speakers
 //     ├─ amb ─┬─ plaza (muffled through a low-pass when you're indoors)
 //     │       └─ room  (the inside of the building you're in, with its echo)
-//     └─ fx       (one-shots: steps, paper, chimes…)
+//     └─ fx       (one-shots: paper, chimes, creatures…)
 //
-// Everything is drawn in code, no recordings: noise shaped by filters and
-// little bells made of sine partials, which suits a plaza drawn in ink.
+// Nearly everything is drawn in code (the dog's bark is a recording): noise
+// shaped by filters and little bells made of sine partials, which suits a
+// plaza drawn in ink.
 // Browsers only allow sound after you've clicked or pressed a key, so the
 // context starts on the first gesture.
 
 import { drawBark } from './bark.js';
 
 const KEY = 'plaza.sound';
-export const settings = { on: true, volume: 0.8, amb: 0.8, fx: 0.9, steps: 'everywhere', stepVol: 0.6 };
+export const settings = { on: true, volume: 0.8, amb: 0.8, fx: 0.9 };
 try { Object.assign(settings, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch { /* defaults */ }
 export function saveSettings() {
   try { localStorage.setItem(KEY, JSON.stringify(settings)); } catch { /* not remembered */ }
   apply();
 }
 
-export const A = { ctx: null, master: null, amb: null, fx: null, dry: null, steps: null, plaza: null, plazaLow: null, room: null, roomVerb: null, noise: null, brown: null };
+export const A = { ctx: null, master: null, amb: null, fx: null, dry: null, plaza: null, plazaLow: null, room: null, roomVerb: null, noise: null, brown: null };
 const starters = [];
 // fn(A) runs once the context exists (beds build themselves here)
 export function whenReady(fn) { if (A.ctx) fn(A); else starters.push(fn); }
@@ -44,7 +45,6 @@ function start() {
   A.amb = gain(1, A.master);
   A.fx = gain(1, A.master);
   A.dry = gain(1, A.master);   // effects with no echo at all (the dog)
-  A.steps = gain(1, A.master); // your footsteps, dry, with their own volume
   // the plaza bus: open outdoors, through a closed window when you're in
   A.plazaLow = ctx.createBiquadFilter();
   A.plazaLow.type = 'lowpass'; A.plazaLow.frequency.value = 20000;
@@ -68,18 +68,6 @@ function start() {
   // with a drawn one (bark.js) until it loads, or if it can't
   fetch(`${import.meta.env.BASE_URL}sounds/dog-bark.ogg`).then((r) => r.arrayBuffer()).then((b) => ctx.decodeAudioData(b))
     .then((b) => { A.barkTape = b; }).catch(() => { /* keep the drawn bark */ });
-  // your footsteps: six clean steps cut from a real recording (credited in
-  // the README), each evened out to the same loudness; drawn ones until then
-  fetch(`${import.meta.env.BASE_URL}sounds/footsteps.ogg`).then((r) => r.arrayBuffer()).then((b) => ctx.decodeAudioData(b))
-    .then((b) => {
-      A.stepCuts = [7.68, 9.75, 13.79, 15.28, 15.97, 16.74].map((from) => {
-        const d = b.getChannelData(0), s = Math.floor(from * b.sampleRate), n = Math.floor(0.22 * b.sampleRate);
-        let peak = 0;
-        for (let i = s; i < s + n; i++) peak = Math.max(peak, Math.abs(d[i]));
-        return { from, len: 0.22, gain: 0.12 / peak };
-      });
-      A.stepTape = b;
-    }).catch(() => { /* keep the drawn steps */ });
   A.barks = [0.96, 1, 1.05, 1.1].map((pitch) => {
     const b = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.17), ctx.sampleRate);
     b.copyToChannel(drawBark(ctx.sampleRate, { pitch }), 0);
@@ -97,7 +85,6 @@ export function apply() {
   A.amb.gain.setTargetAtTime(settings.amb, t, 0.08);
   A.fx.gain.setTargetAtTime(settings.fx, t, 0.08);
   A.dry.gain.setTargetAtTime(settings.fx, t, 0.08);
-  A.steps.gain.setTargetAtTime(settings.fx * settings.stepVol, t, 0.08);
 }
 
 // ---------- small helpers ----------

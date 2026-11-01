@@ -20,7 +20,7 @@ export class Avatar {
     this.moving = false;
     this.running = false;              // Shift held
     this.vel = new THREE.Vector3();     // current velocity, eased toward where you want to go
-    this.stride = 0;                    // distance walked, drives the steps
+    this.stride = 0;                    // distance walked, drives the walk drawings
     this.prevVel = new THREE.Vector3(); // last frame's velocity, to feel speeding up and slowing down
     this.prevHeading = Math.PI;
     this.lean = 0;                      // forward/back, eased
