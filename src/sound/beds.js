@@ -10,29 +10,18 @@ import { VOICES } from './voices.js';
 const rnd = (a, b) => a + Math.random() * (b - a);
 const ease = (p, v, t, k = 0.4) => p.setTargetAtTime(v, t, k);
 
-// A source that sits in the plaza: placed in the world while you're out
-// there, and heard flat (and muffled) once you're inside.
-function plazaSpot(at, opts) {
-  const input = gain(1);
-  const near = gain(1, spot(at, A.plaza, opts));
-  const far = gain(0, A.plaza);
-  input.connect(near); input.connect(far);
-  return { input, near, far };
-}
-
 export function buildBeds() {
   const out = {};
 
-  // the fountain: water bubbling into the basin, heard from a few steps away
-  // and full by the rim; two copies of the loop, out of step, so it never repeats
-  const fount = plazaSpot({ x: 0, y: 1.2, z: 0 }, { ref: 6, max: 26 });
-  for (const [rate, off, v] of [[1, 0, 0.45], [0.87, 3.1, 0.2]]) {
-    const s = A.ctx.createBufferSource();
-    s.buffer = A.water; s.loop = true; s.playbackRate.value = rate;
-    s.connect(filter('lowpass', 2400, 0.5, gain(v, fount.input)));
-    s.start(0, off);
-  }
-  out.fountain = fount;
+  // the fountain: water bubbling into the basin, only once you're on its
+  // paving (6.35 m out) and fullest by the rim. It goes straight to the
+  // ambience, clean: no echo, nothing layered on it
+  const near = gain(0, spot({ x: 0, y: 1.2, z: 0 }, A.amb, { ref: 4.5, max: 9 }));
+  const s = A.ctx.createBufferSource();
+  s.buffer = A.water; s.loop = true;
+  s.connect(filter('lowpass', 2200, 0.5, gain(1.4, near)));
+  s.start(0);
+  out.fountain = { near };
 
   // wind under clouds, its pitch wandering
   const wind = gain(0, A.plaza);
@@ -84,8 +73,7 @@ export function stepBeds(b, st) {
   // the door: open air, or the plaza through the walls
   ease(A.plazaLow.frequency, st.inside ? 900 : 20000, t, 0.15);
   ease(A.plaza.gain, st.inside ? 0.1 : 1, t, 0.15);
-  ease(b.fountain.near.gain, st.inside ? 0 : 1, t, 0.1);
-  ease(b.fountain.far.gain, 0, t, 0.1);   // indoors, the fountain is out of earshot
+  ease(b.fountain.near.gain, st.inside ? 0 : 1, t, 0.1);   // indoors, out of earshot
   // the bank's echo
   const echo = !!st.room?.echo;
   ease(A.verbSend.gain, echo ? 0.6 : 0, t, 0.2);

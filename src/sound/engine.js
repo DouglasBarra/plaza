@@ -31,7 +31,7 @@ function start() {
   if (!Ctx) return;
   const ctx = A.ctx = new Ctx();
   const comp = ctx.createDynamicsCompressor();
-  comp.threshold.value = -18; comp.ratio.value = 3;
+  comp.threshold.value = -8; comp.ratio.value = 2;   // a safety net only, so nothing pumps
   comp.connect(ctx.destination);
   // dreamy: the top end rounded off, nothing sharp
   const shelf = filter('highshelf', 4200, 0.7, filter('lowpass', 9000, 0.5, comp));

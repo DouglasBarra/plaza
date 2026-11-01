@@ -25,13 +25,13 @@ export function drawWater(rate, seconds, seed = Math.random) {
     let ph = 0;
     for (let i = 0; i < len; i++) {
       const t = i / rate;
-      ph += (2 * Math.PI * f0 * (1 + 0.06 * t / tau)) / rate;
+      ph += (2 * Math.PI * f0 * (1 + 0.03 * t / tau)) / rate;   // a gentle rise, not a chirp
       const env = Math.exp(-t / tau) * Math.min(1, i / attack);   // a soft start, no click
       d[(start + i) % n] += Math.sin(ph) * env * amp;
     }
   }
   let peak = 0;
   for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(d[i]));
-  for (let i = 0; i < n; i++) d[i] *= 0.6 / peak;
+  for (let i = 0; i < n; i++) d[i] *= 0.45 / peak;   // headroom: nothing near clipping
   return d;
 }
