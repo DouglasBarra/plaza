@@ -184,3 +184,7 @@ export const tex = {
     return c;
   },
 };
+
+// For textures drawn elsewhere (a menu board, a house front): the same canvas
+// setup and wobbly ink line, so they look and behave like these.
+export { canvas as lineArtCanvas, line as inkLine, SIZE as LINE_ART_SIZE };
