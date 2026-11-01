@@ -31,7 +31,7 @@ const stepWashes = washes();
 
 // your footsteps: boards in the town hall, marble in the bank, stone outside
 const FLOORS = { todo: 'wood', finance: 'marble' };
-me.onStep = () => sfx('step', { surface: game.room ? FLOORS[game.room.id] || 'wood' : 'stone', vol: me.running ? 1.2 : 1 });
+me.onStep = () => sfx('step', { surface: game.room ? FLOORS[game.room.id] || 'wood' : 'stone', vol: me.running ? 1.15 : 1, dry: true });
 
 setOrbitLimits();
 placeCameraBehindMe();

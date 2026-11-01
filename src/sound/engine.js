@@ -10,8 +10,6 @@
 // Browsers only allow sound after you've clicked or pressed a key, so the
 // context starts on the first gesture.
 
-import { drawWater } from './water.js';
-
 const KEY = 'plaza.sound';
 export const settings = { on: true, volume: 0.8, amb: 0.8, fx: 0.9 };
 try { Object.assign(settings, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch { /* defaults */ }
@@ -20,7 +18,7 @@ export function saveSettings() {
   apply();
 }
 
-export const A = { ctx: null, master: null, amb: null, fx: null, plaza: null, plazaLow: null, room: null, roomVerb: null, noise: null, brown: null };
+export const A = { ctx: null, master: null, amb: null, fx: null, dry: null, plaza: null, plazaLow: null, room: null, roomVerb: null, noise: null, brown: null };
 const starters = [];
 // fn(A) runs once the context exists (beds build themselves here)
 export function whenReady(fn) { if (A.ctx) fn(A); else starters.push(fn); }
@@ -43,6 +41,7 @@ function start() {
   A.dream.connect(filter('lowpass', 2800, 0.5, gain(0.8, A.master)));
   A.amb = gain(1, A.master);
   A.fx = gain(1, A.master);
+  A.dry = gain(1, A.master);   // effects with no echo at all (your steps)
   // the plaza bus: open outdoors, through a closed window when you're in
   A.plazaLow = ctx.createBiquadFilter();
   A.plazaLow.type = 'lowpass'; A.plazaLow.frequency.value = 20000;
@@ -62,7 +61,6 @@ function start() {
   A.room.connect(gain(0.12, A.dream));
   A.noise = noiseBuffer('white');
   A.brown = noiseBuffer('brown');
-  A.water = waterBuffer();
   apply();
   starters.splice(0).forEach((fn) => fn(A));
 }
@@ -74,6 +72,7 @@ export function apply() {
   A.master.gain.setTargetAtTime(settings.on ? settings.volume * 0.9 : 0, t, 0.08);
   A.amb.gain.setTargetAtTime(settings.amb, t, 0.08);
   A.fx.gain.setTargetAtTime(settings.fx, t, 0.08);
+  A.dry.gain.setTargetAtTime(settings.fx, t, 0.08);
 }
 
 // ---------- small helpers ----------
@@ -106,12 +105,6 @@ function noiseBuffer(kind) {
     const w = Math.random() * 2 - 1;
     if (kind === 'brown') { last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; } else d[i] = w;
   }
-  return b;
-}
-// the fountain's water: see water.js
-function waterBuffer() {
-  const r = A.ctx.sampleRate, b = A.ctx.createBuffer(2, r * 8, r);
-  for (let c = 0; c < 2; c++) b.copyToChannel(drawWater(r, 8), c);
   return b;
 }
 function impulse(seconds, decay) {

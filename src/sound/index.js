@@ -1,5 +1,5 @@
 // Sound for Plaza, a quiet storybook: paper and pencil for the interface,
-// footsteps, the fountain and the town outside, each building's own room
+// footsteps, the birds, the weather and the town outside, each building's own room
 // inside. The rest of the app calls `sfx('name', { at })`; main.js calls
 // `stepSound()` once a frame.
 //
@@ -15,14 +15,14 @@ let beds = null, roomParts = null, roomOf = null;
 whenReady(() => { beds = buildBeds(); });
 
 const last = new Map();   // name -> when it last played, for `gap`
-export function sfx(name, { at = null, room = null, gap = 0, vol = 1, ...opts } = {}) {
+export function sfx(name, { at = null, room = null, gap = 0, vol = 1, dry = false, ...opts } = {}) {
   if (!A.ctx || !settings.on || !VOICES[name]) return;
   const t = A.ctx.currentTime;
   if (gap && t - (last.get(name) ?? -1e9) < gap) return;
   last.set(name, t);
   const here = game.room?.id ?? null;
   let out;
-  if (!at) out = gain(vol, A.fx);
+  if (!at) out = gain(vol, dry ? A.dry : A.fx);
   else if (room === here) out = gain(vol, spot(at, room ? A.room : A.fx, { ref: room ? 1.5 : 2.5, max: room ? 14 : 20 }));
   else if (room === null) out = gain(vol * 0.12, A.plaza);   // out on the plaza, faint through the walls
   else return;                                               // inside a building you're not in
@@ -81,7 +81,7 @@ export function soundCard(showCard) {
   const body = showCard('sound', { tag: 'Sound', title: 'What you hear', cls: 'sound-card', body: `
     <label class="snd-row snd-on"><input type="checkbox" ${settings.on ? 'checked' : ''} data-on> <span>Sound on <kbd>M</kbd></span></label>
     ${row('volume', 'Volume')}
-    ${row('amb', 'Ambience: the fountain, the town, the weather, the rooms')}
+    ${row('amb', 'Ambience: birds, the weather, the town, the rooms')}
     ${row('fx', 'Effects: steps, paper, creatures')}
     <p class="snd-note">Everything you hear is drawn in code, like the town.</p>` });
   body.addEventListener('input', (e) => {

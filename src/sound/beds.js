@@ -1,9 +1,9 @@
-// The ambience: what's always there, very quietly. Outside, the fountain
-// (louder as you walk up to it), a murmur of the town, wind under clouds,
-// rain when your week (or the sky) says so, birds by day and crickets at
-// night, a tram bell far off, and the town hall's bell on the hour. Inside,
-// each building's own room: the hall's fire and tall clock, the bank's hush.
-// Going in muffles the plaza behind you, as through a closed door.
+// The ambience: what's always there, very quietly. Outside, wind under
+// clouds, rain when your week (or the sky) says so, birds by day and
+// crickets at night in the trees around you, a tram bell at the edges, and
+// the town hall's bell on the hour. Inside, each building's own room: the
+// hall's fire and tall clock, the bank's quiet echo. Going in muffles the
+// plaza behind you, as through a closed door.
 import { A, gain, filter, noiseSource, spot } from './engine.js';
 import { VOICES } from './voices.js';
 
@@ -12,16 +12,6 @@ const ease = (p, v, t, k = 0.4) => p.setTargetAtTime(v, t, k);
 
 export function buildBeds() {
   const out = {};
-
-  // the fountain: water bubbling into the basin, only once you're on its
-  // paving (6.35 m out) and fullest by the rim. It goes straight to the
-  // ambience, clean: no echo, nothing layered on it
-  const near = gain(0, spot({ x: 0, y: 1.2, z: 0 }, A.amb, { ref: 4.5, max: 9 }));
-  const s = A.ctx.createBufferSource();
-  s.buffer = A.water; s.loop = true;
-  s.connect(filter('lowpass', 2200, 0.5, gain(1.4, near)));
-  s.start(0);
-  out.fountain = { near };
 
   // wind under clouds, its pitch wandering
   const wind = gain(0, A.plaza);
@@ -73,7 +63,6 @@ export function stepBeds(b, st) {
   // the door: open air, or the plaza through the walls
   ease(A.plazaLow.frequency, st.inside ? 900 : 20000, t, 0.15);
   ease(A.plaza.gain, st.inside ? 0.1 : 1, t, 0.15);
-  ease(b.fountain.near.gain, st.inside ? 0 : 1, t, 0.1);   // indoors, out of earshot
   // the bank's echo
   const echo = !!st.room?.echo;
   ease(A.verbSend.gain, echo ? 0.6 : 0, t, 0.2);

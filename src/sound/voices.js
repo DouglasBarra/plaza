@@ -82,19 +82,14 @@ export const VOICES = {
   },
 
   // ---------- underfoot ----------
+  // a small, dark click, like a linear (red) key switch bottoming out: a
+  // short low thock and the faintest tap on top, no click from a bump.
+  // Boards a little lower and softer, marble a little brighter.
   step(t, out, { surface = 'stone' } = {}) {
-    const v = rnd(0.8, 1.1) * 0.55;
-    if (surface === 'wood') {
-      tone(t, out, { f: rnd(120, 150), to: 80, dur: 0.09, vol: 0.12 * v });
-      hiss(t, out, { f: 900, q: 1.5, dur: 0.06, vol: 0.07 * v });
-    } else if (surface === 'marble') {
-      hiss(t, out, { f: rnd(2200, 2800), q: 3, dur: 0.05, vol: 0.09 * v });   // heels on marble, with the echo
-      tone(t, out, { f: 300, to: 180, dur: 0.05, vol: 0.05 * v });
-    } else if (surface === 'grass') {
-      hiss(t, out, { f: 3500, q: 0.8, dur: 0.1, vol: 0.05 * v, attack: 0.02, type: 'highpass' });
-    } else {
-      hiss(t, out, { f: rnd(380, 520), q: 1, dur: 0.08, vol: 0.11 * v, attack: 0.008 });   // stone: a soft scuff
-    }
+    const { f, tap } = { wood: { f: 210, tap: 900 }, marble: { f: 300, tap: 1600 }, grass: { f: 190, tap: 700 } }[surface] || { f: 250, tap: 1200 };
+    const v = rnd(0.85, 1.05);
+    tone(t, out, { f: f * rnd(0.95, 1.05), to: f * 0.7, dur: 0.035, vol: 0.06 * v, attack: 0.002 });
+    hiss(t, out, { f: tap, q: 1.4, dur: 0.018, vol: 0.022 * v, attack: 0.001, type: 'bandpass' });
   },
 
   // ---------- creatures and folks ----------
@@ -102,18 +97,22 @@ export const VOICES = {
     const n = 10 + Math.floor(Math.random() * 5);
     for (let i = 0; i < n; i++) hiss(t + i * 0.065, out, { f: rnd(700, 1300), q: 0.8, dur: 0.05, vol: 0.18 * (1 - i / n), type: 'bandpass' });
   },
-  bark(t, out) {    // a friendly woof, twice
-    for (const d of [0, 0.28]) {
-      const o = A.ctx.createOscillator(), g = gain(0, out), f1 = filter('bandpass', 700, 3), f2 = filter('bandpass', 1500, 4);
-      o.type = 'sawtooth';
-      o.frequency.setValueAtTime(rnd(300, 340), t + d);
-      o.frequency.exponentialRampToValueAtTime(170, t + d + 0.14);
-      o.connect(f1).connect(g); o.connect(f2).connect(g);
-      g.gain.setValueAtTime(0, t + d);
-      g.gain.linearRampToValueAtTime(0.35, t + d + 0.012);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.16);
-      o.start(t + d); o.stop(t + d + 0.2);
-    }
+  bark(t, out) {    // a small, happy dog: arf-arf, the second a little higher
+    [[0, 1], [0.2, 1.12]].forEach(([d, up]) => {
+      const s = t + d, o = A.ctx.createOscillator(), g = gain(0, out);
+      const f1 = filter('bandpass', 1500 * up, 2.5), f2 = filter('bandpass', 2900 * up, 3);
+      o.type = 'triangle';
+      // a quick lift and a drop, like a yip
+      o.frequency.setValueAtTime(620 * up, s);
+      o.frequency.linearRampToValueAtTime(820 * up, s + 0.025);
+      o.frequency.exponentialRampToValueAtTime(480 * up, s + 0.09);
+      o.connect(f1).connect(g); o.connect(f2).connect(g); o.connect(gain(0.25, g));
+      g.gain.setValueAtTime(0, s);
+      g.gain.linearRampToValueAtTime(0.32, s + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, s + 0.1);
+      o.start(s); o.stop(s + 0.12);
+      hiss(s, out, { f: 2400, q: 1, dur: 0.05, vol: 0.03, attack: 0.004 });   // a little breath
+    });
   },
   quack(t, out) {
     const o = A.ctx.createOscillator(), g = gain(0, out), f = filter('bandpass', 1100, 5), f2 = filter('bandpass', 2300, 6);
