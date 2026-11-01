@@ -2,6 +2,7 @@
 // click the ground. You can't leave the plaza; buildings and props block you.
 import * as THREE from 'three';
 import { makeFigure, poseFigure } from './folks.js';
+import { skipND } from './life.js';
 
 const WALK = 3.2;   // m/s, an unhurried stroll
 const RUN = 6.0;    // with Shift held
@@ -33,11 +34,17 @@ export class Avatar {
     const g = new THREE.Group();
     this.figure = makeFigure({ hat: 'beanie', scarf: true, backpack: true, height: 1.05 });
     g.add(this.figure);
-    // a little ink ring under your feet so you can always find yourself
-    const ring = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.68, 28), new THREE.MeshBasicMaterial({ color: '#111111' }));
+    // a little ink ring under your feet so you can always find yourself: drawn
+    // over everything (raised paving, a curb, a wall in the way), and kept out
+    // of the outline pass so it neither gets outlined nor hides anything
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.68, 28), new THREE.MeshBasicMaterial({ color: '#111111', depthTest: false, depthWrite: false }));
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 0.02;
+    ring.renderOrder = 10;
+    skipND.push(ring);
     g.add(ring);
+    // and you're drawn after it, so it goes round your feet, not over them
+    this.figure.traverse((o) => { o.renderOrder = 11; });
     this.ring = ring;
     this.body = g;
     g.position.set(0, 0, -10.6); // between the town hall and the fountain, facing the fountain
