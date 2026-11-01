@@ -6,13 +6,13 @@ import * as THREE from 'three';
 import { placeRoomFinds } from '../finds.js';
 import { W, D, lightRoom } from './common.js';
 import { buildTownHall } from './townhall/index.js';
-import { finance } from './bank.js';
+import { buildBank } from './bank/index.js';
 import { study } from './library.js';
 import { ideas } from './workshop.js';
 
 const INTERIORS = {
   todo: buildTownHall, // the town hall: ToDos (see townhall/)
-  finance,             // the bank: Finance
+  finance: buildBank,  // the bank: Finance (see bank/)
   study,               // the library: Study
   ideas,               // the lighthouse workshop: Ideas
 };

@@ -88,3 +88,22 @@ test('V switches to first person and F opens the finds', async ({ plaza: page })
   await page.keyboard.press('f');
   await expect(page.locator('#overlay')).toBeHidden();
 });
+
+test('walk into the bank and ask the teller', async ({ plaza: page }) => {
+  await standAt(page, await page.evaluate(() => window.__plaza.door('finance')));
+  await expect(prompt(page)).toContainText('Enter Finance');
+  await page.keyboard.press('e');
+  await inRoom(page);
+  expect((await state(page)).room).toBe('finance');
+
+  await standAt(page, [-2.3, 0, 1.4]); // at the tellers' counter
+  await expect(prompt(page)).toContainText('Talk to the teller');
+  await page.keyboard.press('e');
+  await expect(page.locator('#panel .pz-panel-tag')).toHaveText('Finance');
+  // the tests run without Plaza's server, so the bank is closed
+  await expect(page.locator('#panel')).toContainText("Plaza's server isn't running");
+  await page.keyboard.press('Escape');
+
+  await standAt(page, [0, 0, 4.4]);
+  await expect(prompt(page)).toContainText('Back to the plaza');
+});

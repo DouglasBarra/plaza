@@ -47,6 +47,9 @@ export const finance = {
 
   subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); },
 
+  // what the bank's interior needs: the data, and the courier's Sync
+  api: { data: () => data, sync: syncNow },
+
   // what the plaza shows on the bank's sign
   summary() {
     if (!data || data.offline) return { status: 'Finance', count: 0 };
@@ -62,8 +65,8 @@ export const finance = {
     return { status: money(cash), count: 0 };
   },
 
-  mount(el) {
-    let shown = 'overview';
+  mount(el, { tab } = {}) {
+    let shown = tab || 'overview';
     let poll = null;
 
     const render = () => {

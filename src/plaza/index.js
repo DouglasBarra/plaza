@@ -74,6 +74,12 @@ export function buildPlaza(scene) {
       // the town hall is as big as its inside: a box around its walls
       collider = { x, z, hw: HALL_SIZE.w / 2, hd: HALL_SIZE.d / 2 + 0.05, rot: rotY };
       b.userData.door = new THREE.Vector3(x, 0, z).addScaledVector(front, b.userData.doorDist);
+    } else if (b.userData.yard) {
+      // a building as big as its inside, with a yard reaching out in front (the bank)
+      const { cz, hw, hd, doorDist } = b.userData.yard;
+      const c = new THREE.Vector3(x, 0, z).addScaledVector(front, cz);
+      collider = { x: c.x, z: c.z, hw, hd, rot: rotY };
+      b.userData.door = new THREE.Vector3(x, 0, z).addScaledVector(front, doorDist);
     } else {
       // a building standing in its yard: a box around the whole yard
       const { w, d } = b.userData.footprint;

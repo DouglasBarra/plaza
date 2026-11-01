@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { M, stamp, glow, mesh, box, cyl, slab, gable } from '../kit.js';
 import { skipND, nightOnly, smoke } from '../life.js';
 import { W, D, T, F, TOP, DOOR, HOLES } from '../interiors/townhall/dims.js';
+import * as BANK from '../interiors/bank/dims.js';
 import { fancyWindow, door, signBoard, hangingSign, clockHands, ridge, chimney, statue } from '../details.js';
 import { folk } from '../folks.js';
 import { ladder } from '../decor.js';
@@ -113,56 +114,83 @@ export function townHall() {
 
 const dark = toon('#3a3a3a'); // iron: rails, pulleys, hooks, lantern frames
 
-// Finance: the Bank of Plaza. A stone temple front on a podium: steps up to
-// four columns under a pediment, green doors, the name on the frieze, and a
-// dome behind. Lamps flank the steps; a statue stands to one side.
+// Finance: the Bank of Plaza. The same hall as the inside (interiors/bank/
+// dims.js), two stories of stone on a podium, a window wherever the inside
+// has one, and the dome right over the skylight inside. In front, a portico:
+// six columns under a pediment, the name on the frieze, green doors, steps
+// up from the plaza, lamps on the steps' corners and the founder's statue.
 export function bank() {
   const g = new THREE.Group();
-  groundTile(g, 12, 10, M.paving);
-  const T = TILE, P = 1.0, top = T + P;               // the podium's top
-  const bz = -1.4, BW = 8.6, BD = 5.4, BH = 6.6;      // the hall behind the portico
-  const front = bz + BD / 2;                          // its front wall
-  slab(g, 10.2, P, 8.2, M.paving, M.stone, 0, T + P / 2, -0.4);
-  for (let i = 0; i < 3; i++) {                       // three steps up to the podium
-    const h = P * (3 - i) / 3, d = 0.45;
-    box(g, 8.2, h, d, M.stone, 0, T + h / 2, 3.7 + i * d - 0.0);
+  const T = TILE, P = BANK.PODIUM, top = T + P;
+  const OW = BANK.W + BANK.T * 2, OD = BANK.D + BANK.T * 2, H = BANK.TOP + 0.25;
+  const frontZ = OD / 2;
+  const PZ = frontZ + 2.4;                           // the portico's columns
+  const stepsZ = PZ + 0.9;                           // where the podium ends and the steps begin
+  const back = -OD / 2 - 0.7, yardFront = stepsZ + 3 * 0.45 + 0.3;
+  slab(g, OW + 2.6, T, yardFront - back + 0.4, M.paving, M.stone, 0, T / 2, (back + yardFront) / 2 - 0.2);
+  slab(g, OW + 1.0, P, stepsZ - back, M.paving, M.stone, 0, T + P / 2, (back + stepsZ) / 2);
+  for (let i = 0; i < 3; i++) {                      // three steps down to the plaza
+    const h = P * (3 - i) / 3;
+    box(g, 9.4, h, 0.45, M.stone, 0, T + h / 2, stepsZ + 0.225 + i * 0.45);
   }
-  box(g, BW, BH, BD, M.stone, 0, top + BH / 2, bz);
-  box(g, BW + 0.3, 0.3, BD + 0.3, M.white, 0, top + BH + 0.15, bz);       // cornice
-  // the portico: four columns, an entablature with the name, a pediment
-  const CH = 5.6, cz = 2.6;
-  for (const x of [-3.3, -1.1, 1.1, 3.3]) {
-    box(g, 0.95, 0.22, 0.95, M.white, x, top + 0.11, cz);
-    cyl(g, 0.34, 0.4, CH - 0.44, M.white, x, top + CH / 2, cz, 14);
-    box(g, 0.95, 0.22, 0.95, M.white, x, top + CH - 0.11, cz);
+  // the hall: one stone block, a band between the floors, a cornice, rusticated corners
+  box(g, OW, H, OD, M.stone, 0, top + H / 2, 0);
+  box(g, OW + 0.24, 0.22, OD + 0.24, M.white, 0, top + BANK.F, 0);
+  box(g, OW + 0.6, 0.4, OD + 0.6, M.white, 0, top + H + 0.2, 0);
+  box(g, OW + 0.3, 0.6, OD + 0.3, M.stone, 0, top + 0.3, 0);                       // the base course
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    for (let y = 0.8; y < H; y += 0.7) box(g, 0.6, 0.5, 0.6, M.white, sx * (OW / 2 - 0.2), top + y, sz * (OD / 2 - 0.2));
   }
-  const ez = (front + cz + 0.5) / 2, ed = cz + 0.5 - front;  // from the wall to just past the columns
-  box(g, 8.4, 0.9, ed, M.stone, 0, top + CH + 0.45, ez);
-  box(g, 8.6, 0.16, ed + 0.2, M.white, 0, top + CH + 0.98, ez);
-  signBoard(g, 0, top + CH + 0.45, ez + ed / 2 + 0.04, 3.4, 0.5, 'Bank of Plaza');
-  for (const sx of [-1, 1]) box(g, 1.6, 0.14, 0.05, stamp.finance, sx * 2.9, top + CH + 0.45, ez + ed / 2 + 0.03);
-  gable(g, 8.6, 1.5, ed + 0.2, M.stone, top + CH + 1.06, ez);
-  // the doors and windows behind the columns
-  door(g, 0, top, front + 0.02, 1.8, 3.0, stamp.finance);
-  for (const sx of [-1, 1]) fancyWindow(g, sx * 2.5, top + 2.3, front + 0.02, 1.1, 2.2);
-  for (const sx of [-1, 1]) for (const wz of [-1.4, 0.8]) fancyWindow(g, sx * (BW / 2 + 0.02), top + 2.3, bz + wz, 1.1, 2.2, sx * Math.PI / 2);
-  // the dome on its drum
-  const dz = bz - 0.4, dy = top + BH + 0.3;
-  cyl(g, 2.5, 2.5, 1.1, M.stone, 0, dy + 0.55, dz, 28);
-  for (let i = 0; i < 12; i++) {                      // pilasters around the drum
-    const a = (i / 12) * Math.PI * 2;
-    box(g, 0.18, 1.1, 0.12, M.white, Math.cos(a) * 2.52, dy + 0.55, dz + Math.sin(a) * 2.52).rotation.y = -a;
+  // windows where the inside has them: tall below, shorter above, each with a pediment
+  const win = (hole, x, y, z, rotY) => {
+    const w = fancyWindow(g, x, top + y, z, hole.w, hole.h, rotY);
+    gable(w, hole.w + 0.6, 0.35, 0.2, M.white, hole.h / 2 + 0.12, 0.1);
+    box(w, hole.w + 0.7, 0.08, 0.24, M.white, 0, hole.h / 2 + 0.1, 0.1);
+  };
+  const { HOLES } = BANK;
+  for (const h of [...HOLES.front.lower, ...HOLES.front.upper]) win(h, h.c, h.y, frontZ, 0);
+  for (const h of [...HOLES.back.lower, ...HOLES.back.upper]) win(h, h.c, h.y, -frontZ, Math.PI);
+  for (const h of [...HOLES.left.lower, ...HOLES.left.upper]) win(h, -OW / 2, h.y, h.c, -Math.PI / 2);
+  for (const h of [...HOLES.right.lower, ...HOLES.right.upper]) win(h, OW / 2, h.y, h.c, Math.PI / 2);
+  door(g, 0, top, frontZ + 0.02, BANK.DOOR.w, BANK.DOOR.h, stamp.finance);
+  // the portico: six columns, the entablature with the name, the pediment
+  const CH = BANK.F + 1.2;
+  for (const x of [-5.0, -3.0, -1.0, 1.0, 3.0, 5.0]) {
+    box(g, 0.95, 0.22, 0.95, M.white, x, top + 0.11, PZ);
+    cyl(g, 0.36, 0.42, CH - 0.44, M.white, x, top + CH / 2, PZ, 16);
+    box(g, 0.95, 0.22, 0.95, M.white, x, top + CH - 0.11, PZ);
   }
-  mesh(new THREE.SphereGeometry(2.4, 28, 12, 0, Math.PI * 2, 0, Math.PI / 2), M.roofTiles, 0, dy + 1.1, dz, g);
-  cyl(g, 0.35, 0.45, 0.8, M.white, 0, dy + 3.9, dz, 10);
-  mesh(new THREE.SphereGeometry(0.22, 10, 8), M.white, 0, dy + 4.45, dz, g);
+  const ez = (frontZ + PZ + 0.5) / 2, ed = PZ + 0.5 - frontZ;
+  box(g, OW - 0.2, 1.0, ed, M.stone, 0, top + CH + 0.5, ez);
+  box(g, OW, 0.18, ed + 0.2, M.white, 0, top + CH + 1.09, ez);
+  signBoard(g, 0, top + CH + 0.5, ez + ed / 2 + 0.04, 4.2, 0.6, 'Bank of Plaza');
+  for (const sx of [-1, 1]) box(g, 2.0, 0.14, 0.05, stamp.finance, sx * 3.7, top + CH + 0.5, ez + ed / 2 + 0.03);
+  gable(g, OW, 1.9, ed + 0.2, M.stone, top + CH + 1.18, ez);
+  mesh(new THREE.CircleGeometry(0.5, 20), M.clock, 0, top + CH + 1.8, ez + ed / 2 + 0.12, g).castShadow = false;
+  // the dome over the skylight: a drum with pilasters, a tiled dome, a lantern
+  const { x: dx, z: dz } = BANK.OCULUS, dy = top + H + 0.4;
+  cyl(g, 2.6, 2.6, 1.2, M.stone, dx, dy + 0.6, dz, 32);
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2;
+    box(g, 0.18, 1.2, 0.12, M.white, dx + Math.cos(a) * 2.62, dy + 0.6, dz + Math.sin(a) * 2.62).rotation.y = -a;
+  }
+  mesh(new THREE.SphereGeometry(2.5, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2), M.roofTiles, dx, dy + 1.2, dz, g);
+  cyl(g, 0.4, 0.5, 0.9, M.white, dx, dy + 4.1, dz, 12);
+  mesh(new THREE.ConeGeometry(0.5, 0.5, 12), M.white, dx, dy + 4.8, dz, g);
+  mesh(new THREE.SphereGeometry(0.16, 10, 8), stamp.finance, dx, dy + 5.15, dz, g);
   // out front: lamps on the steps' corners, the founder's statue
   const yard = new THREE.Group();
   yard.position.y = T;
   g.add(yard);
-  for (const sx of [-1, 1]) lamp(yard, sx * 4.6, 4.3);
-  statue(g, -5.0, T, 2.2, 0.4);
-  g.userData = { district: 'finance', labelY: 13.4, footprint: { w: 12, d: 10 } };
+  for (const sx of [-1, 1]) lamp(yard, sx * 5.4, yardFront - 0.9);
+  statue(g, -OW / 2 - 0.4, T, yardFront - 1.2, 0.4);
+  const cz = (back + yardFront) / 2, hd = (yardFront - back) / 2;
+  g.userData = {
+    district: 'finance', labelY: dy + 6.4,
+    // the yard reaches further in front than behind: its box sits forward of the origin
+    yard: { cz, hw: (OW + 2.6) / 2, hd, doorDist: yardFront + 0.8 },
+    footprint: { w: OW + 2.6, d: yardFront - back },
+  };
   return g;
 }
 

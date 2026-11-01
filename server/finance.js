@@ -154,6 +154,18 @@ export function finance(db, ports) {
     for (const t of thisMonth) if (t.amount < 0 && !/transfer|transfer[eê]ncia|pagamento de fatura|credit card payment/i.test(t.category || '')) {
       spent[t.category || 'Other'] = (spent[t.category || 'Other'] || 0) - t.amount;
     }
+    // the last twelve months' in and out, oldest first, for the year board
+    function byMonth() {
+      const out = new Map();
+      for (const t of db.bank.all('tx', `${daysAgo(370).slice(0, 7)}-01`)) {
+        const m = day(pick(t, 'date', 'postedDate'))?.slice(0, 7), v = flow(t);
+        if (!m || Number.isNaN(v)) continue;
+        const e = out.get(m) || { month: m, in: 0, out: 0 };
+        if (v > 0) e.in += v; else e.out -= v;
+        out.set(m, e);
+      }
+      return [...out.values()].sort((a, b) => a.month.localeCompare(b.month)).slice(-12);
+    }
     // the latest bills, newest first (the open one isn't published by every bank)
     const bills = db.bank.all('bill').map((b) => ({
       id: b.id, accountId: b.accountId, due: day(pick(b, 'dueDate', 'due_date')),
@@ -176,6 +188,7 @@ export function finance(db, ports) {
         byCategory: Object.entries(spent).sort((a, b) => b[1] - a[1]).slice(0, 8),
       },
       bills,
+      months: byMonth(),
       recent: txs.slice(0, 60),
     };
   }

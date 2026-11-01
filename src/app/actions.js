@@ -28,6 +28,7 @@ export function findAction() {
 
 function useStation(s) {
   if (s.typewriter) return openTypewriter();
+  if (s.use) return s.use();
   openApp(s.app || game.room.id, s.tab ? { tab: s.tab } : {});
 }
 
