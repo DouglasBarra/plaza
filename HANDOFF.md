@@ -90,3 +90,17 @@ These lived in the session scratchpad, which won't survive. They're simple Playw
 - **Drawcalls:** count the meshes under the plaza scene and measure frame times with `requestAnimationFrame`.
 - **Lint:** ESLint 9 with `no-undef`, `no-unused-vars` and `import/named`, over `src/`.
 - The shared brief given to the agents (art style, performance rules, file ownership) is worth recreating if more agents are used. Key rules: white/light-gray surfaces with black ink and color only as tiny stamp accents; no real lights; merge or instance repeated geometry; one browser at a time.
+
+## 5. Done checklist (before deleting this file)
+
+- [ ] `npm run test:e2e` passes (17 or more tests) on `main`
+- [ ] All six `wip/*` branches merged, or dropped with a reason noted in the commit message
+- [ ] The overlap check reports no overlaps, and every building door shows its "Enter …" prompt
+- [ ] Day and night screenshots of the plaza, the fountain, the food-truck corner and the town look right
+- [ ] Mesh count and frame time no worse than about 1.3× the pre-merge numbers
+- [ ] `public/models/README.md` updated for new model names (`food-truck`)
+- [ ] The README's "How it's built" table lists any new files
+- [ ] Old `fountain()`, `cafe()` and `stall()` removed from `src/plaza/props.js`
+- [ ] Remote `wip/*` branches deleted: `git push origin --delete wip/props` (and the others)
+
+If you get stuck, merging fewer branches is fine. A working `main` matters more than finishing everything.
