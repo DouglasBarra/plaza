@@ -1,16 +1,57 @@
-// A tiny persistent store per district. Data lives in this browser's
-// localStorage for now; the desktop app will swap this for files on disk
-// without the districts noticing.
+// A tiny persistent store per district. Data lives on Plaza's server on this
+// Mac (server/, a SQLite file), read once before the app starts and saved
+// back a moment after each change. Each store is also mirrored to this
+// browser's localStorage, which is what's used when no server answers (a
+// static build, the end-to-end tests) and where data from before the server
+// came from: a store the server doesn't have yet is sent up from there.
+
+const SAVE_DELAY = 250; // ms: a burst of changes becomes one save
+
+const server = await fetch('/api/stores', { cache: 'no-store' })
+  .then((r) => (r.ok && r.headers.get('content-type')?.includes('json') ? r.json() : null))
+  .catch(() => null);
+
+const pending = new Map(); // key → timer
+
+function upload(key, state) {
+  clearTimeout(pending.get(key));
+  pending.delete(key);
+  return fetch(`/api/stores/${encodeURIComponent(key)}`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(state),
+    keepalive: true, // still goes through when the page is closing
+  }).catch((e) => console.warn(`Plaza: couldn't save ${key} to the server`, e));
+}
+
+const latest = new Map(); // key → state still waiting to be uploaded
+function flush() {
+  for (const [key, state] of latest) upload(key, state);
+  latest.clear();
+}
+if (server) addEventListener('pagehide', flush);
 
 export function createStore(key, initial) {
-  let state = load(key, initial);
+  let state;
+  if (server && key in server) {
+    state = server[key];
+  } else {
+    state = load(key, initial);
+    if (server && state !== initial) upload(key, state); // bring older browser data over
+  }
+  mirror(key, state);
   const listeners = new Set();
 
   return {
     get: () => state,
     set(next) {
       state = typeof next === 'function' ? next(state) : next;
-      save(key, state);
+      mirror(key, state);
+      if (server) {
+        latest.set(key, state);
+        clearTimeout(pending.get(key));
+        pending.set(key, setTimeout(() => { latest.delete(key); upload(key, state); }, SAVE_DELAY));
+      }
       for (const fn of listeners) fn(state);
     },
     subscribe(fn) {
@@ -29,7 +70,7 @@ function load(key, initial) {
   }
 }
 
-function save(key, state) {
+function mirror(key, state) {
   try {
     localStorage.setItem(key, JSON.stringify(state));
   } catch {

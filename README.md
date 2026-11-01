@@ -13,7 +13,9 @@ npm install
 npm run dev
 ```
 
-Then open http://localhost:5173.
+Then open http://localhost:5173. This starts Plaza's own small server (`server/`), which serves the page through Vite and keeps your data in `data/plaza.db`, a SQLite file on this Mac. To run the built app instead, use `npm start` (http://localhost:4174). Both need Node 22 or later and only listen on this computer.
+
+Your data is the `data/` folder: back it up or copy it to move Plaza to another Mac. Data saved in the browser before the server existed is moved over the first time the page loads with the server running, and the browser keeps a copy of everything as a fallback. Without the server (for example `vite preview`), Plaza still works from that browser copy.
 
 ## Test it
 
@@ -25,7 +27,7 @@ npm run test:e2e                  # headless
 npm run test:e2e:ui               # watch and debug in Playwright's UI
 ```
 
-Tests live in `e2e/`. Each one starts from an empty browser (no saved tasks) and fails on any page error. They build with `--mode test`, which keeps the `window.__plaza` dev handle (left out of real builds) so a test can put you at a door or a desk instead of walking there. Headless Chromium has no GPU, so the scene is software-rendered: tests open the app with `?lowpower` (smaller shadow map, no MSAA) and run one at a time. CI runs them on every pull request (`.github/workflows/e2e.yml`) and keeps the HTML report as an artifact.
+Tests live in `e2e/`. They run without Plaza's server, so each one starts from an empty browser (no saved tasks) and fails on any page error. They build with `--mode test`, which keeps the `window.__plaza` dev handle (left out of real builds) so a test can put you at a door or a desk instead of walking there. Headless Chromium has no GPU, so the scene is software-rendered: tests open the app with `?lowpower` (smaller shadow map, no MSAA) and run one at a time. CI runs them on every pull request (`.github/workflows/e2e.yml`) and keeps the HTML report as an artifact.
 
 ## Arrange things
 
@@ -61,7 +63,8 @@ Three.js with Vite, no framework yet.
 | `src/folks.js`, `src/life.js`, `src/finds.js` | Folks and their poses, small motion (smoke, swaying, lamps), the hidden finds |
 | `src/avatar.js` | You: walking, collisions, doors |
 | `src/districts/` | Each district's app (`todos.js` is the first real one) |
-| `src/store.js` | Saving district data on this computer |
+| `server/` | Plaza's server on this Mac: serves the page and keeps your data in SQLite (`db.js`); later, where other apps, MCP servers and Claude connect |
+| `src/store.js` | Saving district data: on the server, with a copy in the browser |
 | `src/layout.js`, `src/layout.json` | Movable pieces and where the layout editor (`src/app/editor.js`) put them |
 | `src/models.js` | Swapping code-built objects for hand-made Blender or Blockbench models (see `public/models/README.md`) |
 | `tools/` | Model starters and the Blender script (`tools/blender/plaza.py`) |

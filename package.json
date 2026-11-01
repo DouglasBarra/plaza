@@ -4,7 +4,8 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node --disable-warning=ExperimentalWarning server/index.js",
+    "start": "vite build && node --disable-warning=ExperimentalWarning server/index.js --prod",
     "build": "vite build",
     "preview": "vite preview",
     "test:e2e": "playwright test",

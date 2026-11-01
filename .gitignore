@@ -8,3 +8,6 @@ playwright/.cache/
 __pycache__/
 *.blend1
 .claude/worktrees/
+
+# your data (server/db.js)
+data/

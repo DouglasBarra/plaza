@@ -38,4 +38,6 @@ function layoutEditor() {
 
 export default defineConfig({
   plugins: [layoutEditor()],
+  // src/store.js waits for the server's data at the top level
+  build: { target: 'es2022' },
 });
