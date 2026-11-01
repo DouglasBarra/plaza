@@ -13,14 +13,14 @@
 import { drawBark } from './bark.js';
 
 const KEY = 'plaza.sound';
-export const settings = { on: true, volume: 0.8, amb: 0.8, fx: 0.9 };
+export const settings = { on: true, volume: 0.8, amb: 0.8, fx: 0.9, steps: 'everywhere', stepVol: 0.6 };
 try { Object.assign(settings, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch { /* defaults */ }
 export function saveSettings() {
   try { localStorage.setItem(KEY, JSON.stringify(settings)); } catch { /* not remembered */ }
   apply();
 }
 
-export const A = { ctx: null, master: null, amb: null, fx: null, dry: null, plaza: null, plazaLow: null, room: null, roomVerb: null, noise: null, brown: null };
+export const A = { ctx: null, master: null, amb: null, fx: null, dry: null, steps: null, plaza: null, plazaLow: null, room: null, roomVerb: null, noise: null, brown: null };
 const starters = [];
 // fn(A) runs once the context exists (beds build themselves here)
 export function whenReady(fn) { if (A.ctx) fn(A); else starters.push(fn); }
@@ -43,7 +43,8 @@ function start() {
   A.dream.connect(filter('lowpass', 2800, 0.5, gain(0.8, A.master)));
   A.amb = gain(1, A.master);
   A.fx = gain(1, A.master);
-  A.dry = gain(1, A.master);   // effects with no echo at all (your steps)
+  A.dry = gain(1, A.master);   // effects with no echo at all (the dog)
+  A.steps = gain(1, A.master); // your footsteps, dry, with their own volume
   // the plaza bus: open outdoors, through a closed window when you're in
   A.plazaLow = ctx.createBiquadFilter();
   A.plazaLow.type = 'lowpass'; A.plazaLow.frequency.value = 20000;
@@ -84,6 +85,7 @@ export function apply() {
   A.amb.gain.setTargetAtTime(settings.amb, t, 0.08);
   A.fx.gain.setTargetAtTime(settings.fx, t, 0.08);
   A.dry.gain.setTargetAtTime(settings.fx, t, 0.08);
+  A.steps.gain.setTargetAtTime(settings.fx * settings.stepVol, t, 0.08);
 }
 
 // ---------- small helpers ----------

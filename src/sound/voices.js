@@ -85,11 +85,15 @@ export const VOICES = {
   // a small, dark click, like a linear (red) key switch bottoming out: a
   // short low thock and the faintest tap on top, no click from a bump.
   // Boards a little lower and softer, marble a little brighter.
-  step(t, out, { surface = 'stone' } = {}) {
-    const { f, tap } = { wood: { f: 210, tap: 900 }, marble: { f: 300, tap: 1600 }, grass: { f: 190, tap: 700 } }[surface] || { f: 250, tap: 1200 };
-    const v = rnd(0.85, 1.05);
-    tone(t, out, { f: f * rnd(0.95, 1.05), to: f * 0.7, dur: 0.035, vol: 0.06 * v, attack: 0.002 });
-    hiss(t, out, { f: tap, q: 1.4, dur: 0.018, vol: 0.022 * v, attack: 0.001, type: 'bandpass' });
+  // The right foot a shade lower than the left; stopping is a softer, rounder
+  // settle. (steps.js paces them.)
+  step(t, out, { surface = 'stone', foot = 0, kind = 'walk' } = {}) {
+    const base = { wood: { f: 210, tap: 900 }, marble: { f: 300, tap: 1600 }, grass: { f: 190, tap: 700 } }[surface] || { f: 250, tap: 1200 };
+    const side = foot ? 0.93 : 1;
+    const f = base.f * side * rnd(0.96, 1.04), tap = base.tap * side * rnd(0.92, 1.08);
+    const settle = kind === 'stop';
+    tone(t, out, { f: settle ? f * 0.85 : f, to: f * 0.7, dur: settle ? 0.055 : 0.035, vol: 0.045, attack: settle ? 0.006 : 0.002 });
+    hiss(t, out, { f: settle ? tap * 0.7 : tap, q: 1.4, dur: 0.018, vol: settle ? 0.008 : 0.016, attack: 0.001, type: 'bandpass' });
   },
 
   // ---------- creatures and folks ----------
