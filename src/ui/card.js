@@ -7,6 +7,7 @@ import { me } from '../app/plaza.js';
 import { captureMouse } from '../app/camera.js';
 import { leaveLot } from '../app/rooms.js';
 import { hideTip } from './hall-cards.js';
+import { sfx } from '../sound/index.js';
 
 const overlay = document.getElementById('overlay');
 const panel = document.getElementById('panel');
@@ -15,6 +16,7 @@ let unmount = null;
 // Open the card as `kind` (what game.appOpen becomes) and return its body.
 // Walking stops and the mouse is freed while it's open.
 export function showCard(kind, { tag, title, cls, body = '', form = false }) {
+  if (!game.appOpen) sfx('rustle');
   unmount?.();
   unmount = null;
   game.appOpen = kind;
@@ -46,6 +48,7 @@ export function openApp(id, opts = {}) {
 
 export function closeApp() {
   hideTip();
+  if (game.appOpen) sfx('slide');
   // back to the game: in first person the mouse looks around again
   if (game.view === 'first') captureMouse();
   unmount?.();
@@ -60,6 +63,7 @@ export function closeApp() {
 export function reward(text) {
   const el = document.createElement('div');
   el.className = 'reward';
+  sfx(/done/i.test(text) ? 'done' : /pinned/i.test(text) ? 'pin' : 'chime');
   const rays = Array.from({ length: 12 }, (_, i) => {
     const a = (i / 12) * Math.PI * 2;
     return `<line x1="${180 + Math.cos(a) * 120}" y1="${180 + Math.sin(a) * 70}" x2="${180 + Math.cos(a) * 150}" y2="${180 + Math.sin(a) * 92}"/>`;

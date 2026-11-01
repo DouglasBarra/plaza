@@ -23,6 +23,7 @@ import { furnishGroundFloor } from './ground-floor.js';
 import { furnishUpstairs } from './upstairs.js';
 import { money } from './displays.js';
 import { openApp } from '../../ui/card.js';
+import { sfx } from '../../sound/index.js';
 import { atWork, backAt } from '../../plaza/routines.js';
 
 const onLayer = (o, layer) => { o.traverse((c) => c.layers.set(layer)); return o; };
@@ -166,6 +167,7 @@ export function buildBank(scene, rand, lights) {
     const quota = d.quota ? `\n\nYour Banco plan: ${d.quota}.` : '';
     if (!confirm(`Send the courier for news from your banks?\n\nThis syncs your accounts and uses about 5 calls on your Banco plan.${quota}`)) return;
     fin.sync();
+    sfx('tube', { at: ground.spots.courier.clone().setY(1.5), room: 'finance' });
   }
 
   // walking: the stairs connect the floors
@@ -202,5 +204,9 @@ export function buildBank(scene, rand, lights) {
     cameraOffset: new THREE.Vector3(10, 16, 17),
     // the room is the building: the yard tile (0.4 m) and the podium lift the hall off the plaza
     plazaOffset: new THREE.Vector3(0, 0.4 + PODIUM, 0),
+    // a hushed hall with an echo; coins and pages across it; the vault's bolt as you come in
+    sounds: [{ kind: 'hush' }],
+    soundSpots: [ground.spots.teller, ground.spots.vault, ground.spots.ticker, ground.spots.chart].map((p) => p.clone().setY(1.2)),
+    enterSound: { name: 'vault', at: ground.spots.vault.clone().setY(1).setZ(ground.spots.vault.z - 1.2), delay: 0.9 },
   };
 }

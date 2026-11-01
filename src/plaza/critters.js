@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { M, mesh, box, cyl } from '../kit.js';
 import { swapModel } from '../models.js';
+import { sfx } from '../sound/index.js';
 import { PIGEON, parts, meshBird, fold, flap, steer } from '../birds.js';
 
 const cats = [];
@@ -157,6 +158,7 @@ function groundStep(b, time, player) {
 // plaza, and back down in a glide to land somewhere clear of you.
 const UP = new THREE.Vector3(0, 1, 0);
 function takeOff(b, time, player) {
+  sfx('flutter', { at: b.getWorldPosition(new THREE.Vector3()), gap: 0.25 });
   const u = b.userData, A = b.position.clone();
   const out = new THREE.Vector3(A.x, 0, A.z).normalize();               // away from the fountain
   const away = player ? new THREE.Vector3(A.x - player.x, 0, A.z - player.z) : out.clone();

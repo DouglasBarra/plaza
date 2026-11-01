@@ -307,3 +307,10 @@ body.editing .layout-toggle { display: none; }
 .greeting h1, .greeting p { text-shadow: 0 0 2px var(--paper), 0 0 4px var(--paper), 0 0 8px var(--paper), 0 0 12px var(--paper); }
 .greeting p { color: var(--ink); }
 .chat-ask[hidden], .chat-form[hidden] { display: none; }
+
+/* ---------- the Sound card ---------- */
+.sound-card .snd-row { display: grid; gap: var(--space-2); margin-bottom: var(--space-4); font-size: 16px; }
+.sound-card .snd-on { display: flex; align-items: center; gap: var(--space-2); font-family: var(--font-display); font-size: 18px; }
+.sound-card .snd-on input { width: 20px; height: 20px; accent-color: var(--ink); }
+.sound-card input[type="range"] { width: 100%; accent-color: var(--ink); }
+.sound-card .snd-note { color: var(--ink-muted); font-size: 14px; margin: 0; }
