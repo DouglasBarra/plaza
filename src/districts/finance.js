@@ -52,10 +52,11 @@ export const finance = {
     if (!data || data.offline) return { status: 'Finance', count: 0 };
     if (!data.loggedIn) return { status: 'Connect your bank', count: 0 };
     if (!data.accounts?.length) return { status: data.syncing ? 'Syncing…' : 'Add a bank', count: 0 };
-    const soon = (data.bills || []).filter((b) => daysUntil(b.due) <= 7);
+    const soon = data.accounts.filter((a) => a.type === 'CREDIT' && a.due && daysUntil(a.due) >= 0 && daysUntil(a.due) <= 7)
+      .sort((a, b) => a.due.localeCompare(b.due));
     if (soon.length) {
       const d = daysUntil(soon[0].due);
-      return { status: `Card bill ${d <= 0 ? 'due today' : d === 1 ? 'due tomorrow' : `due ${shortDate(soon[0].due)}`}`, count: soon.length };
+      return { status: `Card ${d === 0 ? 'due today' : d === 1 ? 'due tomorrow' : `due ${shortDate(soon[0].due)}`}`, count: soon.length };
     }
     const cash = data.accounts.filter((a) => a.type === 'BANK').reduce((s, a) => s + (a.balance || 0), 0);
     return { status: money(cash), count: 0 };
@@ -108,12 +109,18 @@ export const finance = {
       const { month, bills } = data;
       const cash = data.accounts.filter((a) => a.type === 'BANK').reduce((s, a) => s + (a.balance || 0), 0);
       const top = month.byCategory[0]?.[1] || 1;
+      // each card: what's used of its limit, and when it's due
+      const cardRows = data.accounts.filter((a) => a.type === 'CREDIT').map((a) => {
+        const d = a.due ? daysUntil(a.due) : null;
+        return `<div class="row"><span class="t">${esc(a.name)}<small>${a.limit != null ? `of ${money(a.limit, a.currency)}` : ''}</small></span>
+          ${d != null && d >= 0 ? `<span class="when${d <= 3 ? ' late' : ''}">due ${d === 0 ? 'today' : shortDate(a.due)}</span>` : ''}
+          <span class="fi-amt">${money(a.used ?? a.balance, a.currency)}</span></div>`;
+      }).join('');
+      const STATUS = { PAID: 'paid', OPEN: 'open', PAST_DUE_UNCONFIRMED: 'not confirmed', PAST_DUE_UNPAID: 'unpaid' };
       const billRows = bills.slice(0, 3).map((b) => {
-        const card = data.accounts.find((a) => a.id === b.accountId);
-        const d = daysUntil(b.due);
-        return `<div class="row"><span class="t">${esc(card?.name || 'Card')} bill</span>
-          <span class="when${d <= 3 ? ' late' : ''}">${d <= 0 ? 'today' : shortDate(b.due)}</span>
-          <span class="fi-amt">${money(b.total, b.currency)}</span></div>`;
+        const late = b.status === 'PAST_DUE_UNPAID' && b.total > 0;
+        return `<div class="row"><span class="t">Bill due ${shortDate(b.due)}<small>${b.total ? esc(STATUS[b.status] || '') : 'nothing due'}</small></span>
+          <span class="fi-amt${late ? ' fi-late' : ''}">${money(b.total, b.currency)}</span></div>`;
       }).join('');
       return `
         <div class="fi-cards">
@@ -121,7 +128,8 @@ export const finance = {
           <div class="fi-card"><span>In this month</span><b class="fi-in">${money(month.in)}</b></div>
           <div class="fi-card"><span>Out this month</span><b>${money(month.out)}</b></div>
         </div>
-        ${billRows ? `<h3 class="td-section">Card bills coming up</h3>${billRows}` : ''}
+        ${cardRows ? `<h3 class="td-section">Cards</h3>${cardRows}` : ''}
+        ${billRows ? `<h3 class="td-section">Last bills</h3>${billRows}` : ''}
         ${month.byCategory.length ? `<h3 class="td-section">Where it went this month</h3>
           <div class="fi-bars">${month.byCategory.map(([c, v]) => `
             <div class="fi-bar"><span class="fi-bar-name">${esc(c)}</span>
@@ -158,7 +166,7 @@ export const finance = {
 
     function footer() {
       return `<div class="fi-foot">
-        <span>${data.syncing ? 'Syncing…' : data.lastSync ? `Synced ${ago(data.lastSync)}` : 'Not synced yet'}</span>
+        <span>${data.syncing ? 'Syncing…' : data.lastSync ? `Synced ${ago(data.lastSync)}` : 'Not synced yet'}${data.quota ? `<small>Banco plan: ${esc(data.quota)}</small>` : ''}</span>
         <button class="pz-btn" data-act="sync"${data.syncing ? ' disabled' : ''}>Sync</button>
         ${data.addConnectionUrl && data.accounts?.length ? `<a class="pz-btn" href="${esc(data.addConnectionUrl)}" target="_blank" rel="noopener">Add a bank</a>` : ''}
         <button class="fi-link" data-act="logout">Log out of Banco</button>

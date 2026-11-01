@@ -1,16 +1,20 @@
 // The Finance district's data: your banks, through Banco MCP (Brazilian Open
 // Finance, read-only for money). The server logs in to Banco once, then
 // copies connections, accounts, transactions and card bills into the bank
-// table: on start, every few hours, and when you press Sync. The page only
-// ever reads Plaza's own /api/finance, never Banco directly.
+// table when you press Sync (and right after logging in). The page only ever
+// reads Plaza's own /api/finance, never Banco directly.
+//
+// Every Banco call counts against your mcp.ai plan (the free one has 10), so
+// a sync makes as few as it can: about 2 plus 1 per account plus 1 per card.
+// Set FINANCE_SYNC_HOURS to also sync on a timer.
 //
 // Banco can also change things (re-categorize transactions, revoke a bank's
 // consent). Plaza doesn't use those; when Claude does, it asks you first.
 import { mcpConnection } from './mcp.js';
 
 const BANCO_URL = process.env.BANCO_MCP_URL || 'https://api.mcp.ai/banco';
-const EVERY = 6 * 3600e3;          // background sync
-const FIRST_DAYS = 365;             // how far back the first sync reaches
+const EVERY = Number(process.env.FINANCE_SYNC_HOURS || 0) * 3600e3; // 0: only when you press Sync
+const FIRST_DAYS = 365;             // how far back an account's first sync reaches
 const OVERLAP_DAYS = 10;            // later syncs re-read this much, for late changes
 const PAGE = 500;
 
@@ -27,6 +31,7 @@ function listIn(res) {
   return [];
 }
 const pick = (o, ...names) => { for (const n of names) if (o?.[n] != null) return o[n]; };
+const num = (v) => (v == null || v === '' ? null : Number(v));
 const day = (d) => (d ? String(d).slice(0, 10) : null);
 const daysAgo = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
 
@@ -37,8 +42,16 @@ export function finance(db, ports) {
   const meta = () => db.secret('finance.meta') || {};
   const setMeta = (m) => db.setSecret('finance.meta', { ...meta(), ...m });
 
+  // a Banco call, noting what it says about your plan's usage
+  async function ask(tool, args) {
+    const res = await banco.call(tool, args);
+    const hint = res && typeof res === 'object' && pick(res, 'free_tier_usage_hint', 'usage_hint');
+    if (hint) setMeta({ quota: String(hint).replace(/^_+|_+$/g, '').replace(/^\(|\)$/g, '') });
+    return res;
+  }
+
   async function syncNow() {
-    const res = await banco.call('openfinance_list_connections');
+    const res = await ask('openfinance_list_connections');
     const conns = listIn(res);
     const items = conns.map((c) => ({
       id: String(pick(c, 'item_id', 'itemId', 'id')),
@@ -53,26 +66,33 @@ export function finance(db, ports) {
       ? (res.match(/Banco MCP:\s*(https:\/\/\S+)/) || res.match(/(https:\/\/\S*\/connect\/\S+)/))?.[1]
       : pick(res, 'add_connection_url', 'addConnectionUrl', 'connect_url', 'url');
 
+    // every bank's accounts in one call
     const accounts = [];
-    for (const item of items) {
-      for (const a of listIn(await banco.call('openfinance_list_accounts', { item_id: item.id }))) {
-        accounts.push({ ...a, itemId: a.itemId || item.id, bank: item.bank });
+    if (items.length) {
+      const bankOf = Object.fromEntries(items.map((i) => [i.id, i.bank]));
+      const got = await ask('openfinance_list_accounts', items.length === 1 ? { item_id: items[0].id } : { item_ids: items.map((i) => i.id) });
+      for (const a of listIn(got)) {
+        const itemId = a.itemId || a.item_id || (items.length === 1 ? items[0].id : null);
+        accounts.push({ ...a, itemId, bank: bankOf[itemId] || items[0].bank });
       }
     }
 
-    const since = meta().lastSync ? daysAgo(OVERLAP_DAYS) : daysAgo(FIRST_DAYS);
+    // a year back until an account's whole year has come in once, then the last few days
+    const known = new Set(meta().history || []);
     const to = daysAgo(-1);
     const txs = [], bills = [];
     for (const a of accounts) {
+      const from = known.has(a.id) ? daysAgo(OVERLAP_DAYS) : daysAgo(FIRST_DAYS);
       for (let page = 1; page <= 40; page++) {
-        const got = listIn(await banco.call('openfinance_list_transactions', { account_id: a.id, from: since, to, page, page_size: PAGE, detail: 'raw' }));
-        for (const t of got) txs.push({ ...t, accountId: t.accountId || a.id });
-        if (got.length < PAGE) break;
+        const got = await ask('openfinance_list_transactions', { account_id: a.id, from, to, page, page_size: PAGE, detail: 'raw' });
+        const list = listIn(got);
+        for (const t of list) txs.push({ ...t, accountId: t.accountId || a.id });
+        if (list.length < PAGE || page >= (got?.totalPages ?? page)) break;
       }
       if (a.type === 'CREDIT') {
-        for (const b of listIn(await banco.call('openfinance_list_credit_card_bills', { account_id: a.id, include_open_bill: true }))) {
-          bills.push({ ...b, accountId: a.id });
-        }
+        const got = await ask('openfinance_list_credit_card_bills', { account_id: a.id, include_open_bill: true });
+        for (const b of listIn(got)) bills.push({ ...b, accountId: a.id });
+        a.pendingDebt = got?.total_pending_debt;
       }
     }
 
@@ -83,7 +103,7 @@ export function finance(db, ports) {
       for (const t of txs) db.bank.put('tx', t.id, t.accountId, day(pick(t, 'date', 'postedDate')), t);
       for (const b of bills) db.bank.put('bill', b.id, b.accountId, day(pick(b, 'dueDate', 'due_date')), b);
     });
-    setMeta({ lastSync: Date.now(), addUrl: addUrl || meta().addUrl, error: null });
+    setMeta({ lastSync: Date.now(), addUrl: addUrl || meta().addUrl, error: null, history: [...new Set([...known, ...accounts.map((a) => a.id)])] });
     return { items: items.length, accounts: accounts.length, transactions: txs.length, bills: bills.length };
   }
 
@@ -98,10 +118,12 @@ export function finance(db, ports) {
     return syncing;
   }
 
-  // in the background: soon after start, then every few hours
-  const tick = () => { if (banco.loggedIn() && Date.now() - (meta().lastSync || 0) > EVERY - 60e3) sync().catch(() => {}); };
-  setTimeout(tick, 5e3);
-  setInterval(tick, 15 * 60e3).unref();
+  // on a timer, only if asked for (FINANCE_SYNC_HOURS)
+  if (EVERY) {
+    const tick = () => { if (banco.loggedIn() && Date.now() - (meta().lastSync || 0) > EVERY - 60e3) sync().catch(() => {}); };
+    setTimeout(tick, 5e3);
+    setInterval(tick, 15 * 60e3).unref();
+  }
 
   // ---------- what the page gets ----------
   function summary() {
@@ -109,14 +131,17 @@ export function finance(db, ports) {
     const items = db.bank.all('item');
     const accounts = db.bank.all('account').map((a) => ({
       id: a.id, bank: a.bank, type: a.type, subtype: a.subtype,
-      name: pick(a, 'marketingName', 'name') || a.type,
-      number: a.number, currency: a.currencyCode || 'BRL', balance: a.balance,
-      limit: a.creditData?.creditLimit, available: a.creditData?.availableCreditLimit,
+      // banks name accounts after the company ("Nu Pagamentos S.A. - …"): say
+      // "Nubank account" instead; cards keep their name ("Nubank gold")
+      name: a.type === 'CREDIT' ? `${a.bank} ${a.name || 'card'}` : !a.name || a.name.length > 28 ? `${a.bank} account` : a.name,
+      number: a.number, currency: a.currencyCode || 'BRL', balance: num(a.balance),
+      limit: num(a.creditData?.creditLimit), available: num(a.creditData?.availableCreditLimit),
+      used: num(a.creditData?.usedAmount ?? a.pendingDebt), due: day(a.creditData?.balanceDueDate),
     }));
     const kind = Object.fromEntries(accounts.map((a) => [a.id, a.type]));
     // one sign for everything: money in is positive. Card charges come in
     // positive from the provider, so they're flipped.
-    const flow = (t) => (kind[t.accountId] === 'CREDIT' ? -t.amount : t.amount);
+    const flow = (t) => (kind[t.accountId] === 'CREDIT' ? -num(t.amount) : num(t.amount));
     const txs = db.bank.all('tx', daysAgo(120)).map((t) => ({
       id: t.id, date: day(pick(t, 'date', 'postedDate')), accountId: t.accountId,
       description: pick(t, 'descriptionRaw', 'description') || '',
@@ -129,18 +154,19 @@ export function finance(db, ports) {
     for (const t of thisMonth) if (t.amount < 0 && !/transfer|transfer[eê]ncia|pagamento de fatura|credit card payment/i.test(t.category || '')) {
       spent[t.category || 'Other'] = (spent[t.category || 'Other'] || 0) - t.amount;
     }
-    const today = daysAgo(0);
+    // the latest bills, newest first (the open one isn't published by every bank)
     const bills = db.bank.all('bill').map((b) => ({
       id: b.id, accountId: b.accountId, due: day(pick(b, 'dueDate', 'due_date')),
-      total: pick(b, 'totalAmount', 'total_amount'), minimum: pick(b, 'minimumPaymentAmount', 'minimum_payment_amount'),
-      currency: pick(b, 'totalAmountCurrencyCode', 'currencyCode') || 'BRL',
-    })).filter((b) => b.due && b.due >= today).sort((a, b) => a.due.localeCompare(b.due));
+      total: num(pick(b, 'totalAmount', 'total_amount')), minimum: num(pick(b, 'minimumPaymentAmount', 'minimum_payment_amount')),
+      currency: pick(b, 'totalAmountCurrencyCode', 'currencyCode') || 'BRL', status: b.payment_status || null,
+    })).filter((b) => b.due).slice(0, 6);
 
     return {
       loggedIn: banco.loggedIn(),
       syncing: !!syncing,
       lastSync: m.lastSync || null,
       error: m.error || null,
+      quota: m.quota || null,
       addConnectionUrl: m.addUrl || null,
       banks: items.map((i) => ({ id: i.id, bank: i.bank, status: i.status, reconnectUrl: i.reconnectUrl })),
       accounts,
