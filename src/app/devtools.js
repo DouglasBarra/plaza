@@ -47,7 +47,7 @@ export function installDevtools() {
       const first = ray.intersectObjects(currentScene().children, true).find((h) => !h.object.material?.transparent && shownInScene(h.object));
       return { onScreen: Math.abs(p.x) < 1 && Math.abs(p.y) < 1, firstHit: first?.object.userData.findId ?? first?.object.geometry?.type ?? null, found: tryFind() };
     },
-    state: () => ({ room: game.room?.id ?? null, view: game.view, appOpen: game.appOpen, action: game.action?.label ?? null, pos: me.position.toArray().map((n) => +n.toFixed(2)) }),
+    state: () => ({ room: game.room?.id ?? null, view: game.view, appOpen: game.appOpen, transitioning: !!game.transitioning, action: game.action?.label ?? null, pos: me.position.toArray().map((n) => +n.toFixed(2)) }),
     // walk with held keys for `seconds`, simulated at 60 fps
     walk(keys, seconds) {
       keys.forEach((k) => me.keys.add(k));

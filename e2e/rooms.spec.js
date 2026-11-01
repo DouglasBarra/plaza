@@ -9,6 +9,8 @@ async function enterHall(page) {
   await expect(prompt(page)).toContainText('Enter ToDos');
   await page.keyboard.press('e');
   await inRoom(page);
+  // let the ink wipe finish, so clicks land on the room and not the fading plaza
+  await page.waitForFunction(() => !window.__plaza.state().transitioning);
 }
 
 test('walk into the town hall at its door and out by the doormat', async ({ plaza: page }) => {

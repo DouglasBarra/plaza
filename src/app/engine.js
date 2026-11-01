@@ -29,7 +29,7 @@ const ambient = new THREE.AmbientLight(0xffffff, 1);
 const sun = new THREE.DirectionalLight(0xffffff, Math.PI);
 sun.position.set(-14, 26, 12);
 sun.castShadow = true;
-sun.shadow.mapSize.setScalar(lowPower ? 1024 : 4096);
+sun.shadow.mapSize.setScalar(lowPower ? 512 : 4096);
 Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 1, far: 120 });
 sun.shadow.bias = -0.0005;
 sun.shadow.normalBias = 0.03;

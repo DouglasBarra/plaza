@@ -2,7 +2,7 @@
 // ui/ (cards, signs, toggles), plaza/ and interiors/ (the scenes); this file
 // wires them together and runs the frame loop.
 import * as THREE from 'three';
-import { renderer, ink, camera, canvas } from './app/engine.js';
+import { renderer, ink, camera, canvas, lowPower } from './app/engine.js';
 import { game } from './app/state.js';
 import { me, town, updatePlaza } from './app/plaza.js';
 import { setOrbitLimits, placeCameraBehindMe, stepTween, updateCamera } from './app/camera.js';
@@ -50,6 +50,10 @@ if (import.meta.env.DEV || import.meta.env.MODE === 'test') {
 }
 
 const clock = new THREE.Clock();
+// ?lowpower (what the e2e tests use) still runs the plaza every frame but
+// only draws it 12 times a second: the drawing is what's costly without a GPU
+const DRAW_EVERY = lowPower ? 1000 / 12 : 0;
+let drawnAt = -1e9;
 renderer.setAnimationLoop((now) => {
   const dt = Math.min(clock.getDelta(), 0.05);
   const t = clock.elapsedTime;
@@ -74,8 +78,11 @@ renderer.setAnimationLoop((now) => {
   stepWashes(dt);
 
   animatePlaza(t, room ? null : me.position, dt);
-  if (room?.plazaOffset && game.view === 'first') renderWindowView(t);
-  ink.render(currentScene(), camera, t);
+  if (now - drawnAt >= DRAW_EVERY) {
+    drawnAt = now;
+    if (room?.plazaOffset && game.view === 'first') renderWindowView(t);
+    ink.render(currentScene(), camera, t);
+  }
   placeLabels();
   placeSpeech();
 });

@@ -41,12 +41,14 @@ Folks keep hours: the clerk works 8 to 6, the bank 9 to 5. Outside them you can 
 
 ## Test it
 
-End-to-end tests drive the real app in Chromium with [Playwright](https://playwright.dev). They build the app, serve it with `vite preview`, and play it: the dock and shortcuts, walking into the town hall, the clerk's typewriter, tearing a note off the board, an empty lot, and the ToDos app itself.
+End-to-end tests drive the real app in Chromium with [Playwright](https://playwright.dev). They build the app, serve it with `vite preview`, and play it: the dock and shortcuts, walking into the town hall, the clerk's typewriter, tearing a note off the board, an empty lot, and the ToDos app itself. They open the page with `?lowpower`, which draws the scene 12 times a second with smaller shadows; rendering WebGL without a GPU is what makes them heavy.
 
 ```bash
 npx playwright install chromium   # once
 npm run test:e2e                  # headless
 npm run test:e2e:ui               # watch and debug in Playwright's UI
+npm run test:e2e:quiet            # macOS: on the efficiency cores, so the Mac stays cool (about twice as slow)
+npm run test:e2e:changed          # quiet, and only the specs touched since main
 ```
 
 Tests live in `e2e/`. They run without Plaza's server, so each one starts from an empty browser (no saved tasks) and fails on any page error. They build with `--mode test`, which keeps the `window.__plaza` dev handle (left out of real builds) so a test can put you at a door or a desk instead of walking there. Headless Chromium has no GPU, so the scene is software-rendered: tests open the app with `?lowpower` (smaller shadow map, no MSAA) and run one at a time. CI runs them on every pull request (`.github/workflows/e2e.yml`) and keeps the HTML report as an artifact.
