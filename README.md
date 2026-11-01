@@ -25,7 +25,7 @@ The Finance district (the bank) reads your Brazilian bank accounts through [Banc
 2. **Log in to Banco** takes you to mcp.ai, then back to Plaza.
 3. **Connect a bank** opens Banco's page, where you give each bank its Open Finance consent. Then press **Sync**.
 
-Plaza's server does the talking (`server/finance.js`, through `server/mcp.js`): the login is kept in `data/plaza.db` and never reaches the page. It syncs accounts, a year of transactions and card bills into the same file when it starts, every six hours, and when you press Sync. Set `BANCO_MCP_URL` to use another Banco address.
+Plaza's server does the talking (`server/finance.js`, through `server/mcp.js`): the login is kept in `data/plaza.db` and never reaches the page. It syncs accounts, a year of transactions and card bills into the same file when you press Sync. Every Banco call counts against your mcp.ai plan (the free one has 10 questions), so it doesn't sync on its own; set `FINANCE_SYNC_HOURS` to sync on a timer. Set `BANCO_MCP_URL` to use another Banco address.
 
 ## Test it
 
