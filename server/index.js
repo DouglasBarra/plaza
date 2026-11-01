@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { openDb } from './db.js';
 import { finance } from './finance.js';
 import { claude } from './claude.js';
+import { people } from './people.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const DEV = !process.argv.includes('--prod');
@@ -20,7 +21,7 @@ const db = openDb(process.env.PLAZA_DB || join(ROOT, 'data', 'plaza.db'));
 // logins come back to whichever port this server answers on
 const ports = [...new Set([PORT, 5173, 4174])];
 const money = finance(db, ports);
-const districts = [money, claude(db, money)];
+const districts = [money, claude(db, money), people(db, ports)];
 
 // ---------- the API ----------
 const KEY = /^[\w.-]{1,100}$/;

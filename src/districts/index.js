@@ -6,6 +6,7 @@
 // Adding a district = writing one of these and putting it in DISTRICTS.
 import { todos } from './todos.js';
 import { finance } from './finance.js';
+import { people } from './people.js';
 
 // Placeholder district with static sample rows, until its real app exists.
 function sample({ id, name, key, title, status, count = 0, items = [], note }) {
@@ -35,6 +36,5 @@ export const DISTRICTS = {
     items: [['A plaza where my life lives', 'Today'], ['Postcard club with friends', 'Oct 28'], ['Learn to draw like Hidden Folks', 'Oct 12']] }),
   projects: sample({ id: 'projects', name: 'Projects', key: '5', title: 'On the workbench', status: '3 on the go',
     items: [['Plaza, this app', 'Town hall'], ['TCC', 'Ch. 3 of 5'], ['A bookshelf for the hall', 'Sanding'], ['Learn Blender', 'Started', 'done']] }),
-  people: sample({ id: 'people', name: 'People', key: '6', title: 'Keeping in touch', status: 'Coffee with Ana', count: 1,
-    items: [['Coffee with Ana', 'Overdue', 'late'], ['Call Grandma', 'Sun'], ["Leo's birthday", 'Nov 12'], ['Postcard to the club', 'Mailed', 'done']] }),
+  people,
 };
