@@ -14,7 +14,7 @@ import { bench, crate, bike, lamp } from './props.js';
 
 export const beams = [];
 
-const TILE = 0.4; // height of each building's raised ground tile
+export const TILE = 0.4; // height of each building's raised ground tile
 
 // The raised yard a building stands on, w x d meters.
 function groundTile(p, w, d, top) {

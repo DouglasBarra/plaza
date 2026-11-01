@@ -5,7 +5,7 @@ import { placeFinds, animateFinds } from '../finds.js';
 import { leaves, animateLife } from '../life.js';
 import { addFolk, animateFigures } from '../folks.js';
 import { updateClocks, animateCranes } from '../details.js';
-import { beams, HALL_SIZE, townHall, bank, library, lighthouse, works, postOffice } from './buildings.js';
+import { beams, HALL_SIZE, TILE, townHall, bank, library, lighthouse, works, postOffice } from './buildings.js';
 import { roundTree, bench, lamp, bollards, planter, bike, noticeboard, mailbox } from './props.js';
 import { TRUCK, truckFrame, foodTruck, chalkSign, stringLights, lightPool, barrelPlanter, bistroTable, picnicTable, chairSpot, benchSpot, litterBin } from './foodtruck.js';
 import { cat, pigeon, animateCritters } from './critters.js';
@@ -47,6 +47,26 @@ const SPOTS = {
   ideas: [25.1, 28.9],                  // the lighthouse, in the south-east corner
 };
 const facingFountain = (x, z) => Math.atan2(-x, -(z - FZ));
+
+// Stone steps up onto a building's raised yard, where its walk arrives: two
+// treads between low cheek blocks, set against the yard's front edge (80 cm
+// in from the door spot) and facing the fountain. Returns where the walk
+// should end: just under the bottom step, so the stone runs on into it.
+const STEP_W = 3.1, TREAD = 0.36;
+function yardSteps(world, door, rotY) {
+  const g = new THREE.Group();
+  const front = new THREE.Vector3(Math.sin(rotY), 0, Math.cos(rotY));
+  g.position.copy(door).addScaledVector(front, -0.8).setY(0);
+  g.rotation.y = rotY;
+  world.add(g);
+  const rise = TILE / 3;
+  for (let i = 0; i < 2; i++) {                                  // the upper tread meets the yard, the lower one the walk
+    const h = rise * (2 - i);
+    box(g, STEP_W, h, TREAD, M.stone, 0, h / 2, TREAD / 2 + i * TREAD);
+  }
+  for (const sx of [-1, 1]) box(g, 0.28, TILE, TREAD * 2, M.stone, sx * (STEP_W / 2 + 0.14), TILE / 2, TREAD);
+  return g.position.clone().addScaledVector(front, TREAD * 2 - 0.1);
+}
 
 export function buildPlaza(scene) {
   const world = new THREE.Group();
@@ -112,19 +132,26 @@ export function buildPlaza(scene) {
   for (const [id, [x, z]] of Object.entries(SPOTS)) place(builders[id](), x, z, facingFountain(x, z));
   const hallSteps = HALL.z + HALL_SIZE.d / 2 + 1.6;              // the foot of the town hall's steps
 
-  // ---- walks: the streets to the fountain, and the ring to every door
-  walk(0, hz, 0, FZ + RING, 3.2);                                // from the south street
-  walk(hx, 0, RING, 0, 3.2);                                     // from the east
-  walk(-hx, 0, -RING, 0, 3.2);                                   // from the west
-  walk(0, FZ - RING, 0, hallSteps - 0.2, 3.2);                   // up to the hall's steps
+  // ---- walks: the streets to the fountain, and the ring to every door. Each
+  // starts tucked a little under the fountain's stone ring, so the ring's
+  // curve is the joint, and ends under the bottom step up to a building's yard.
+  const IN = RING - 0.35;                                        // under the ring, corners and all
+  const walks = [
+    [0, hz, 0, FZ + IN, 3.2],                                    // from the south street
+    [hx, 0, IN, 0, 3.2],                                         // from the east
+    [-hx, 0, -IN, 0, 3.2],                                       // from the west
+    [0, FZ - IN, 0, hallSteps - 0.2, 3.2],                       // up to the hall's steps
+  ];
   const walkAngles = [0, Math.PI / 2, Math.PI, -Math.PI / 2];   // as seen from the fountain: south, east, north, west
   for (const b of buildings) {
     if (b.userData.hall) continue;
     const d = b.userData.door;
     const a = Math.atan2(d.x, d.z - FZ);
-    walk(Math.sin(a) * RING, FZ + Math.cos(a) * RING, d.x, d.z);
+    const foot = yardSteps(world, d, b.rotation.y);
+    walks.push([Math.sin(a) * IN, FZ + Math.cos(a) * IN, foot.x, foot.z, 2.6]);
     walkAngles.push(a);
   }
+  for (const w of walks) walk(...w);
 
   // ---- the fountain, and the bench ring around it; each bench brings the folks on it
   const fountainGroup = fountain(world);
@@ -289,11 +316,7 @@ export function buildPlaza(scene) {
   const NAMES = { todo: 'Town Hall', finance: 'Bank', study: 'Library', ideas: 'Lighthouse', projects: 'Works', people: 'Post Office' };
   const plan = {
     hx, hz, ring: RING, basin: FOUNTAIN.rim,
-    walks: [[0, hz, 0, FZ + RING, 3.2], [hx, 0, RING, 0, 3.2], [-hx, 0, -RING, 0, 3.2], [0, FZ - RING, 0, hallSteps - 0.2, 3.2],
-      ...doors.filter(({ b }) => !b.userData.hall).map(({ door }) => {
-        const a = Math.atan2(door.x, door.z - FZ);
-        return [Math.sin(a) * RING, FZ + Math.cos(a) * RING, door.x, door.z, 2.6];
-      })],
+    walks,
     places: doors.map(({ id, b }, i) => ({
       n: i + 1, label: NAMES[id], district: DISTRICTS[id].name, x: b.position.x, z: b.position.z, rot: b.rotation.y,
       ...(b.userData.hall ? { w: HALL_SIZE.w, d: HALL_SIZE.d } : b.userData.footprint),
