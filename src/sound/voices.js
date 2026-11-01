@@ -97,21 +97,28 @@ export const VOICES = {
     const n = 10 + Math.floor(Math.random() * 5);
     for (let i = 0; i < n; i++) hiss(t + i * 0.065, out, { f: rnd(700, 1300), q: 0.8, dur: 0.05, vol: 0.18 * (1 - i / n), type: 'bandpass' });
   },
-  bark(t, out) {    // a small, happy dog: arf-arf, the second a little higher
-    [[0, 1], [0.2, 1.12]].forEach(([d, up]) => {
-      const s = t + d, o = A.ctx.createOscillator(), g = gain(0, out);
-      const f1 = filter('bandpass', 1500 * up, 2.5), f2 = filter('bandpass', 2900 * up, 3);
-      o.type = 'triangle';
-      // a quick lift and a drop, like a yip
-      o.frequency.setValueAtTime(620 * up, s);
-      o.frequency.linearRampToValueAtTime(820 * up, s + 0.025);
-      o.frequency.exponentialRampToValueAtTime(480 * up, s + 0.09);
-      o.connect(f1).connect(g); o.connect(f2).connect(g); o.connect(gain(0.25, g));
-      g.gain.setValueAtTime(0, s);
-      g.gain.linearRampToValueAtTime(0.32, s + 0.008);
-      g.gain.exponentialRampToValueAtTime(0.0001, s + 0.1);
-      o.start(s); o.stop(s + 0.12);
-      hiss(s, out, { f: 2400, q: 1, dur: 0.05, vol: 0.03, attack: 0.004 });   // a little breath
+  bark(t, out) {    // woof-woof: two barks, the second a touch higher
+    // the recording has three clean barks, at these seconds
+    const TAPE = [[0.17, 0.31], [1.16, 0.31], [1.87, 0.31]];
+    const k = Math.floor(Math.random() * 3);
+    [[0, k, 1], [0.3, (k + 1) % 3, 1.06]].forEach(([d, i, rate]) => {
+      const s = A.ctx.createBufferSource(), g = gain(0, out), at = t + d;
+      if (A.barkTape) {
+        const [from, len] = TAPE[i];
+        s.buffer = A.barkTape;
+        s.playbackRate.value = rate;
+        g.gain.setValueAtTime(0, at);
+        g.gain.linearRampToValueAtTime(0.5, at + 0.01);
+        g.gain.setValueAtTime(0.5, at + len / rate - 0.06);
+        g.gain.linearRampToValueAtTime(0, at + len / rate);
+        s.connect(g);
+        s.start(at, from, len);
+      } else {
+        s.buffer = A.barks[i];
+        g.gain.value = 0.55;
+        s.connect(g);
+        s.start(at);
+      }
     });
   },
   quack(t, out) {

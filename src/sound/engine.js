@@ -10,6 +10,8 @@
 // Browsers only allow sound after you've clicked or pressed a key, so the
 // context starts on the first gesture.
 
+import { drawBark } from './bark.js';
+
 const KEY = 'plaza.sound';
 export const settings = { on: true, volume: 0.8, amb: 0.8, fx: 0.9 };
 try { Object.assign(settings, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch { /* defaults */ }
@@ -61,6 +63,15 @@ function start() {
   A.room.connect(gain(0.12, A.dream));
   A.noise = noiseBuffer('white');
   A.brown = noiseBuffer('brown');
+  // the dog's bark: a real recording (public/sounds, credited in the README),
+  // with a drawn one (bark.js) until it loads, or if it can't
+  fetch(`${import.meta.env.BASE_URL}sounds/dog-bark.ogg`).then((r) => r.arrayBuffer()).then((b) => ctx.decodeAudioData(b))
+    .then((b) => { A.barkTape = b; }).catch(() => { /* keep the drawn bark */ });
+  A.barks = [0.96, 1, 1.05, 1.1].map((pitch) => {
+    const b = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.17), ctx.sampleRate);
+    b.copyToChannel(drawBark(ctx.sampleRate, { pitch }), 0);
+    return b;
+  });
   apply();
   starters.splice(0).forEach((fn) => fn(A));
 }

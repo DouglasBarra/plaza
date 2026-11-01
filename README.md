@@ -87,7 +87,7 @@ Three.js with Vite, no framework yet.
 | Folder / file | What it does |
 |---|---|
 | `src/main.js` | Starts the app and runs the frame loop |
-| `src/sound/` | Sound, all drawn in code with Web Audio: the engine and its buses (`engine.js`), the one-shots like steps, paper and chimes (`voices.js`), the ambience outside and in each room (`beds.js`), and `sfx()` for the rest of the app (`index.js`) |
+| `src/sound/` | Sound, drawn in code with Web Audio (all but the dog, a recording in `public/sounds/`): the engine and its buses (`engine.js`), the one-shots like steps, paper and chimes (`voices.js`), the ambience outside and in each room (`beds.js`), and `sfx()` for the rest of the app (`index.js`) |
 | `src/app/` | The game shell: renderer and camera (`engine.js`, `camera.js`), going in and out of buildings (`rooms.js`), the plaza through the windows (`window-view.js`), what's under the pointer (`picking.js`), what E does (`actions.js`), mouse and keys (`input.js`), shared state (`state.js`), the weather (`weather.js`) and the dev console handle (`devtools.js`) |
 | `src/ui/` | Everything drawn in HTML over the scene: the card that districts open in (`card.js`), the town hall's note and typewriter cards (`hall-cards.js`), the finds list, building signs, speech bubbles, talking with folks (`chat.js`), the color washes (`washes.js`) and the Day/Night and Wobbly lines buttons |
 | `src/plaza/` | The plaza: its layout (`index.js`), buildings, props, the fountain (`fountain.js`), the food truck corner (`foodtruck.js`), animals (`critters.js`, `animals.js`), the lamplighter (`lamplighter.js`) and the folks who keep hours (`routines.js`) |
@@ -104,3 +104,7 @@ Three.js with Vite, no framework yet.
 | `src/layout.js`, `src/layout.json` | Movable pieces and where the layout editor (`src/app/editor.js`) put them |
 | `src/models.js` | Swapping code-built objects for hand-made Blender or Blockbench models (see `public/models/README.md`) |
 | `tools/` | Model starters and the Blender script (`tools/blender/plaza.py`) |
+
+## Credits
+
+- The dog's bark is ["Barking of a dog"](https://commons.wikimedia.org/wiki/File:Barking_of_a_dog.ogg) by Amada44, from Wikimedia Commons, under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) (`public/sounds/dog-bark.ogg`, unchanged). Every other sound is drawn in code.
