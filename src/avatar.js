@@ -21,6 +21,12 @@ export class Avatar {
     this.running = false;              // Shift held
     this.vel = new THREE.Vector3();     // current velocity, eased toward where you want to go
     this.stride = 0;                    // distance walked, drives the steps
+    this.prevVel = new THREE.Vector3(); // last frame's velocity, to feel speeding up and slowing down
+    this.prevHeading = Math.PI;
+    this.lean = 0;                      // forward/back, eased
+    this.bank = 0;                      // into a turn, eased
+    this.wasMoving = false;
+    this.stopUntil = 0;                 // showing the pull-up drawing until then
     this.level = 0;        // which floor you're on (rooms with stairs)
     this.heightAt = null;  // (x, z, level) -> { y, level } in rooms with stairs
 
@@ -53,6 +59,11 @@ export class Avatar {
     this.goal = null;
     this.onArrive = null;
     this.vel.set(0, 0, 0);
+    this.prevVel.set(0, 0, 0);
+    this.prevHeading = rotY;
+    this.lean = this.bank = 0;
+    this.wasMoving = false;
+    this.stopUntil = 0;
   }
 
   walkTo(point, onArrive = null) {
@@ -121,10 +132,34 @@ export class Avatar {
       if (speed > 0.2) this.body.rotation.y += d * Math.min(1, dt * 10);
     }
 
-    // hand-drawn 2-frame animation: quick steps when walking, slow sway when idle
-    // a step every ~0.55 m walked, so feet keep pace with the ground at any speed
-    const frame = this.moving ? Math.floor(this.stride / 0.55) % 2 : Math.floor(time * 2) % 2;
-    poseFigure(this.figure, this.moving ? 'walk' : 'idle', frame);
+    // hand-drawn frames: two drawings to a step, a step every 0.55 m walked
+    // (0.85 m running), so the feet keep pace with the ground at any speed;
+    // a quick pull-up drawing when you stop, then idling
+    const running = speed > (WALK + RUN) / 2;
+    if (this.wasMoving && !this.moving) this.stopUntil = time + 0.28;
+    this.wasMoving = this.moving;
+    let pose = 'idle', frame = Math.floor(time * 2.5);
+    if (this.moving) {
+      pose = running ? 'run' : 'walk';
+      frame = Math.floor(this.stride / ((running ? 0.85 : 0.55) / 2));
+    } else if (time < this.stopUntil) pose = 'stop';
+    poseFigure(this.figure, pose, frame);
+
+    // lean into speeding up and slowing down, and into turns
+    if (dt > 0) {
+      const h = this.body.rotation.y;
+      const accel = ((this.vel.x - this.prevVel.x) * Math.sin(h) + (this.vel.z - this.prevVel.z) * Math.cos(h)) / dt;
+      let yaw = h - this.prevHeading;
+      yaw = Math.atan2(Math.sin(yaw), Math.cos(yaw)) / dt;
+      const ease = 1 - Math.exp(-10 * dt);
+      this.lean += (THREE.MathUtils.clamp(accel * 0.02, -0.12, 0.15) - this.lean) * ease;
+      this.bank += (THREE.MathUtils.clamp(-yaw * speed * 0.02, -0.18, 0.18) - this.bank) * ease;
+      this.prevVel.copy(this.vel);
+      this.prevHeading = h;
+    }
+    const torso = this.figure.userData.parts.body;
+    torso.rotation.x += this.lean;
+    torso.rotation.z += this.bank;
     if (!this.heightAt) p.y = 0;
   }
 
