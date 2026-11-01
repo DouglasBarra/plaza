@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { M, mesh, cyl } from '../kit.js';
 import { makeFigure, poseFigure } from '../folks.js';
+import { sfx } from '../sound/index.js';
 import { onDusk, setLampLit, isNight } from '../life.js';
 
 const SPEED = 2.6;       // m/s: a brisk walk
@@ -58,7 +59,7 @@ export function lamplighter(world) {
     if (route.waitUntil) {
       // under the lamp: pole up, then the lamp catches
       poseFigure(fig, 'wave', 0);
-      if (time >= route.waitUntil) { setLampLit(route.lamp, true); route = null; }
+      if (time >= route.waitUntil) { setLampLit(route.lamp, true); sfx('flame', { at: route.lamp.pool.getWorldPosition(new THREE.Vector3()).setY(3) }); route = null; }
       return;
     }
     const d = new THREE.Vector3().subVectors(route.to, pos).setY(0);

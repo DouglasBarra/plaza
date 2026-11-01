@@ -23,9 +23,15 @@ import { placeSpeech } from './ui/speech.js';
 import './ui/toggles.js';
 import { weather } from './app/weather.js';
 import { washes } from './ui/washes.js';
+import { stepSound, sfx } from './sound/index.js';
+import { hourNow, isNight } from './life.js';
 
 const stepWeather = weather();
 const stepWashes = washes();
+
+// your footsteps: boards in the town hall, marble in the bank, stone outside
+const FLOORS = { todo: 'wood', finance: 'marble' };
+me.onStep = () => sfx('step', { surface: game.room ? FLOORS[game.room.id] || 'wood' : 'stone', vol: me.running ? 1.2 : 1 });
 
 setOrbitLimits();
 placeCameraBehindMe();
@@ -76,6 +82,7 @@ renderer.setAnimationLoop((now) => {
   town.animate(t);
   stepWeather(t, dt);
   stepWashes(dt);
+  stepSound(t, dt, { camera, me, hour: hourNow(), night: isNight(), weather: game.weather });
 
   animatePlaza(t, room ? null : me.position, dt);
   if (now - drawnAt >= DRAW_EVERY) {

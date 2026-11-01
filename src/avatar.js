@@ -124,6 +124,10 @@ export class Avatar {
     // hand-drawn 2-frame animation: quick steps when walking, slow sway when idle
     // a step every ~0.55 m walked, so feet keep pace with the ground at any speed
     const frame = this.moving ? Math.floor(this.stride / 0.55) % 2 : Math.floor(time * 2) % 2;
+    // and a footstep each time a foot comes down
+    const step = Math.floor(this.stride / 0.55);
+    if (this.moving && step !== this.lastStep) this.onStep?.();
+    this.lastStep = step;
     poseFigure(this.figure, this.moving ? 'walk' : 'idle', frame);
     if (!this.heightAt) p.y = 0;
   }

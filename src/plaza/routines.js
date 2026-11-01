@@ -8,6 +8,7 @@
 import * as THREE from 'three';
 import { makeFigure, poseFigure } from '../folks.js';
 import { hourNow } from '../life.js';
+import { sfx } from '../sound/index.js';
 import { M, box } from '../kit.js';
 
 const WALK = 1.35;         // m/s
@@ -112,18 +113,22 @@ export function routines(world, buildings) {
   const order = ['people', 'todo', 'projects', 'finance', 'ideas', 'study', 'people'];
   const legs = [];
   for (let i = 1; i < order.length; i++) legs.push(polyline(around(door(order[i - 1]), door(order[i]))));
+  let delivered = null;
   const round = legs.reduce((s, l) => s + l.total / WALK + STOP, 0);   // seconds
   walkers.push({ fig: postman, update(h, time) {
     postman.visible = h >= 8 && h < 16;
     if (!postman.visible) return;
     let t = ((h - 8) * 3600) % round;
-    for (const leg of legs) {
+    const lap = Math.floor(((h - 8) * 3600) / round);
+    for (const [i, leg] of legs.entries()) {
       const walk = leg.total / WALK;
       if (t < STOP) {                                       // at a door, dropping the letters
         const { p, dir } = leg.at(0);
         postman.position.copy(p);
         postman.rotation.y = Math.atan2(-dir.x, -dir.z);
         poseFigure(postman, 'vendor', Math.floor(time * 2) % 2);
+        // a letter through the slot, once per door per round
+        if (delivered !== `${lap}.${i}`) { delivered = `${lap}.${i}`; if (time > 2) sfx('letter', { at: p }); }
         return;
       }
       t -= STOP;

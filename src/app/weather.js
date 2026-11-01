@@ -150,6 +150,7 @@ export function weather() {
     // rain around wherever you're looking
     if (!game.room) center.copy(game.view === 'first' ? me.position : controls.target).setY(0);
     const n = Math.round(kind.drops * Math.min(1, cover));
+    game.weather = { wet: n / 900, cloud: Math.min(1, cover) };
     dropMat.color.set(isNight() ? '#cfd2d4' : '#5d5d5d');
     rain.count = n;
     for (let i = 0; i < n; i++) {

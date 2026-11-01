@@ -212,5 +212,7 @@ export function buildTownHall(scene, rand, lights) {
     // the room is the building: the same walls, so the window views are exact;
     // only the plinth (0.4 m) lifts the ground floor off the plaza
     plazaOffset: new THREE.Vector3(0, 0.4, 0),
+    // the fire crackling on the left wall, the tall clock ticking at the back
+    sounds: [{ kind: 'fire', at: new THREE.Vector3(-W / 2 + 0.6, 0.5, 0.1) }, { kind: 'clock', at: new THREE.Vector3(3.15, 1.6, -D / 2 + 0.28) }],
   };
 }

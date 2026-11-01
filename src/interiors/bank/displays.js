@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { toon } from '../../ink.js';
 import { M, stamp, mesh, box, cyl } from '../../kit.js';
 import { inkLine } from '../../textures.js';
+import { sfx } from '../../sound/index.js';
 import { brass, gold, dark, polished } from './materials.js';
 
 export const money = (n, cur = 'BRL') => (n == null ? '—' : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: cur }).format(n));
@@ -92,7 +93,7 @@ export function flapBoard(p, x, y, z, rotY, cols = 26, rows = 6) {
         if (now >= at) { settle[r][k] = 0; return target[r][k]; }
         return FLAP[Math.floor(Math.random() * FLAP.length)];
       }).join(''));
-      if (changed) t.userData.draw();
+      if (changed) { t.userData.draw(); sfx('flaps', { at: new THREE.Vector3(x, y, z), room: 'finance', gap: 0.09 }); }
     },
   };
 }

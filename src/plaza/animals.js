@@ -3,6 +3,7 @@
 // critters.js.)
 import * as THREE from 'three';
 import { toon } from '../ink.js';
+import { sfx } from '../sound/index.js';
 import { M, mesh, box } from '../kit.js';
 
 const dark = toon('#3a3a3a');
@@ -47,7 +48,7 @@ export function dog(world, home) {
   return function update(time, player, dt) {
     const frame = Math.floor(time * 7) % 2;
     let target = null;
-    if (mode === 'nap' && player && time > until && player.distanceTo(g.position) < NOTICE) { mode = 'follow'; until = time + FOLLOW_FOR; }
+    if (mode === 'nap' && player && time > until && player.distanceTo(g.position) < NOTICE) { mode = 'follow'; until = time + FOLLOW_FOR; sfx('bark', { at: g.position }); }
     if (mode === 'follow') {
       if (!player || time > until) { mode = 'home'; until = time + BORED_FOR; }
       else {
@@ -91,7 +92,10 @@ export function ducks(fountainGroup, { water = 0.52, inner = 3.1, outer = 4.4 } 
     fountainGroup.add(g);
     flock.push({ g, r: inner + (outer - inner) * (i / 2), speed: 0.12 + i * 0.03, phase: i * 2.1 });
   }
+  let quackAt = 6;
   return function update(time) {
+    // now and then one of them says something
+    if (time > quackAt) { quackAt = time + 5 + Math.random() * 14; sfx('quack', { at: fountainGroup.getWorldPosition(new THREE.Vector3()).setY(0.6) }); }
     for (const d of flock) {
       // circling, drifting in and out a little
       const a = d.phase + time * d.speed;

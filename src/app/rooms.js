@@ -10,6 +10,7 @@ import { setOrbitLimits, placeCameraBehindMe, lookFrom, flyTo } from './camera.j
 import { portalMat } from './window-view.js';
 import { refreshSigns } from '../ui/labels.js';
 import { openApp } from '../ui/card.js';
+import { sfx } from '../sound/index.js';
 import { hideTip } from '../ui/hall-cards.js';
 
 const rooms = new Map();    // interiors are built the first time you enter
@@ -40,6 +41,7 @@ function inkBlot() {
 }
 function fadeThrough(swap) {
   game.transitioning = true;
+  sfx('swish');
   inkBlot();
   fade.classList.add('is-on');
   setTimeout(() => {
@@ -64,6 +66,7 @@ export function enterBuilding(id) {
     if (game.view === 'first') lookFrom(Math.PI); else placeCameraBehindMe();
     applyRoomView();
     document.body.classList.add('in-room');
+    sfx('door', { vol: 0.8 });
   };
   seamless(rooms.get(id)) ? swap() : fadeThrough(swap);
 }
@@ -78,6 +81,7 @@ export function exitBuilding() {
     applyRoomView();
     hideTip();
     document.body.classList.remove('in-room');
+    sfx('door', { vol: 0.8 });
   };
   seamless(game.room) ? swap() : fadeThrough(swap);
 }

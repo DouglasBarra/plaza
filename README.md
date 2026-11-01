@@ -69,6 +69,7 @@ A piece is anything registered with `piece()` or `placeable()` from `src/layout.
 - In the **town hall** (ToDos): hover a note on the board to read it, click it to open it, and tear it off to finish it. Ask the clerk at the desk to type a new task. Take the stairs up for the calendar, what's coming up and the archive
 - **T** talks to someone standing near you (see above)
 - **C** turns the color washes on and off: a faint watercolor tint at the screen's edges in the color of the district you're in or near
+- **M** turns the sound on and off; the **Sound** button opens its volume sliders (ambience and effects)
 - **V** switches to first person: the mouse looks around (click to capture it, **Esc** frees it), and a click does what **E** does
 
 ## The plaza lives
@@ -86,6 +87,7 @@ Three.js with Vite, no framework yet.
 | Folder / file | What it does |
 |---|---|
 | `src/main.js` | Starts the app and runs the frame loop |
+| `src/sound/` | Sound, all drawn in code with Web Audio: the engine and its buses (`engine.js`), the one-shots like steps, paper and chimes (`voices.js`), the ambience outside and in each room (`beds.js`), and `sfx()` for the rest of the app (`index.js`) |
 | `src/app/` | The game shell: renderer and camera (`engine.js`, `camera.js`), going in and out of buildings (`rooms.js`), the plaza through the windows (`window-view.js`), what's under the pointer (`picking.js`), what E does (`actions.js`), mouse and keys (`input.js`), shared state (`state.js`), the weather (`weather.js`) and the dev console handle (`devtools.js`) |
 | `src/ui/` | Everything drawn in HTML over the scene: the card that districts open in (`card.js`), the town hall's note and typewriter cards (`hall-cards.js`), the finds list, building signs, speech bubbles, talking with folks (`chat.js`), the color washes (`washes.js`) and the Day/Night and Wobbly lines buttons |
 | `src/plaza/` | The plaza: its layout (`index.js`), buildings, props, the fountain (`fountain.js`), the food truck corner (`foodtruck.js`), animals (`critters.js`, `animals.js`), the lamplighter (`lamplighter.js`) and the folks who keep hours (`routines.js`) |

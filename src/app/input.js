@@ -15,6 +15,7 @@ import { openApp, closeApp } from '../ui/card.js';
 import { openFinds } from '../ui/finds-card.js';
 import { showTip, openNoteCard } from '../ui/hall-cards.js';
 import { nearSpeaker } from '../ui/speech.js';
+import { toggleSound } from '../sound/index.js';
 import { openChat } from '../ui/chat.js';
 
 let hovered = null;
@@ -65,13 +66,14 @@ canvas.addEventListener('pointerup', (e) => {
 });
 
 const MOVE_KEYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright']);
-// F finds · V view · L wobbly lines · C washes · N night (shown on the buttons)
+// F finds · V view · L wobbly lines · C washes · M sound · N night (shown on the buttons)
 const SHORTCUTS = {
   f: () => (game.appOpen === 'finds' ? closeApp() : openFinds()),
   v: () => setView(game.view === 'first' ? 'third' : 'first'),
   l: () => document.getElementById('toggle-wobble').click(),
   n: () => document.getElementById('toggle-theme').click(),
   c: () => document.getElementById('toggle-washes').click(),
+  m: () => toggleSound(),
 };
 window.addEventListener('keydown', (e) => {
   if (game.editing) return; // the layout editor has the keys
