@@ -14,10 +14,10 @@ import { piece, placeable } from '../layout.js';
 // A civic square shaped like a U around the fountain, open to the south,
 // where you arrive. The town hall heads it; down the west side stand the
 // post office (People) and the library (Study), down the east side the Works
-// (Projects) and the bank (Finance), each turned toward the opening so you
-// see its front as you come in; the lighthouse (Ideas) marks the south-east,
-// beside the street you arrive by, and the café and market fill the
-// south-west. Every building is real size (see buildings.js).
+// (Projects) and the bank (Finance); the lighthouse (Ideas) marks the
+// south-east corner, and the café and market fill the south-west. Every
+// building faces the middle of the fountain, and every one is real size
+// (see buildings.js).
 //
 // Streets enter at the middle of the south, east and west sides (x = 0 or
 // z = 0), 5 m wide; the north street ends at the town hall's back. Stone
@@ -29,12 +29,14 @@ const FZ = 0;                // the fountain's z: the middle of the square
 const FS = 1.8, FSY = 1.25;  // the fountain's scale (wide, not much taller)
 const RING = 9.6;            // the stone ring around the fountain
 const deg = THREE.MathUtils.degToRad;
-// [x, z, facing] of each building; side buildings turn toward the south opening
+// Where each district's building stands. Every building faces the middle of
+// the fountain.
 const SPOTS = {
-  people: [-27, -13.5, deg(65)], projects: [27, -13.5, deg(-65)],
-  study: [-27, 12.5, deg(65)], finance: [27, 12.5, deg(-65)],
-  ideas: [25.1, 28.9, Math.atan2(-25.1, -28.9)], // in the corner, facing the fountain, clear of the bank's view
+  people: [-27, -13.5], projects: [27, -13.5],
+  study: [-27, 12.5], finance: [27, 12.5],
+  ideas: [25.1, 28.9],                  // the lighthouse, in the south-east corner
 };
+const facingFountain = (x, z) => Math.atan2(-x, -(z - FZ));
 
 export function buildPlaza(scene) {
   const world = new THREE.Group();
@@ -91,7 +93,7 @@ export function buildPlaza(scene) {
   const HALL = { x: 0, z: -hz + (HALL_SIZE.d + 1) / 2 + 0.6 };
   place(townHall(), HALL.x, HALL.z, 0);
   const builders = { people: postOffice, projects: works, study: library, finance: bank, ideas: lighthouse };
-  for (const [id, [x, z, r]] of Object.entries(SPOTS)) place(builders[id](), x, z, r);
+  for (const [id, [x, z]] of Object.entries(SPOTS)) place(builders[id](), x, z, facingFountain(x, z));
   const hallSteps = HALL.z + HALL_SIZE.d / 2 + 1.6;              // the foot of the town hall's steps
 
   // ---- walks: the streets to the fountain, and the ring to every door

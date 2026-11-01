@@ -2,7 +2,7 @@
 
 A personal life app shaped like a small hand-drawn town square. Each building on the plaza is a district of life (ToDos in the town hall, Finance in the bank, Study in the library, Ideas in the lighthouse workshop, Projects at the Works and People at the post office), and walking into one opens that district's app.
 
-The square is a U open to the south, all at real size: the town hall at its head, the post office and the library down the west side, the Works and the bank down the east, each turned toward the opening, and the lighthouse in the south-east corner. Streets come in from the south, east and west, and stone walks lead from the fountain to every door.
+The square is a U open to the south, all at real size: the town hall at its head, the post office and the library down the west side, the Works and the bank down the east, and the lighthouse in the south-east corner, every one of them facing the fountain. Streets come in from the south, east and west, and stone walks lead from the fountain to every door.
 
 The look is ink on paper: dense line-art details in the spirit of Hidden Folks, on shaded 3D dioramas like TOEM. Color is rare and appears only as small stamps where a district speaks. The full visual language lives in the Plaza design system.
 
