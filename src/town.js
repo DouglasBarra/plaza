@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { toon } from './ink.js';
 import { tex } from './textures.js';
-import { boxGeo, prismGeo, PLAZA_HALF, M } from './world.js';
+import { boxGeo, prismGeo, PLAZA, M } from './world.js';
 import { smoke } from './life.js';
 
 const ROAD_PITCH = 40;   // a street every 40m, plus the two through the plaza
@@ -87,7 +87,10 @@ export function buildTown(scene) {
   for (let c = -EXTENT + 16; c <= EXTENT; c += ROAD_PITCH) {
     const k = Math.round(c / ROAD_PITCH) * ROAD_PITCH;
     for (const alongZ of [true, false]) {
-      if (k === 0) { roadSeg(alongZ, 0, -EXTENT * 1.4, -PLAZA_HALF); roadSeg(alongZ, 0, PLAZA_HALF, EXTENT * 1.4); }
+      // the two streets through the plaza stop at its edges (a road along z
+      // meets the north and south sides, one along x the east and west)
+      const edge = alongZ ? PLAZA.hz : PLAZA.hx;
+      if (k === 0) { roadSeg(alongZ, 0, -EXTENT * 1.4, -edge); roadSeg(alongZ, 0, edge, EXTENT * 1.4); }
       else roadSeg(alongZ, k, -EXTENT * 1.4, EXTENT * 1.4);
     }
   }
@@ -103,7 +106,7 @@ export function buildTown(scene) {
     for (let cz = -EXTENT; cz <= EXTENT; cz += LOT) {
       const x = cx + (rand() - 0.5) * 2, z = cz + (rand() - 0.5) * 2;
       const dist = Math.hypot(x, z);
-      if (Math.max(Math.abs(x), Math.abs(z)) < PLAZA_HALF + 6 || dist > EXTENT) continue;
+      if ((Math.abs(x) < PLAZA.hx + 6 && Math.abs(z) < PLAZA.hz + 6) || dist > EXTENT) continue;
       const dx = distToRoad(x), dz = distToRoad(z);
       if (dx < 6 || dz < 6) {
         if ((dx > 3.4 || dz > 3.4) && Math.min(dx, dz) > 3.2 && rand() > 0.55) rounds.push({ x, z, s: 0.5 + rand() * 0.3, rot: rand() * 6 });
@@ -126,8 +129,8 @@ export function buildTown(scene) {
   }
   // a ring of trees just outside the plaza
   for (let i = 0; i < 28; i++) {
-    const a = (i / 28) * Math.PI * 2, rr = PLAZA_HALF + 3 + rand() * 2;
-    const x = Math.cos(a) * rr * 1.15, z = Math.sin(a) * rr * 1.15;
+    const a = (i / 28) * Math.PI * 2, rr = 1.15 + rand() * 0.08;
+    const x = Math.cos(a) * (PLAZA.hx + 3.5) * rr, z = Math.sin(a) * (PLAZA.hz + 3.5) * rr;
     if (distToRoad(x) < 4 || distToRoad(z) < 4) continue;
     (i % 3 ? pines : rounds).push({ x, z, s: 0.7 + rand() * 0.5, rot: rand() * 6 });
   }

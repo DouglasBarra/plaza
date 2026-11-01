@@ -34,7 +34,7 @@ export class Avatar {
     g.add(ring);
     this.ring = ring;
     this.body = g;
-    g.position.set(0, 0, 9.5);
+    g.position.set(2, 0, 16); // the south end of the square, looking up at the town hall
     g.rotation.y = Math.PI;
     scene.add(g);
   }
