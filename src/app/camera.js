@@ -96,7 +96,7 @@ document.addEventListener('pointerlockchange', () => {
 const follow = new THREE.Vector3();
 export function updateCamera(dt) {
   if (game.view === 'first') {
-    camera.position.copy(me.position).setY(me.position.y + 1.5);
+    camera.position.copy(me.position).setY(me.position.y + 1.7); // eye height
     camera.rotation.set(pitch, yaw, 0, 'YXZ');
     me.body.rotation.y = yaw + Math.PI;
     return;
