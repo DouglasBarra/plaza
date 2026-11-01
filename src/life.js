@@ -61,7 +61,10 @@ const lampGlow = new THREE.MeshBasicMaterial({ color: '#fff1b8' });
 const poolMat = new THREE.MeshBasicMaterial({ color: '#ffe38a', transparent: true, opacity: 0.16, depthWrite: false });
 const litPane = new THREE.MeshBasicMaterial({ color: '#ffe9a8' });
 
-export function lampLight(lampGroup, head) {
+// A lamp's head glows at night, with a pool of light under it. A street lamp
+// ({ street: true }) waits for the lamplighter (plaza/lamplighter.js) at dusk;
+// the rest come on by themselves.
+export function lampLight(lampGroup, head, { street = false } = {}) {
   const pool = new THREE.Mesh(new THREE.CircleGeometry(2.4, 32), poolMat);
   pool.rotation.x = -Math.PI / 2;
   pool.position.y = 0.03;
@@ -69,11 +72,20 @@ export function lampLight(lampGroup, head) {
   pool.userData.keep = true;
   lampGroup.add(pool);
   skipND.push(pool);
-  nightOnly.push(pool);
-  const lamp = { head };
+  const lamp = { head, pool, street, lit: false };
   lamps.push(lamp);
   return lamp;
 }
+
+export function setLampLit(l, on) {
+  l.lit = on;
+  l.pool.visible = on;
+  if (l.head) l.head.material = on ? lampGlow : l.day ?? M.white;
+}
+// the lamplighter takes over the street lamps at dusk: fn(lamps) is told when night falls
+let dusk = null;
+export const onDusk = (fn) => { dusk = fn; };
+export const streetLamps = () => lamps.filter((l) => l.street);
 
 // Some windows light up at night (not all: somebody is always out).
 export function registerPane(pane) {
@@ -87,9 +99,22 @@ export const isNight = () => night;
 
 export function setNight(on) {
   for (const o of nightOnly) o.visible = on;
+  const fell = on && !night;
   night = on;
-  for (const l of lamps) if (l.head) l.head.material = on ? lampGlow : l.day ?? M.white;
+  for (const l of lamps) setLampLit(l, on && !(l.street && dusk));
+  if (fell && dusk) dusk(streetLamps());
   for (const p of panes) p.material = on && p.userData.lightsOn ? litPane : p.userData.dark;
+}
+
+// ---------- the time of day ----------
+// Folks keep hours by the real clock; tests and screenshots can set the hour
+// (window.__plaza.clock), which everything that keeps hours reads from here.
+let fakeHour = null;
+export const setHour = (h) => { fakeHour = h; };
+export function hourNow() {
+  if (fakeHour != null) return fakeHour;
+  const d = new Date();
+  return d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600;
 }
 
 // ---------- the clock that drives it all ----------

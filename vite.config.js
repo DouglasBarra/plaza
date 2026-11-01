@@ -1,7 +1,9 @@
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { defineConfig } from 'vite';
 
+const ROOT = fileURLToPath(new URL('.', import.meta.url));
 const LAYOUT = fileURLToPath(new URL('./src/layout.json', import.meta.url));
 
 // The layout editor (src/app/editor.js) saves through this, in development
@@ -41,5 +43,6 @@ export default defineConfig({
   // src/store.js waits for the server's data at the top level
   build: { target: 'es2022' },
   // other sessions' worktrees and the database change all the time: don't reload for them
-  server: { watch: { ignored: ['**/.claude/**', '**/data/**'] } },
+  // (only this project's own .claude and data folders: a worktree under .claude/ still sees its files)
+  server: { watch: { ignored: [(p) => p.startsWith(join(ROOT, '.claude')) || p.startsWith(join(ROOT, 'data'))] } },
 });

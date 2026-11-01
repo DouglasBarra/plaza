@@ -15,9 +15,32 @@ import { hideTip } from '../ui/hall-cards.js';
 const rooms = new Map();    // interiors are built the first time you enter
 export const currentScene = () => (game.room ? game.room.scene : plazaScene);
 
+// Going in and out: an ink blot spreads from the middle of the screen until
+// it covers it, the room changes behind it, and it shrinks away again. Its
+// edge is a wobbly circle with a few lumps and a splatter of drops, drawn
+// anew each time, so no two are alike.
 const fade = document.getElementById('fade');
+function inkBlot() {
+  const pts = [], n = 28, lumps = 3 + Math.floor(Math.random() * 3), ph = Math.random() * 6;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    const r = 50 * (1 + 0.06 * Math.sin(a * lumps + ph) + 0.05 * (Math.random() - 0.5));
+    pts.push([Math.cos(a) * r, Math.sin(a) * r]);
+  }
+  // a smooth closed curve through the points (midpoint quadratics)
+  const mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+  let d = `M${mid(pts[n - 1], pts[0]).join(' ')}`;
+  for (let i = 0; i < n; i++) d += ` Q${pts[i].join(' ')} ${mid(pts[i], pts[(i + 1) % n]).join(' ')}`;
+  const drops = Array.from({ length: 7 }, () => {
+    const a = Math.random() * Math.PI * 2, r = 54 + Math.random() * 12;
+    return `<circle cx="${(Math.cos(a) * r).toFixed(1)}" cy="${(Math.sin(a) * r).toFixed(1)}" r="${(1 + Math.random() * 3).toFixed(1)}"/>`;
+  }).join('');
+  fade.innerHTML = `<svg viewBox="-50 -50 100 100" preserveAspectRatio="xMidYMid slice"><g class="blot" style="--turn:${(Math.random() * 40 - 20).toFixed(0)}deg"><path d="${d}Z"/>${drops}</g></svg>`;
+  fade.getBoundingClientRect();     // let the blot start small before it grows
+}
 function fadeThrough(swap) {
   game.transitioning = true;
+  inkBlot();
   fade.classList.add('is-on');
   setTimeout(() => {
     swap();

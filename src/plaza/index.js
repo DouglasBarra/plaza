@@ -14,6 +14,12 @@ import { LAMP_TOP, TREE_LOW_BRANCH, KIOSK, bin, drinkingFountain, bikeRack, kios
 import { DISTRICTS } from '../districts/index.js';
 import { piece, placeable } from '../layout.js';
 import { edgeLawns } from './lawns.js';
+import { lamplighter } from './lamplighter.js';
+import { routines } from './routines.js';
+import { dog, ducks } from './animals.js';
+
+// things that move by their own clocks: (time, player, dt) => void
+const movers = [];
 
 // ---------- the plaza ----------
 // A civic square shaped like a U around the fountain, open to the south,
@@ -362,6 +368,9 @@ export function buildPlaza(scene) {
   leaves(world, 30, Math.min(hx, hz) - 2);
   cat(world, 3.6, hz - 8.0, 0.7, true);    // the friendly one, near where you arrive
   cat(world, -16.5, 21.5, 2.4);            // between the library's garden and the food truck's tables
+  movers.push(dog(world, new THREE.Vector3(-4.2, 0, hz - 9.5)));   // naps by the south walk
+  movers.push(ducks(fountainGroup));
+  movers.push(lamplighter(world), routines(world, buildings));
 
   // ---- grass along the edge, wherever the border is clear of props and yards
   const clearOf = (x, z) => !onBuilding(x, z, 1.4) && !colliders.some((c) => c.hw == null && Math.hypot(x - c.x, z - c.z) < c.r + 1.0);
@@ -383,4 +392,5 @@ export function animatePlaza(time, player = null, dt = 1 / 60) {
   animateCranes(time);
   for (const b of beams) b.rotation.y = time * 0.6;
   animateCritters(time, player, dt);
+  for (const m of movers) m(time, player, dt);
 }

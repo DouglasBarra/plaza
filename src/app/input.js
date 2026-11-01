@@ -14,6 +14,8 @@ import { labels } from '../ui/labels.js';
 import { openApp, closeApp } from '../ui/card.js';
 import { openFinds } from '../ui/finds-card.js';
 import { showTip, openNoteCard } from '../ui/hall-cards.js';
+import { nearSpeaker } from '../ui/speech.js';
+import { openChat } from '../ui/chat.js';
 
 let hovered = null;
 let downAt = null;
@@ -63,12 +65,13 @@ canvas.addEventListener('pointerup', (e) => {
 });
 
 const MOVE_KEYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright']);
-// F finds · V view · L wobbly lines · N night (shown on the buttons)
+// F finds · V view · L wobbly lines · C washes · N night (shown on the buttons)
 const SHORTCUTS = {
   f: () => (game.appOpen === 'finds' ? closeApp() : openFinds()),
   v: () => setView(game.view === 'first' ? 'third' : 'first'),
   l: () => document.getElementById('toggle-wobble').click(),
   n: () => document.getElementById('toggle-theme').click(),
+  c: () => document.getElementById('toggle-washes').click(),
 };
 window.addEventListener('keydown', (e) => {
   if (game.editing) return; // the layout editor has the keys
@@ -82,6 +85,7 @@ window.addEventListener('keydown', (e) => {
   if (game.appOpen) return;
   if (MOVE_KEYS.has(k)) { me.keys.add(k); e.preventDefault(); return; }
   if (k === 'e' || k === 'enter') return interact();
+  if (k === 't' && nearSpeaker?.persona) return openChat(nearSpeaker);
   if (SHORTCUTS[k]) return SHORTCUTS[k]();
   const id = Object.keys(DISTRICTS).find((key) => DISTRICTS[key].key === e.key);
   if (id) openApp(id);

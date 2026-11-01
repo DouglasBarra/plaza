@@ -21,6 +21,11 @@ import { showTip } from './ui/hall-cards.js';
 import { openApp } from './ui/card.js';
 import { placeSpeech } from './ui/speech.js';
 import './ui/toggles.js';
+import { weather } from './app/weather.js';
+import { washes } from './ui/washes.js';
+
+const stepWeather = weather();
+const stepWashes = washes();
 
 setOrbitLimits();
 placeCameraBehindMe();
@@ -65,6 +70,8 @@ renderer.setAnimationLoop((now) => {
     room.update?.(t, { view: game.view });
   } else updatePlaza(dt);
   town.animate(t);
+  stepWeather(t, dt);
+  stepWashes(dt);
 
   animatePlaza(t, room ? null : me.position, dt);
   if (room?.plazaOffset && game.view === 'first') renderWindowView(t);

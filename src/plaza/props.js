@@ -284,7 +284,7 @@ export function lamp(p, x, z) {
   const head = mesh(lampGlass(), M.white, 0, 0, 0, g);
   head.name = 'glow';
   head.castShadow = false;
-  const light = lampLight(g, head);
+  const light = lampLight(g, head, { street: true });
   g.position.set(x, 0, z);
   // in a lamp model, the part named "glow" is the one that lights up
   p.add(swapModel(g, 'lamp', (model) => {

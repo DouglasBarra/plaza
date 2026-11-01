@@ -11,3 +11,5 @@ __pycache__/
 
 # your data (server/db.js)
 data/
+# your Anthropic API key (server/claude.js)
+.env

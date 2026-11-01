@@ -142,12 +142,25 @@ export function finance(db, ports) {
     // one sign for everything: money in is positive. Card charges come in
     // positive from the provider, so they're flipped.
     const flow = (t) => (kind[t.accountId] === 'CREDIT' ? -num(t.amount) : num(t.amount));
-    const txs = db.bank.all('tx', daysAgo(120)).map((t) => ({
+    const txs = transactions(daysAgo(120), flow);
+    return shape(m, items, accounts, txs, flow);
+  }
+
+  // Every transaction since `since`, in one sign (money in positive).
+  function transactions(since, flow = flowOf()) {
+    return db.bank.all('tx', since).map((t) => ({
       id: t.id, date: day(pick(t, 'date', 'postedDate')), accountId: t.accountId,
       description: pick(t, 'descriptionRaw', 'description') || '',
       amount: flow(t), category: pick(t, 'category', 'categoryName') || null,
       pending: t.status === 'PENDING',
     }));
+  }
+  function flowOf() {
+    const kind = Object.fromEntries(db.bank.all('account').map((a) => [a.id, a.type]));
+    return (t) => (kind[t.accountId] === 'CREDIT' ? -num(t.amount) : num(t.amount));
+  }
+
+  function shape(m, items, accounts, txs, flow) {
     const month = daysAgo(0).slice(0, 7);
     const thisMonth = txs.filter((t) => t.date?.startsWith(month));
     const spent = {};
@@ -202,7 +215,11 @@ export function finance(db, ports) {
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
   // Returns true when it answered the request.
-  return async function handle(req, res, url, serverPort) {
+  // what Claude reads (server/claude.js)
+  handle.summary = summary;
+  handle.transactions = (since) => transactions(since);
+  return handle;
+  async function handle(req, res, url, serverPort) {
     if (url.pathname === '/api/finance' && req.method === 'GET') return json(res, 200, summary()), true;
     if (url.pathname === '/api/finance/sync' && req.method === 'POST') {
       if (!banco.loggedIn()) return json(res, 401, { error: 'login needed' }), true;
@@ -239,5 +256,5 @@ export function finance(db, ports) {
       return true;
     }
     return false;
-  };
+  }
 }

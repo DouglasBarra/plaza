@@ -14,7 +14,7 @@
 // away, using render layers so they still cast shadows.
 import * as THREE from 'three';
 import { M, mesh, box } from '../../kit.js';
-import { isNight } from '../../life.js';
+import { isNight, hourNow } from '../../life.js';
 import { DISTRICTS } from '../../districts/index.js';
 import { W, D, F } from './dims.js';
 import { lampOn } from './materials.js';
@@ -22,6 +22,7 @@ import { buildHouse, inStair, stairHeight } from './shell.js';
 import { furnishGroundFloor } from './ground-floor.js';
 import { furnishUpstairs } from './upstairs.js';
 import { ballGeo } from './boards.js';
+import { atWork, backAt } from '../../plaza/routines.js';
 export { glassDay, glassNight } from './materials.js';
 
 export const LAYER_CEILING = 1, LAYER_UPPER = 2;
@@ -89,6 +90,7 @@ export function buildTownHall(scene, rand, lights) {
   // ---------- light and life ----------
   const t0 = performance.now();
   function update(time, ctx) {
+    clerk.visible = atWork('clerk');      // he keeps hours: in at eight, home at six
     // notes popping onto the board
     for (const b of [board, later]) {
       for (let i = b.pops.length - 1; i >= 0; i--) {
@@ -131,8 +133,7 @@ export function buildTownHall(scene, rand, lights) {
     }
 
     // the sun crosses the sky with the real time; lamps come on in the evening
-    const now = new Date();
-    const hour = now.getHours() + now.getMinutes() / 60;
+    const hour = hourNow();
     const day = THREE.MathUtils.clamp((hour - 6) / 13, 0, 1);
     const az = day * Math.PI;
     const dark = isNight() || hour < 6.5 || hour > 19.5;
@@ -162,8 +163,9 @@ export function buildTownHall(scene, rand, lights) {
 
   // what the clerk says when you come close
   function clerkLine() {
+    if (!atWork('clerk')) return `Gone home for the day. Back at ${backAt('clerk')}.`;
     const g = api.groups();
-    const hour = new Date().getHours();
+    const hour = hourNow();
     const hello = hour < 12 ? 'Morning!' : hour < 18 ? 'Afternoon!' : 'Evening!';
     const s = api.streak();
     if (g.overdue.length) return `${hello} Psst, “${g.overdue[0].title}” is late.`;
@@ -196,7 +198,7 @@ export function buildTownHall(scene, rand, lights) {
     heightAt,
     tearOff,
     update,
-    speakers: [{ object: clerk, height: 1.9, range: 3.0, level: 0, text: clerkLine }],
+    speakers: [{ object: clerk, height: 1.9, range: 3.0, level: 0, text: clerkLine, persona: 'clerk', name: 'the clerk' }],
     stations: [
       { point: ground.spots.board, level: 0, label: 'Open the task board', app: 'todo', tab: 'today' },
       { point: ground.spots.clerk, level: 0, label: 'Ask the clerk to type a task', typewriter: true },

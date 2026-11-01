@@ -13,7 +13,7 @@
 // facing the camera, the gallery and the ceilings cut away in third person.
 import * as THREE from 'three';
 import { M } from '../../kit.js';
-import { isNight } from '../../life.js';
+import { isNight, hourNow } from '../../life.js';
 import { DISTRICTS } from '../../districts/index.js';
 import { LAYER_CEILING, LAYER_UPPER } from '../townhall/index.js';
 import { W, D, F, PODIUM } from './dims.js';
@@ -23,6 +23,7 @@ import { furnishGroundFloor } from './ground-floor.js';
 import { furnishUpstairs } from './upstairs.js';
 import { money } from './displays.js';
 import { openApp } from '../../ui/card.js';
+import { atWork, backAt } from '../../plaza/routines.js';
 
 const onLayer = (o, layer) => { o.traverse((c) => c.layers.set(layer)); return o; };
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -99,6 +100,9 @@ export function buildBank(scene, rand, lights) {
   // ---------- light and life ----------
   let last = 0;
   function update(time) {
+    // the staff keep bank hours
+    for (const t of ground.tellers) t.visible = atWork('teller');
+    up.manager.visible = atWork('manager');
     const dt = Math.min(0.1, time - last); last = time;
     ground.board.update();
     for (const dial of ground.dials) dial.update(dt);
@@ -113,8 +117,7 @@ export function buildBank(scene, rand, lights) {
     } else capsule.position.y += (base.y - capsule.position.y) * Math.min(1, dt * 4);
 
     // the sun crosses the sky with the real time; lamps come on in the evening
-    const now = new Date();
-    const hour = now.getHours() + now.getMinutes() / 60;
+    const hour = hourNow();
     const day = THREE.MathUtils.clamp((hour - 6) / 13, 0, 1);
     const az = day * Math.PI;
     const dark = isNight() || hour < 6.5 || hour > 19.5;
@@ -132,10 +135,11 @@ export function buildBank(scene, rand, lights) {
 
   // what the teller and the manager say when you come close
   function hello() {
-    const h = new Date().getHours();
+    const h = hourNow();
     return h < 12 ? 'Good morning!' : h < 18 ? 'Good afternoon!' : 'Good evening!';
   }
   function tellerLine() {
+    if (!atWork('teller')) return `The bank is closed. We open at ${backAt('teller')}.`;
     const d = fin.data();
     if (!d || d.offline) return `${hello()} We're closed: Plaza's server isn't running.`;
     if (!d.loggedIn) return `${hello()} No account with us yet? The courier can set one up.`;
@@ -146,6 +150,7 @@ export function buildBank(scene, rand, lights) {
     return `${hello()} You have ${money(cash)} in the bank.`;
   }
   function managerLine() {
+    if (!atWork('manager')) return `The manager is out. Back at ${backAt('manager')}.`;
     const d = fin.data();
     const m = d?.month;
     if (!m || (!m.in && !m.out)) return 'The books are quiet this month.';
@@ -179,8 +184,8 @@ export function buildBank(scene, rand, lights) {
     heightAt,
     update,
     speakers: [
-      { object: ground.tellers[0], height: 1.9, range: 3.2, level: 0, text: tellerLine },
-      { object: up.manager, height: 1.6, range: 3.0, level: 1, text: managerLine },
+      { object: ground.tellers[0], height: 1.9, range: 3.2, level: 0, text: tellerLine, persona: 'teller', name: 'the teller' },
+      { object: up.manager, height: 1.6, range: 3.0, level: 1, text: managerLine, persona: 'manager', name: 'the manager' },
     ],
     stations: [
       { point: ground.spots.teller, level: 0, label: 'Talk to the teller', app: 'finance', tab: 'overview' },

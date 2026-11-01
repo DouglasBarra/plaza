@@ -13,11 +13,13 @@ import { findAction } from './actions.js';
 import { whereIs, homeOf, pieceOf } from '../layout.js';
 import { openApp, closeApp } from '../ui/card.js';
 import { openFinds } from '../ui/finds-card.js';
+import { setHour } from '../life.js';
 
 export function installDevtools() {
   window.__plaza = {
     me, camera, enterBuilding, exitBuilding, setView, openApp, closeApp, openFinds, finds,
     room: () => game.room,
+    clock: (h) => setHour(h),               // pretend it's this hour (null: the real time)
     look,                                   // first-person gaze, for taking screenshots
     eye: () => camera.position.toArray(),
     // the layout editor's pieces: where one stands now and where the code puts it
