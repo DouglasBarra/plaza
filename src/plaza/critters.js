@@ -19,8 +19,102 @@ export function cat(p, x, z, rotY, follows = false) {
   g.add(tail);
   for (const lx of [-0.18, 0.18]) for (const lz of [-0.06, 0.06]) box(g, 0.05, 0.1, 0.05, M.white, lx, 0.05, lz);
   g.position.set(x, 0, z); g.rotation.y = rotY;
-  p.add(swapModel(g, 'cat'));
-  cats.push({ g, tail, home: new THREE.Vector3(x, 0, z), follows });
+  const c = { g, tail, home: new THREE.Vector3(x, 0, z), spot: new THREE.Vector3(x, 0, z), follows,
+    mixer: null, actions: null, clip: 'idle', clipTime: Math.random() * 3, rest: 'idle', until: 0, idleSince: 0 };
+  p.add(swapModel(g, 'cat', (model, clips) => {
+    // the Blender cat (tools/blender/cat.py): idle, walk, trot, sit, groom, nap
+    if (!clips.length) return;
+    c.mixer = new THREE.AnimationMixer(model);
+    c.actions = Object.fromEntries(clips.map((clip) => [clip.name, c.mixer.clipAction(clip)]));
+    for (const a of Object.values(c.actions)) { a.play(); a.enabled = false; }
+  }));
+  cats.push(c);
+}
+
+// The cats: each heads for a spot (the friendly one, a spot near you), trotting
+// when it's far and walking the last bit; once there it stands a moment, sits,
+// grooms now and then, and dozes off if nobody comes by. Their clips play on
+// the plaza's 12 fps drawing clock; walking and trotting advance with the
+// ground covered, so the paws don't slide.
+const CAT_FPS = 12;
+const WALK_SPEED = 0.5, TROT_SPEED = 1.6;        // m/s on the plaza
+const WALK_STRIDE = 0.45, TROT_STRIDE = 1.1;     // m/s the clips were drawn for
+const catTarget = new THREE.Vector3(), catStep = new THREE.Vector3();
+
+function catPlay(c, clip) {
+  if (c.clip === clip) return;
+  c.clip = clip;
+  c.clipTime = 0;
+}
+
+function animateCats(time, player, dt) {
+  for (const c of cats) {
+    const near = player && player.distanceTo(c.home) < 7;
+    // where to be: by you, or its own spot (which drifts about now and then)
+    if (c.follows && near) {
+      catStep.subVectors(c.g.position, player).setY(0);
+      if (catStep.lengthSq() < 1e-4) catStep.set(1, 0, 0);
+      catTarget.copy(player).setY(0).addScaledVector(catStep.normalize(), 1.3);
+    } else {
+      if (time > c.until && c.rest !== 'nap' && Math.random() < dt * 0.04) {
+        const a = Math.random() * Math.PI * 2, r = 0.5 + Math.random() * 1.3;
+        c.spot.set(c.home.x + Math.cos(a) * r, 0, c.home.z + Math.sin(a) * r);
+      }
+      catTarget.copy(c.spot);
+    }
+    catStep.subVectors(catTarget, c.g.position).setY(0);
+    const d = catStep.length();
+    const moving = c.clip === 'walk' || c.clip === 'trot' ? d > 0.08 : d > (c.rest === 'nap' ? 1.2 : 0.45);
+
+    let advance = dt;
+    if (moving) {
+      const trot = d > 2.5;
+      const speed = trot ? TROT_SPEED : WALK_SPEED * Math.min(1, 0.4 + d);
+      const step = Math.min(d, speed * dt);
+      c.g.position.addScaledVector(catStep.normalize(), step);
+      // turn toward where it's going, quickly but not in a snap
+      let dh = Math.atan2(-catStep.z, catStep.x) - c.g.rotation.y;
+      dh = Math.atan2(Math.sin(dh), Math.cos(dh));
+      c.g.rotation.y += dh * Math.min(1, dt * 8);
+      catPlay(c, trot ? 'trot' : 'walk');
+      advance = step / (trot ? TROT_STRIDE : WALK_STRIDE);
+      c.rest = 'idle'; c.until = time + 2 + Math.random() * 2; c.idleSince = time;
+    } else {
+      // settled: idle a moment, then sit; groom now and then; nap when left alone
+      if (c.follows && near) {
+        let dh = Math.atan2(-(player.z - c.g.position.z), player.x - c.g.position.x) - c.g.rotation.y;
+        dh = Math.atan2(Math.sin(dh), Math.cos(dh));
+        c.g.rotation.y += dh * Math.min(1, dt * 3);     // keep an eye on you
+      }
+      const company = player && player.distanceTo(c.g.position) < 3;
+      if (c.rest === 'nap' && company && player.distanceTo(c.g.position) < 1.4) { c.rest = 'sit'; c.until = time + 4; }
+      if (time > c.until) {
+        if (c.rest === 'idle' || c.rest === 'groom') { c.rest = 'sit'; c.until = time + 5 + Math.random() * 8; }
+        else if (c.rest === 'sit') {
+          if (!company && time - c.idleSince > 25 && Math.random() < 0.5) { c.rest = 'nap'; c.until = time + 30 + Math.random() * 30; }
+          else if (Math.random() < 0.45) { c.rest = 'groom'; c.until = time + 4 + Math.random() * 3; }
+          else c.until = time + 4 + Math.random() * 6;
+        } else if (c.rest === 'nap') { c.rest = 'sit'; c.until = time + 6; c.idleSince = time; }
+      }
+      catPlay(c, c.rest);
+    }
+
+    if (c.mixer) {
+      c.clipTime += advance;
+      for (const [name, a] of Object.entries(c.actions)) a.enabled = name === c.clip;
+      const a = c.actions[c.clip];
+      if (a) {
+        const len = a.getClip().duration;
+        a.time = (Math.floor(c.clipTime * CAT_FPS) / CAT_FPS) % len;   // one drawing at a time
+        c.mixer.update(0);
+      }
+    } else {
+      // the code-built cat: a bob and a wag
+      const frame = Math.floor(time * 6) % 2;
+      c.g.position.y = moving && frame ? 0.04 : 0;
+      c.tail.rotation.x = (frame ? 0.35 : -0.35) * (moving ? 1.4 : 0.6);
+    }
+  }
 }
 
 // Pigeons walk about the paving round the fountain, bobbing their heads,
@@ -265,22 +359,5 @@ export function animateCritters(time, player = null, dt = 1 / 60) {
     if (tick !== u.tick) { u.tick = tick; groundStep(b, time, player); }
   }
 
-  // the friendly cat trots after you for a bit, then goes home
-  for (const c of cats) {
-    const frame = Math.floor(time * 6) % 2;
-    let target = c.home;
-    if (c.follows && player && player.distanceTo(c.home) < 7) {
-      const away = new THREE.Vector3().subVectors(c.g.position, player).setY(0);
-      if (away.lengthSq() < 1e-4) away.set(1, 0, 0);
-      target = player.clone().setY(0).addScaledVector(away.normalize(), 1.3);
-    }
-    const d = new THREE.Vector3().subVectors(target, c.g.position).setY(0);
-    const moving = d.length() > 0.25;
-    if (moving) {
-      c.g.position.addScaledVector(d.normalize(), Math.min(d.length(), 2.4 * dt));
-      c.g.rotation.y = Math.atan2(-d.z, d.x);
-    }
-    c.g.position.y = moving && frame ? 0.04 : 0;
-    c.tail.rotation.x = (frame ? 0.35 : -0.35) * (moving ? 1.4 : 0.6);
-  }
+  animateCats(time, player, dt);
 }

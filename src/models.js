@@ -5,6 +5,7 @@
 // but they get the plaza's stepped shading and outlines like everything else.
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { toon } from './ink.js';
 
 const loader = new GLTFLoader();
@@ -42,29 +43,30 @@ async function load(name) {
   if (!entry) return null;
   if (!cache.has(name)) {
     const file = typeof entry === 'string' ? entry : entry.file;
-    cache.set(name, loader.loadAsync(`/models/${file}`).then((g) => inkify(g.scene)).catch((err) => {
+    cache.set(name, loader.loadAsync(`/models/${file}`).then((g) => ({ scene: inkify(g.scene), clips: g.animations })).catch((err) => {
       console.warn(`Plaza: couldn't load model "${name}"`, err);
       return null;
     }));
   }
-  const scene = await cache.get(name);
-  if (!scene) return null;
-  const copy = scene.clone(true);
+  const loaded = await cache.get(name);
+  if (!loaded) return null;
+  const copy = cloneSkinned(loaded.scene);   // a plain clone would leave a skinned copy bound to the original's bones
   if (entry.scale) copy.scale.setScalar(entry.scale);
   if (entry.rotateY) copy.rotation.y = THREE.MathUtils.degToRad(entry.rotateY);
-  return copy;
+  return { model: copy, clips: loaded.clips };
 }
 
 // Keep the code-built children for now; if a model named `name` exists,
 // replace them with it (same position, rotation and scale as the group).
 // Children marked userData.keep (smoke, steam, light pools, swinging signs)
-// stay, so the model keeps its life. `onModel(model)` runs after a swap.
+// stay, so the model keeps its life. `onModel(model, clips)` runs after a
+// swap, with the model's animation clips (empty for most).
 export function swapModel(group, name, onModel) {
-  load(name).then((model) => {
-    if (!model) return;
+  load(name).then((loaded) => {
+    if (!loaded) return;
     for (const c of [...group.children]) if (!c.userData.keep) group.remove(c);
-    group.add(model);
-    onModel?.(model);
+    group.add(loaded.model);
+    onModel?.(loaded.model, loaded.clips);
   });
   return group;
 }

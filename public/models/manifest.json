@@ -1,3 +1,5 @@
 {
-  "models": {}
+  "models": {
+    "cat": "cat.glb"
+  }
 }
