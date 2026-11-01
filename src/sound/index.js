@@ -92,7 +92,7 @@ export function soundCard(showCard) {
       </select>
     </label>
     ${row('stepVol', 'Footsteps volume')}
-    <p class="snd-note">Drawn in code, like the town (all but the dog, a recording).</p>` });
+    <p class="snd-note">Drawn in code, like the town (all but the dog and your steps, recordings).</p>` });
   body.addEventListener('input', (e) => {
     const k = e.target.dataset.key;
     if (k) settings[k] = k === 'steps' ? e.target.value : Number(e.target.value);

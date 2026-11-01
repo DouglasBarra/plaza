@@ -68,6 +68,18 @@ function start() {
   // with a drawn one (bark.js) until it loads, or if it can't
   fetch(`${import.meta.env.BASE_URL}sounds/dog-bark.ogg`).then((r) => r.arrayBuffer()).then((b) => ctx.decodeAudioData(b))
     .then((b) => { A.barkTape = b; }).catch(() => { /* keep the drawn bark */ });
+  // your footsteps: six clean steps cut from a real recording (credited in
+  // the README), each evened out to the same loudness; drawn ones until then
+  fetch(`${import.meta.env.BASE_URL}sounds/footsteps.ogg`).then((r) => r.arrayBuffer()).then((b) => ctx.decodeAudioData(b))
+    .then((b) => {
+      A.stepCuts = [7.68, 9.75, 13.79, 15.28, 15.97, 16.74].map((from) => {
+        const d = b.getChannelData(0), s = Math.floor(from * b.sampleRate), n = Math.floor(0.22 * b.sampleRate);
+        let peak = 0;
+        for (let i = s; i < s + n; i++) peak = Math.max(peak, Math.abs(d[i]));
+        return { from, len: 0.22, gain: 0.12 / peak };
+      });
+      A.stepTape = b;
+    }).catch(() => { /* keep the drawn steps */ });
   A.barks = [0.96, 1, 1.05, 1.1].map((pitch) => {
     const b = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.17), ctx.sampleRate);
     b.copyToChannel(drawBark(ctx.sampleRate, { pitch }), 0);

@@ -33,6 +33,29 @@ function tone(t, out, { f, dur = 0.5, vol = 0.2, type = 'sine', attack = 0.004, 
   o.start(t);
   o.stop(t + dur + 0.05);
 }
+// A real step from the recording: never the same one twice running, the
+// right foot played a hair slower, and darkened by the floor it lands on
+// (soft boards, plain stone, brighter marble), which also hides the hiss.
+let lastCut = -1;
+function realStep(t, out, surface, foot, kind) {
+  let i;
+  do i = Math.floor(Math.random() * A.stepCuts.length); while (i === lastCut);
+  lastCut = i;
+  const cut = A.stepCuts[i], settle = kind === 'stop';
+  const { rate, cutoff } = { wood: { rate: 0.9, cutoff: 1600 }, marble: { rate: 1.06, cutoff: 4200 } }[surface] || { rate: 1, cutoff: 2600 };
+  const r = rate * (foot ? 0.96 : 1) * rnd(0.97, 1.03), len = cut.len / r;
+  const s = A.ctx.createBufferSource(), g = gain(0, out);
+  s.buffer = A.stepTape;
+  s.playbackRate.value = r;
+  s.connect(filter('highpass', 90, 0.7, filter('lowpass', settle ? cutoff * 0.6 : cutoff, 0.6, g)));
+  const v = cut.gain * (settle ? 0.6 : 1);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(v, t + 0.004);
+  g.gain.setValueAtTime(v, t + len * 0.45);
+  g.gain.linearRampToValueAtTime(0, t + len);
+  s.start(t, cut.from, cut.len);
+}
+
 // a little bell, like a music box: soft partials, each doubled a hair out
 // of tune so it shimmers as it rings away
 function bell(t, out, f, vol = 0.12, dur = 2.4) {
@@ -88,6 +111,7 @@ export const VOICES = {
   // The right foot a shade lower than the left; stopping is a softer, rounder
   // settle. (steps.js paces them.)
   step(t, out, { surface = 'stone', foot = 0, kind = 'walk' } = {}) {
+    if (A.stepTape) return realStep(t, out, surface, foot, kind);
     const base = { wood: { f: 210, tap: 900 }, marble: { f: 300, tap: 1600 }, grass: { f: 190, tap: 700 } }[surface] || { f: 250, tap: 1200 };
     const side = foot ? 0.93 : 1;
     const f = base.f * side * rnd(0.96, 1.04), tap = base.tap * side * rnd(0.92, 1.08);
