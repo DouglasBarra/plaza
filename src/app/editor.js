@@ -35,13 +35,13 @@ export function installEditor() {
   panel.hidden = true;
   document.body.appendChild(panel);
   button = document.createElement('button');
-  button.className = 'pz-btn layout-toggle';
+  button.className = 'pz-btn';
   button.id = 'toggle-layout';
   button.dataset.key = '`';
   button.textContent = 'Layout';
   button.setAttribute('aria-pressed', 'false');
   button.addEventListener('click', () => toggle());
-  document.body.appendChild(button);   // bottom left, where the panel opens
+  document.getElementById('toggle-theme').after(button);   // in the top bar, next to Night
   canvas.addEventListener('pointerdown', onDown, true);
   canvas.addEventListener('pointermove', onMove);
   canvas.addEventListener('pointerup', onUp);

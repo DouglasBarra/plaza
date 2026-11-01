@@ -64,7 +64,7 @@ Tests live in `e2e/`. They run without Plaza's server, so each one starts from a
 
 ## Arrange things
 
-In development (`npm run dev`), press <kbd>`</kbd> or click **Layout** (bottom left) for the layout editor. Click a piece of furniture or a building and drag it over the floor, nudge it with the arrow keys (Shift for 50 cm, Alt for 1 cm), turn it with <kbd>[</kbd> <kbd>]</kbd>, raise it with Page Up/Down, and press <kbd>R</kbd> to put it back. Ctrl/⌘+S saves to `src/layout.json`, which the game reads, so commit that file. A piece takes its collider and the spot where you use it along, so you never bump into where it used to be.
+In development (`npm run dev`), press <kbd>`</kbd> or click **Layout** (top right, next to Night) for the layout editor. Click a piece of furniture or a building and drag it over the floor, nudge it with the arrow keys (Shift for 50 cm, Alt for 1 cm), turn it with <kbd>[</kbd> <kbd>]</kbd>, raise it with Page Up/Down, and press <kbd>R</kbd> to put it back. Ctrl/⌘+S saves to `src/layout.json`, which the game reads, so commit that file. A piece takes its collider and the spot where you use it along, so you never bump into where it used to be.
 
 A piece is anything registered with `piece()` or `placeable()` from `src/layout.js`; its id (like `hall.clock`) is shown in the editor.
 

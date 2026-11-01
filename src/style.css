@@ -220,8 +220,6 @@ body { background: var(--ground); color: var(--ink); font-family: var(--font-bod
 .layout-editor .le-hint, .layout-editor .le-status { color: var(--ink-muted); }
 .layout-editor .le-actions { display: flex; gap: var(--space-2); margin-bottom: var(--space-2); }
 body.editing .hint, body.editing .prompt { display: none; }
-.layout-toggle { position: fixed; left: var(--space-6); bottom: 104px; z-index: 4; }
-body.editing .layout-toggle { display: none; }
 
 /* ---------- Finance district ---------- */
 .fi-lead { margin: 0 0 var(--space-4); font-size: 17px; line-height: 26px; }
