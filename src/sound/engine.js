@@ -10,6 +10,8 @@
 // Browsers only allow sound after you've clicked or pressed a key, so the
 // context starts on the first gesture.
 
+import { drawWater } from './water.js';
+
 const KEY = 'plaza.sound';
 export const settings = { on: true, volume: 0.8, amb: 0.8, fx: 0.9 };
 try { Object.assign(settings, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch { /* defaults */ }
@@ -106,33 +108,10 @@ function noiseBuffer(kind) {
   }
   return b;
 }
-// Water, drawn as bubbles: a falling stream is thousands of tiny bubbles,
-// each ringing at a pitch set by its size and gliding up as it bursts. Six
-// seconds of them, wrapped round so the loop has no seam, over a soft hush.
+// the fountain's water: see water.js
 function waterBuffer() {
-  const r = A.ctx.sampleRate, n = r * 6, b = A.ctx.createBuffer(2, n, r);
-  for (let c = 0; c < 2; c++) {
-    const d = b.getChannelData(c);
-    // the hush of the sheet of water: noise, smoothed twice
-    let l1 = 0, l2 = 0;
-    for (let i = 0; i < n; i++) { l1 += 0.12 * (Math.random() * 2 - 1 - l1); l2 += 0.12 * (l1 - l2); d[i] = l2 * 0.35; }
-    for (let k = 0; k < 6 * 240; k++) {
-      const big = Math.random() ** 2.2;                 // mostly small bubbles, a few big ones
-      const f0 = 2600 - big * 2100;                     // 500 Hz (big) to 2600 Hz (small)
-      const tau = 0.003 + 0.018 * (500 / f0);           // small ones ring shorter
-      const amp = (0.05 + Math.random() * 0.12) * (0.6 + big);
-      const start = Math.floor(Math.random() * n), len = Math.floor(tau * 5 * r);
-      let ph = 0;
-      for (let i = 0; i < len; i++) {
-        const t = i / r;
-        ph += (2 * Math.PI * f0 * (1 + 0.12 * t / tau)) / r;
-        d[(start + i) % n] += Math.sin(ph) * Math.exp(-t / tau) * amp;
-      }
-    }
-    let peak = 0;
-    for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(d[i]));
-    for (let i = 0; i < n; i++) d[i] *= 0.7 / peak;
-  }
+  const r = A.ctx.sampleRate, b = A.ctx.createBuffer(2, r * 8, r);
+  for (let c = 0; c < 2; c++) b.copyToChannel(drawWater(r, 8), c);
   return b;
 }
 function impulse(seconds, decay) {

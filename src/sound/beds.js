@@ -26,18 +26,13 @@ export function buildBeds() {
   // the fountain: water bubbling into the basin, heard from a few steps away
   // and full by the rim; two copies of the loop, out of step, so it never repeats
   const fount = plazaSpot({ x: 0, y: 1.2, z: 0 }, { ref: 6, max: 26 });
-  for (const [rate, off] of [[1, 0], [0.93, 2.7]]) {
+  for (const [rate, off, v] of [[1, 0, 0.45], [0.87, 3.1, 0.2]]) {
     const s = A.ctx.createBufferSource();
     s.buffer = A.water; s.loop = true; s.playbackRate.value = rate;
-    s.connect(filter('lowpass', 3800, 0.5, gain(0.5, fount.input)));
+    s.connect(filter('lowpass', 2400, 0.5, gain(v, fount.input)));
     s.start(0, off);
   }
   out.fountain = fount;
-
-  // the town: a low murmur of people that drifts up and down
-  const murmur = gain(0, A.plaza);
-  noiseSource('brown', filter('lowpass', 700, 0.5, filter('bandpass', 420, 1.1, murmur)));
-  out.murmur = murmur;
 
   // wind under clouds, its pitch wandering
   const wind = gain(0, A.plaza);
@@ -63,13 +58,15 @@ export function buildRoom(room) {
   for (const s of room.sounds || []) {
     if (s.kind === 'fire') {
       const p = spot(s.at, A.room, { ref: 1.2, max: 10 });
-      parts.sources.push(noiseSource('brown', filter('lowpass', 380, 0.7, gain(0.35, p))));
+      // the flames: a breath of soft, mid noise that flickers, no rumble
+      const flick = gain(0.02, p);
+      parts.sources.push(noiseSource('white', filter('bandpass', 1100, 0.6, flick)));
+      parts.flick = flick;
       parts.fire = p;
     } else if (s.kind === 'clock') {
       parts.clock = spot(s.at, A.room, { ref: 1, max: 8 });
     } else if (s.kind === 'hush') {
-      parts.sources.push(noiseSource('brown', filter('lowpass', 160, 0.6, gain(0.12, A.room))));
-      parts.echo = true;
+      parts.echo = true;   // a quiet hall: no hum, just its echo and the small sounds in it
     }
   }
   parts.spots = room.soundSpots || [];
@@ -85,21 +82,19 @@ let lastHour = null, tock = 0;
 export function stepBeds(b, st) {
   const ctx = A.ctx, t = ctx.currentTime, T = b.timers;
   // the door: open air, or the plaza through the walls
-  ease(A.plazaLow.frequency, st.inside ? 650 : 20000, t, 0.15);
-  ease(A.plaza.gain, st.inside ? 0.3 : 1, t, 0.15);
+  ease(A.plazaLow.frequency, st.inside ? 900 : 20000, t, 0.15);
+  ease(A.plaza.gain, st.inside ? 0.1 : 1, t, 0.15);
   ease(b.fountain.near.gain, st.inside ? 0 : 1, t, 0.1);
-  ease(b.fountain.far.gain, st.inside ? 0.04 : 0, t, 0.1);
+  ease(b.fountain.far.gain, 0, t, 0.1);   // indoors, the fountain is out of earshot
   // the bank's echo
   const echo = !!st.room?.echo;
   ease(A.verbSend.gain, echo ? 0.6 : 0, t, 0.2);
   ease(A.fxVerb.gain, echo ? 0.35 : 0, t, 0.2);
 
   // the town, the wind, the rain
-  const busy = st.night ? 0.008 : 0.025;   // barely there: the town is far off
-  ease(b.murmur.gain, busy * (0.75 + 0.25 * Math.sin(st.t * 0.13) * Math.sin(st.t * 0.31)) * (1 - st.wet * 0.5), t, 1);
-  ease(b.wind.gain, 0.004 + st.cloud * 0.03, t, 1.5);
+  ease(b.wind.gain, st.inside ? 0 : st.cloud * 0.02, t, 1.5);
   ease(b.windF.frequency, 260 + 260 * (0.5 + 0.5 * Math.sin(st.t * 0.21) * Math.sin(st.t * 0.07)), t, 0.8);
-  ease(b.rain.gain, st.wet * 0.22, t, 1.2);
+  ease(b.rain.gain, st.wet * (st.inside ? 0.6 : 0.22), t, 1.2);   // rain you do hear on the roof (muffled)
 
   const dt = st.dt;
   // drips when it rains
@@ -130,7 +125,7 @@ export function stepBeds(b, st) {
   // the hour, struck on the town hall's bell
   const h = Math.floor(st.hour);
   // (the one sound that carries across the whole square)
-  if (lastHour != null && h !== lastHour) VOICES.hour(t, gain(0.9, st.inside ? A.plaza : spot(st.hall, A.plaza, { ref: 14, max: 90 })), { strikes: h % 12 || 12 });
+  if (lastHour != null && h !== lastHour) VOICES.hour(t, st.inside ? gain(0.12, A.fx) : gain(0.9, spot(st.hall, A.plaza, { ref: 14, max: 90 })), { strikes: h % 12 || 12 });
   lastHour = h;
 
   // the room you're in
@@ -143,11 +138,12 @@ export function stepBeds(b, st) {
       g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.5, t + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
       s.start(t, Math.random()); s.stop(t + 0.05);
     }
+    if (R.flick) ease(R.flick.gain, 0.012 + 0.012 * Math.random(), t, 0.08);
     if (R.fire && (R.timers.crackle -= dt) < 0) {
-      R.timers.crackle = rnd(0.04, 0.35);
+      R.timers.crackle = rnd(0.08, 0.6);
       const s = ctx.createBufferSource(), f = filter('highpass', rnd(1500, 4000), 1), g = gain(0, R.fire);
       s.buffer = A.noise; s.connect(f).connect(g);
-      const v = Math.random() < 0.15 ? 0.5 : rnd(0.06, 0.2);
+      const v = Math.random() < 0.12 ? 0.22 : rnd(0.03, 0.1);
       g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + 0.001); g.gain.exponentialRampToValueAtTime(0.0001, t + rnd(0.01, 0.04));
       s.start(t, Math.random()); s.stop(t + 0.06);
     }
