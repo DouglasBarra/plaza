@@ -13,7 +13,7 @@ const GAP = 0.9;            // from the plaza's edge to the bed (the bollards st
 const MIN_RUN = 3.5, MAX_RUN = 11, BREAK = 1.4;
 
 const lawn = toon('#e8f6dc', tex.grass());
-const blade = toon('#dcf0cc');
+const blade = toon('#ffffff');
 
 // a deterministic random stream
 const seeded = (n) => () => ((n = (n * 1664525 + 1013904223) >>> 0) / 4294967296);
