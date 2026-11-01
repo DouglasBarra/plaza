@@ -21,9 +21,9 @@ const spinners = [];
 const puffGeo = new THREE.IcosahedronGeometry(1, 0);
 
 // ---------- smoke and steam ----------
-export function smoke(p, x, y, z, { n = 4, rise = 1.8, size = 0.2, speed = 0.22, drift = 0.6 } = {}) {
+export function smoke(p, x, y, z, { n = 4, rise = 1.8, size = 0.2, speed = 0.22, drift = 0.6, mat = M.white } = {}) {
   for (let i = 0; i < n; i++) {
-    const m = mesh(puffGeo, M.white, x, y, z, p);
+    const m = mesh(puffGeo, mat, x, y, z, p);
     m.castShadow = false;
     m.userData.keep = true;
     puffs.push({ m, base: new THREE.Vector3(x, y, z), i, n, rise, size, speed, drift, spin: Math.random() * 6 });

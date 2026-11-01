@@ -130,6 +130,16 @@ export const tex = {
     }
   }),
 
+  // Rock for the mountains: a few strata and patches of hatching.
+  rock: () => canvas((g) => {
+    g.lineWidth = 4;
+    for (let i = 0; i < 3; i++) { const y = rand() * S; line(g, 0, y, S, y + (rand() - 0.5) * 30, 3); }
+    for (let k = 0; k < 3; k++) {
+      const x0 = rand() * S, y0 = rand() * S;
+      for (let i = 0; i < 5; i++) line(g, x0 + i * 9, y0, x0 + i * 9 + 18, y0 + 26, 1);
+    }
+  }),
+
   stripes: () => canvas((g) => {
     g.lineWidth = 4;
     for (let x = -S; x < S * 2; x += 18) line(g, x, S / 2, x + S / 2, S, 0.8);

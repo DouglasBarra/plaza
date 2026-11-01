@@ -56,6 +56,9 @@ function wall(p, axis, at, from, to, y0, y1, holes, mat) {
     cursor = b;
   }
   seg(cursor, to, y0, y1);
+  // one wall, one outline: its pieces share an ink id so they show no seams
+  const id = 1e5 + Math.random() * 1e5;
+  for (const part of parts) part.userData.inkId = id;
   return parts;
 }
 
@@ -81,8 +84,42 @@ function windowIn(p, axis, at, hole, inward, panes, door = false) {
     box(g, 0.04, hole.h, 0.04, M.white, 0, 0, f - 0.02).castShadow = false;
     box(g, hole.w, 0.04, 0.04, M.white, 0, hole.h * 0.1, f - 0.02).castShadow = false;
     box(g, hole.w + 0.34, 0.06, 0.28, M.white, 0, -hole.h / 2 - 0.1, f + 0.08);
+    // curtains on a rod, gathered to each side
+    box(g, hole.w + 1.0, 0.04, 0.04, dark, 0, hole.h / 2 + 0.28, f + 0.12);
+    for (const k of [-1, 1]) {
+      const c = new THREE.Group();
+      c.position.set(k * (hole.w / 2 + 0.26), 0.12, f + 0.1);
+      for (let i = 0; i < 3; i++) box(c, 0.13, hole.h + 0.4, 0.05, M.white, (i - 1) * 0.1, 0, (i % 2) * 0.04);
+      box(c, 0.36, 0.06, 0.09, dark, 0, -0.25, 0.03); // tie-back
+      g.add(c);
+    }
   }
   return g;
+}
+
+// Wood paneling on the lower part of a wall, with a rail on top, a baseboard
+// below and crown molding at the ceiling. `axis`/`at`/`inward` as for wall();
+// skips spans listed in `gaps` ([from, to] along the wall).
+function trim(p, axis, at, from, to, y0, ceiling, inward, gaps = []) {
+  const s = inward[0] === '+' ? 1 : -1;
+  const face = at + s * (T / 2 + 0.02);
+  const piece = (a, b, y, h, d, mat) => {
+    const len = b - a, c = (a + b) / 2, off = face + s * d / 2;
+    const m = axis === 'x' ? box(p, len, h, d, mat, c, y, off) : box(p, d, h, len, mat, off, y, c);
+    m.castShadow = false;
+    m.userData.inkId = 3e5 + y;
+    return m;
+  };
+  let cursor = from;
+  for (const [a, b] of [...gaps, [to, to]].sort((u, v) => u[0] - v[0])) {
+    if (a - cursor > 0.05) {
+      piece(cursor, a, y0 + 0.55, 1.1, 0.04, M.planks);   // panels
+      piece(cursor, a, y0 + 1.12, 0.07, 0.09, M.white);   // chair rail
+      piece(cursor, a, y0 + 0.08, 0.16, 0.07, M.white);   // baseboard
+    }
+    cursor = Math.max(cursor, b);
+  }
+  piece(from, to, ceiling - 0.08, 0.16, 0.14, M.white);   // crown molding
 }
 
 // ---------- notes ----------
@@ -257,15 +294,21 @@ function fireplace(p, x, z) {
   g.position.set(x, 0, z);
   g.rotation.y = Math.PI / 2; // faces +x, into the room
   p.add(g);
-  box(g, 2.4, 1.3, 0.6, M.bricks, 0, 0.65, 0);          // surround
-  box(g, 1.2, 0.9, 0.62, M.deep, 0, 0.45, 0.01).castShadow = false; // firebox
+  // surround: two brick pillars and a lintel around an open firebox
+  for (const sx of [-0.9, 0.9]) box(g, 0.6, 1.3, 0.6, M.bricks, sx, 0.65, 0);
+  box(g, 1.2, 0.4, 0.6, M.bricks, 0, 1.1, 0);
+  box(g, 1.2, 0.9, 0.08, M.deep, 0, 0.45, -0.26).castShadow = false; // the sooty back
+  for (const sx of [-0.58, 0.58]) box(g, 0.04, 0.9, 0.5, M.deep, sx, 0.45, -0.02).castShadow = false; // sooty sides
+  box(g, 1.2, 0.04, 0.55, M.stone, 0, 0.02, 0);                       // firebox floor
+  // a fire grate
+  for (const gx of [-0.35, -0.12, 0.12, 0.35]) box(g, 0.03, 0.14, 0.4, dark, gx, 0.09, 0.02);
   box(g, 2.7, 0.12, 0.8, M.planks, 0, 1.36, 0.08);       // mantel
   box(g, 1.6, 2.9, 0.5, M.bricks, 0, 2.9, -0.05);        // chimney breast
   box(g, 2.6, 0.06, 0.9, M.stone, 0, 0.03, 0.55);        // hearth
-  for (const [lx, r] of [[-0.25, 0.1], [0.2, -0.15]]) { const log = cyl(g, 0.08, 0.08, 0.7, M.planks, lx * 0.3, 0.12, 0.05, 8); log.rotation.set(0, r, Math.PI / 2); }
+  for (const [lx, r] of [[-0.25, 0.1], [0.2, -0.15]]) { const log = cyl(g, 0.08, 0.08, 0.7, M.planks, lx * 0.3, 0.2, 0.02, 8); log.rotation.set(0, r, Math.PI / 2); }
   const flames = [];
   for (const [fx, fh, mat] of [[-0.2, 0.42, flameA], [0.05, 0.6, flameA], [0.28, 0.38, flameA], [0, 0.34, flameB], [-0.12, 0.24, flameB]]) {
-    const f = mesh(new THREE.ConeGeometry(0.12, 1, 6), mat, fx, 0.2, 0.08, g);
+    const f = mesh(new THREE.ConeGeometry(0.12, 1, 6), mat, fx, 0.28, 0.06, g);
     f.castShadow = false;
     f.userData = { h: fh, x: fx };
     flames.push(f);
@@ -274,7 +317,7 @@ function fireplace(p, x, z) {
   for (let i = 0; i < 5; i++) cyl(g, 0.07, 0.07, 0.5, M.planks, 1.55, 0.08 + Math.floor(i / 3) * 0.14, -0.1 + (i % 3) * 0.15 + (i > 2 ? 0.07 : 0), 7).rotation.x = Math.PI / 2;
   cyl(g, 0.015, 0.015, 0.9, dark, -1.45, 0.45, 0.25, 4).rotation.z = 0.15;
   const light = new THREE.PointLight('#ffb070', 0, 7, 1.5);
-  light.position.set(0, 0.6, 0.7);
+  light.position.set(0, 0.55, 0.6);
   g.add(light);
   return { group: g, flames, light };
 }
@@ -371,7 +414,7 @@ export function buildTownHall(scene, rand, lights) {
   box(lower, 1.8, 0.04, 1.0, M.dirt, 0, 0.02, D / 2 - 0.7);
 
   // upper floor: a slab with the stairwell left open
-  const slab = (x0, x1, z0, z1) => box(upper, x1 - x0, 0.3, z1 - z0, M.floor, (x0 + x1) / 2, F - 0.15, (z0 + z1) / 2);
+  const slab = (x0, x1, z0, z1) => { box(upper, x1 - x0, 0.3, z1 - z0, M.floor, (x0 + x1) / 2, F - 0.15, (z0 + z1) / 2).userData.inkId = 424242; };
   slab(-W / 2, STAIR.x0, -D / 2, D / 2);
   slab(STAIR.x0, W / 2, -D / 2, STAIR.zTop);
   slab(STAIR.x0, W / 2, STAIR.zBottom, D / 2);
@@ -403,6 +446,15 @@ export function buildTownHall(scene, rand, lights) {
 
   stairs(lower);
 
+  // paneling, rails, baseboards and molding
+  trim(lower, 'x', bz, -W / 2, W / 2, 0, F - 0.3, '+z');
+  trim(lower, 'z', lx, -D / 2, D / 2, 0, F - 0.3, '+x', [[-1.3, 1.5]]); // not behind the fireplace
+  trim(cutLower, 'z', rx, -D / 2, D / 2, 0, F - 0.3, '-x', [[STAIR.zTop - 0.2, STAIR.zBottom + 0.1]]);
+  trim(cutLower, 'x', fz, -W / 2, W / 2, 0, F - 0.3, '-z', [[-1.15, 1.15]]); // around the door
+  trim(upper, 'x', bz, -W / 2, W / 2, F, TOP, '+z');
+  trim(upper, 'z', lx, -D / 2, D / 2, F, TOP, '+x');
+  trim(cutUpper, 'x', fz, -W / 2, W / 2, F, TOP, '-z');
+
   // ---------- ground floor: Today ----------
   const board = taskBoard(lower, -0.5, 2.25, -D / 2 + 0.1, 5.0, 2.3, 5, 2, stamp.todo);
   signBoard(lower, -0.5, 3.75, -D / 2 + 0.14, 1.6, 0.36, 'Today');
@@ -427,13 +479,16 @@ export function buildTownHall(scene, rand, lights) {
 
   // fireplace on the left wall, with armchairs around it
   const fire = fireplace(lower, -W / 2 + 0.32, 0.1);
-  const progressJar = jar(lower, -W / 2 + 0.45, 1.42, -0.7);
+  // the mantel's front edge, clear of the chimney breast behind it
+  const MX = -W / 2 + 0.68;
+  const progressJar = jar(lower, MX, 1.42, -0.95);
   let plaque = null;
   const setPlaque = (n) => {
     if (plaque) lower.remove(plaque);
-    plaque = signBoard(lower, -W / 2 + 0.36, 1.66, 0.8, 0.9, 0.28, n === 1 ? 'Streak: 1 day' : `Streak: ${n} days`, Math.PI / 2);
+    plaque = signBoard(lower, MX, 1.6, 1.05, 0.72, 0.24, n === 1 ? 'Streak: 1 day' : `Streak: ${n} days`, Math.PI / 2);
+    plaque.rotation.z = -0.12; // leaning back against the chimney
   };
-  for (const zz of [-0.15, 1.3]) cyl(lower, 0.04, 0.05, 0.22, M.white, -W / 2 + 0.45, 1.53, zz, 8); // candles
+  for (const zz of [-0.35, 0.5]) { cyl(lower, 0.06, 0.07, 0.05, dark, MX, 1.45, zz, 10); cyl(lower, 0.035, 0.035, 0.24, M.white, MX, 1.6, zz, 8); } // candles
   picture(lower, -W / 2 + 0.6, 2.9, 0.1, 1.0, 1.1, Math.PI / 2, 'portrait');
   for (const [z, r] of [[-1.4, -Math.PI / 2 - 0.4], [1.6, -Math.PI / 2 + 0.4]]) armchair(lower, -3.6, z, r); // facing the fire
   box(lower, 0.6, 0.55, 0.6, M.planks, -3.3, 0.28, 0.1);
@@ -453,17 +508,18 @@ export function buildTownHall(scene, rand, lights) {
   folk(lower, -4.6, 4.55, Math.PI, { pose: 'sit', seat: 0.5, look: { hat: 'top', scarf: true } });
   rug(lower, -0.6, 1.6, 4.6, 3.0);
   plant(lower, -5.4, -4.4);
-  plant(lower, 1.4, 4.45);
+  plant(lower, 5.3, 4.4); // in the corner, clear of the door and the stairs
   wallShelf(lower, -W / 2 + 0.05, 3.0, -1.95, 1.1, Math.PI / 2, rand);
-  picture(lower, 3.6, 2.6, -D / 2 + 0.06, 0.8, 0.8, 0, 'map');
 
-  // the tall clock by the stairs, with a pendulum
-  box(lower, 0.6, 2.3, 0.45, M.planks, 3.75, 1.15, 2.6);
-  const face = mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.04, 20), [M.white, M.clock, M.white], 3.75, 1.9, 2.84, lower);
+  // the tall clock against the back wall, with a pendulum
+  const CZ = -D / 2 + 0.28;
+  box(lower, 0.6, 2.3, 0.45, M.planks, 3.7, 1.15, CZ);
+  box(lower, 0.7, 0.12, 0.52, M.planks, 3.7, 2.36, CZ);
+  const face = mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.04, 20), [M.white, M.clock, M.white], 3.7, 1.9, CZ + 0.24, lower);
   face.rotation.x = Math.PI / 2;
-  clockHands(lower, 3.75, 1.9, 2.87, 0.21);
+  clockHands(lower, 3.7, 1.9, CZ + 0.27, 0.21);
   const pendulum = new THREE.Group();
-  pendulum.position.set(3.75, 1.6, 2.86);
+  pendulum.position.set(3.7, 1.6, CZ + 0.26);
   box(pendulum, 0.02, 0.55, 0.02, M.white, 0, -0.28, 0);
   mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.03, 14), M.white, 0, -0.58, 0, pendulum).rotation.x = Math.PI / 2;
   lower.add(pendulum);
@@ -624,7 +680,7 @@ export function buildTownHall(scene, rand, lights) {
     // the fire: brighter the more of today you've cleared
     const g = api.groups();
     const left = g.overdue.length + g.today.length, cleared = api.doneToday();
-    const glow = 0.45 + 0.55 * (cleared / Math.max(1, cleared + left));
+    const glow = 0.75 + 0.6 * (cleared / Math.max(1, cleared + left));
     const frame = Math.floor((performance.now() - t0) / 140) % 2;
     for (const [i, f] of fire.flames.entries()) {
       const h = f.userData.h * glow * (1 + ((i + frame) % 2 ? 0.12 : -0.08));
@@ -658,7 +714,7 @@ export function buildTownHall(scene, rand, lights) {
   const colliders = [
     { x: 2.2, z: 0.4, r: 1.35 }, { x: -W / 2 + 0.7, z: 0.1, r: 1.0 }, { x: -3.6, z: -1.4, r: 0.6 }, { x: -3.6, z: 1.6, r: 0.6 },
     { x: -3.3, z: 0.1, r: 0.45 }, { x: 5.1, z: -4.5, r: 0.9 }, { x: -1.9, z: 4.35, r: 0.4 }, { x: -4.4, z: 4.55, r: 0.75 },
-    { x: 3.75, z: 2.6, r: 0.45 }, { x: -5.4, z: -4.4, r: 0.5 }, { x: 1.4, z: 4.45, r: 0.5 }, { x: 2.75, z: -4.35, r: 0.4 },
+    { x: 3.7, z: -4.72, r: 0.45 }, { x: -5.4, z: -4.4, r: 0.5 }, { x: 5.3, z: 4.4, r: 0.5 }, { x: 2.75, z: -4.35, r: 0.4 },
     { x: -2.4, z: -3.3, r: 1.0, level: 1 }, { x: -2.4, z: -2.2, r: 0.35, level: 1 }, { x: -5.6, z: 0, r: 1.6, level: 1 },
     { x: -5.5, z: -3.25, r: 0.8, level: 1 }, { x: -3.6, z: 0.6, r: 0.9, level: 1 }, { x: -3.4, z: 4.55, r: 0.95, level: 1 },
     { x: 1.0, z: 4.4, r: 0.5, level: 1 }, { x: 3.0, z: 3.6, r: 0.6, level: 1 }, { x: 4.0, z: -4.4, r: 0.35, level: 1 },
@@ -672,7 +728,7 @@ export function buildTownHall(scene, rand, lights) {
     heightAt,
     tearOff,
     update,
-    speakers: [{ object: clerk, height: 1.9, range: 4.2, level: 0, text: clerkLine }],
+    speakers: [{ object: clerk, height: 1.9, range: 3.0, level: 0, text: clerkLine }],
     stations: [
       { point: new THREE.Vector3(-0.5, 0, -3.5), level: 0, label: 'Open the task board', app: 'todo', tab: 'today' },
       { point: new THREE.Vector3(2.2, 0, 1.95), level: 0, label: 'Ask the clerk to type a task', typewriter: true },

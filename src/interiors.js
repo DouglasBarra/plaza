@@ -34,9 +34,10 @@ function shell(scene, wallMat, floorMat) {
   box(scene, T, H, D, wallMat, -W / 2 - T / 2, H / 2, 0);                  // left
   cut(box(scene, T, H, D, wallMat, W / 2 + T / 2, H / 2, 0));              // right
   const seg = (W - 2) / 2;
-  cut(box(scene, seg, H, T, wallMat, -(W / 2 + 1) / 2, H / 2, D / 2 + T / 2)); // front, left of door
-  cut(box(scene, seg, H, T, wallMat, (W / 2 + 1) / 2, H / 2, D / 2 + T / 2));  // front, right of door
-  cut(box(scene, 2, H - 2.5, T, wallMat, 0, 2.5 + (H - 2.5) / 2, D / 2 + T / 2));
+  const frontId = 1e5 + Math.random() * 1e5; // the front wall's pieces share one outline
+  cut(box(scene, seg, H, T, wallMat, -(W / 2 + 1) / 2, H / 2, D / 2 + T / 2)).userData.inkId = frontId; // front, left of door
+  cut(box(scene, seg, H, T, wallMat, (W / 2 + 1) / 2, H / 2, D / 2 + T / 2)).userData.inkId = frontId;  // front, right of door
+  cut(box(scene, 2, H - 2.5, T, wallMat, 0, 2.5 + (H - 2.5) / 2, D / 2 + T / 2)).userData.inkId = frontId;
   const ceiling = cut(box(scene, W + T * 2, 0.2, D + T * 2, M.white, 0, H + 0.1, 0));
   ceiling.castShadow = false;
   // the way out: a door frame and a doormat that stay visible in the cutaway

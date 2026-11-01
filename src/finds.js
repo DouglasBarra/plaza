@@ -176,6 +176,7 @@ export function placeFinds(world, buildings) {
   }
   sky.add(stars);
   sky.visible = false;
+  sky.userData.inkCrisp = true;
   world.add(sky);
   nightOnly.push(sky);
 }

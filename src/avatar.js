@@ -3,7 +3,10 @@
 import * as THREE from 'three';
 import { makeFigure, poseFigure } from './folks.js';
 
-const SPEED = 5.5;
+const WALK = 3.2;   // m/s, an unhurried stroll
+const RUN = 6.0;    // with Shift held
+const ACCEL = 8;    // how quickly you get up to speed (per second)
+const SPEED = WALK;
 const RADIUS = 0.4;
 
 export class Avatar {
@@ -15,6 +18,9 @@ export class Avatar {
     this.goal = null;      // a point to walk to (click)
     this.onArrive = null;  // called when the goal is reached
     this.moving = false;
+    this.running = false;              // Shift held
+    this.vel = new THREE.Vector3();     // current velocity, eased toward where you want to go
+    this.stride = 0;                    // distance walked, drives the steps
     this.level = 0;        // which floor you're on (rooms with stairs)
     this.heightAt = null;  // (x, z, level) -> { y, level } in rooms with stairs
 
@@ -46,6 +52,7 @@ export class Avatar {
     this.body.rotation.set(0, rotY, 0);
     this.goal = null;
     this.onArrive = null;
+    this.vel.set(0, 0, 0);
   }
 
   walkTo(point, onArrive = null) {
@@ -79,13 +86,27 @@ export class Avatar {
       }
     }
 
-    this.moving = dir.lengthSq() > 0;
-    const p = this.position;
-    if (this.moving) {
+    // ease the velocity toward the wanted direction, so starts and stops feel soft
+    const want = new THREE.Vector3();
+    if (dir.lengthSq() > 0) {
+      const toGoal = this.goal ? dir.length() : Infinity;
       dir.normalize();
+      // slow down as you arrive at a clicked spot
+      want.copy(dir).multiplyScalar((this.running ? RUN : WALK) * Math.min(1, toGoal / 0.9 + 0.25));
+    }
+    this.vel.lerp(want, 1 - Math.exp(-ACCEL * dt));
+    if (want.lengthSq() === 0 && this.vel.lengthSq() < 0.01) this.vel.set(0, 0, 0);
+    const speed = this.vel.length();
+    this.moving = speed > 0.3;
+    const p = this.position;
+    if (speed > 0) {
       const prev = p.clone();
-      p.addScaledVector(dir, SPEED * dt);
+      p.addScaledVector(this.vel, dt);
       this.collide();
+      // walking into something: lose the speed you can't use
+      const moved = p.distanceTo(prev);
+      if (moved < speed * dt * 0.5) this.vel.multiplyScalar(0.5);
+      this.stride += moved;
       if (this.heightAt) {
         // stairs: follow the floor, but a step taller than 0.6 m is a wall or a railing
         const g = this.heightAt(p.x, p.z, this.level);
@@ -93,15 +114,16 @@ export class Avatar {
         else { p.y = g.y; this.level = g.level; }
       }
       // stuck against something while walking to a goal: give up
-      if (this.goal && p.distanceTo(prev) < SPEED * dt * 0.15) { this.goal = null; this.onArrive = null; }
-      const target = Math.atan2(dir.x, dir.z);
+      if (this.goal && moved < SPEED * dt * 0.15) { this.goal = null; this.onArrive = null; }
+      const target = Math.atan2(this.vel.x, this.vel.z);
       let d = target - this.body.rotation.y;
       d = Math.atan2(Math.sin(d), Math.cos(d));
-      this.body.rotation.y += d * Math.min(1, dt * 12);
+      if (speed > 0.2) this.body.rotation.y += d * Math.min(1, dt * 10);
     }
 
     // hand-drawn 2-frame animation: quick steps when walking, slow sway when idle
-    const frame = Math.floor(time * (this.moving ? 7 : 2)) % 2;
+    // a step every ~0.55 m walked, so feet keep pace with the ground at any speed
+    const frame = this.moving ? Math.floor(this.stride / 0.55) % 2 : Math.floor(time * 2) % 2;
     poseFigure(this.figure, this.moving ? 'walk' : 'idle', frame);
     if (!this.heightAt) p.y = 0;
   }

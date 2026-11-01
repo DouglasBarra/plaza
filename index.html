@@ -20,10 +20,10 @@
       <p id="greeting-line">Good evening. 4 things need you today.</p>
     </div>
     <div class="hud-actions">
-      <button class="pz-btn" id="finds-btn">Finds</button>
-      <button class="pz-btn" id="toggle-view" aria-pressed="false">First person</button>
-      <button class="pz-btn" id="toggle-wobble" aria-pressed="true">Wobbly lines</button>
-      <button class="pz-btn" id="toggle-theme">Night</button>
+      <button class="pz-btn" id="finds-btn" data-key="F" aria-keyshortcuts="F">Finds</button>
+      <button class="pz-btn" id="toggle-view" data-key="V" aria-keyshortcuts="V" aria-pressed="false">First person</button>
+      <button class="pz-btn" id="toggle-wobble" data-key="L" aria-keyshortcuts="L" aria-pressed="true">Wobbly lines</button>
+      <button class="pz-btn" id="toggle-theme" data-key="N" aria-keyshortcuts="N">Night</button>
     </div>
   </header>
 
@@ -33,8 +33,8 @@
     <section class="pz-panel" id="panel" aria-live="polite"></section>
   </div>
 
-  <p class="hint hint-third">WASD or click to walk · drag to look around · scroll to zoom · E to go in · V for first person</p>
-  <p class="hint hint-first">WASD to walk · mouse to look · E or click to use · V for third person · Esc frees the mouse</p>
+  <p class="hint hint-third">WASD or click to walk · Shift to run · drag to look · scroll to zoom · E to go in</p>
+  <p class="hint hint-first">WASD to walk · Shift to run · mouse to look · E or click to use · Esc frees the mouse</p>
 
   <script type="module" src="/src/main.js"></script>
 </body>

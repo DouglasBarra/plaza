@@ -318,6 +318,9 @@ function openApp(id, opts = {}) {
 }
 
 function closeApp() {
+  hideTip();
+  // back to the game: in first person the mouse looks around again
+  if (view === 'first') captureMouse();
   unmount?.();
   unmount = null;
   appOpen = null;
@@ -398,6 +401,12 @@ function tryFind(fromCenter = false) {
 }
 
 // ---------- first person ----------
+// Capture the mouse for looking around. Browsers can refuse (no recent click,
+// or the window isn't focused); then the next click captures it.
+function captureMouse() {
+  if (view !== 'first' || document.pointerLockElement === canvas) return;
+  try { canvas.requestPointerLock?.()?.catch?.(() => {}); } catch { /* not allowed right now */ }
+}
 const viewBtn = document.getElementById('toggle-view');
 let yaw = 0, pitch = -0.08;
 
@@ -418,7 +427,7 @@ function setView(next) {
   applyRoomView();
   if (first) {
     lookFrom(me.body.rotation.y);
-    canvas.requestPointerLock?.();
+    captureMouse();
   } else {
     if (document.pointerLockElement) document.exitPointerLock();
     placeCameraBehindMe();
@@ -605,12 +614,12 @@ canvas.addEventListener('pointermove', (e) => {
 canvas.addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; });
 canvas.addEventListener('pointerup', (e) => {
   if (view === 'first') {
-    if (appOpen) return;
+    if (appOpen) return closeApp();
     if (document.pointerLockElement !== canvas) {
       // mouse not captured: a click finds what's under the pointer, else captures it
       const clicked = downAt && Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) <= 5;
       if (clicked) { setPointer(e); if (tryFind()) return; }
-      return canvas.requestPointerLock?.();
+      return captureMouse();
     }
     if (tryFind(true)) return;
     const note = pickNote(true);
@@ -630,20 +639,30 @@ canvas.addEventListener('pointerup', (e) => {
 });
 
 const MOVE_KEYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright']);
+// F finds · V view · L wobbly lines · N night (shown on the buttons)
+const SHORTCUTS = {
+  f: () => (appOpen === 'finds' ? closeApp() : openFinds()),
+  v: () => setView(view === 'first' ? 'third' : 'first'),
+  l: () => wobbleBtn.click(),
+  n: () => themeBtn.click(),
+};
 window.addEventListener('keydown', (e) => {
   const k = e.key.toLowerCase();
+  me.running = e.shiftKey;
   if (k === 'escape' && appOpen) return closeApp();
   // typing in a district's app must not walk you around
   if (e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (appOpen === 'finds' && k === 'f') return closeApp();
   if (appOpen) return;
   if (MOVE_KEYS.has(k)) { me.keys.add(k); e.preventDefault(); return; }
   if (k === 'e' || k === 'enter') return interact();
-  if (k === 'v') return setView(view === 'first' ? 'third' : 'first');
+  if (SHORTCUTS[k]) return SHORTCUTS[k]();
   const id = Object.keys(DISTRICTS).find((key) => DISTRICTS[key].key === e.key);
   if (id) openApp(id);
 });
-window.addEventListener('keyup', (e) => me.keys.delete(e.key.toLowerCase()));
-window.addEventListener('blur', () => me.keys.clear());
+window.addEventListener('keyup', (e) => { me.keys.delete(e.key.toLowerCase()); me.running = e.shiftKey; });
+window.addEventListener('blur', () => { me.keys.clear(); me.running = false; });
 
 // ---------- toggles ----------
 function setRoomLights(l) {
@@ -667,6 +686,7 @@ themeBtn.addEventListener('click', () => {
 const wobbleBtn = document.getElementById('toggle-wobble');
 wobbleBtn.addEventListener('click', () => {
   ink.wobbleOn = !ink.wobbleOn;
+  plazaInk.wobbleOn = ink.wobbleOn;
   wobbleBtn.setAttribute('aria-pressed', String(ink.wobbleOn));
 });
 

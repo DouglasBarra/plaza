@@ -95,8 +95,15 @@ export function applyTheme(theme, lights) {
   lights.sun.intensity = Math.PI;
 }
 
-// Normal + linear depth, one pass. Background stays alpha 0.
+// One pass writes what the outline shader needs, per pixel:
+//   r, g  the view-space normal (x, y; z is rebuilt)
+//   b     which object this is (so things lying flat on each other, like a
+//         note on a cork board, still get a line); 0.5 and up = "always crisp"
+//   a     linear depth (0 = background)
+// Objects can share an id (userData.inkId) so pieces of one wall don't get
+// seams, and userData.inkCrisp keeps far scenery (mountains) from fading.
 const ndMaterial = new THREE.ShaderMaterial({
+  uniforms: { objId: { value: 0 } },
   vertexShader: /* glsl */ `
     varying vec3 vN;
     varying float vZ;
@@ -113,10 +120,37 @@ const ndMaterial = new THREE.ShaderMaterial({
       gl_Position = projectionMatrix * mv;
     }`,
   fragmentShader: /* glsl */ `
+    uniform float objId;
     varying vec3 vN;
     varying float vZ;
-    void main() { gl_FragColor = vec4(normalize(vN) * 0.5 + 0.5, vZ); }`,
+    void main() {
+      vec3 n = normalize(vN);
+      if (n.z < 0.0) n = -n; // seen from behind (double-sided planes)
+      gl_FragColor = vec4(n.xy * 0.5 + 0.5, objId, vZ);
+    }`,
 });
+
+// Before each object is drawn in the normal/depth pass, hand it its id.
+function inkIdOf(o) {
+  if (o.userData.inkIdValue === undefined) {
+    let src = o, id = null, crisp = false;
+    for (; src; src = src.parent) {
+      if (id === null && src.userData.inkId !== undefined) id = src.userData.inkId;
+      if (src.userData.inkCrisp) crisp = true;
+    }
+    const h = ((id ?? o.id) * 0.6180339887) % 1;
+    o.userData.inkIdValue = (crisp ? 0.5 : 0) + h * 0.49;
+  }
+  return o.userData.inkIdValue;
+}
+function setInkId(renderer, scene, camera, geometry, material) {
+  if (material !== ndMaterial) return;
+  ndMaterial.uniforms.objId.value = inkIdOf(this);
+  ndMaterial.uniformsNeedUpdate = true;
+}
+function hookInkIds(scene) {
+  scene.traverse((o) => { if ((o.isMesh || o.isInstancedMesh) && o.onBeforeRender !== setInkId) o.onBeforeRender = setInkId; });
+}
 
 const compositeMaterial = new THREE.ShaderMaterial({
   uniforms: {
@@ -148,15 +182,22 @@ const compositeMaterial = new THREE.ShaderMaterial({
       return mix(mix(hash(i), hash(i + vec2(1, 0)), u.x),
                  mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), u.x), u.y);
     }
+    vec3 normalOf(vec4 c) { vec2 xy = c.rg * 2.0 - 1.0; return vec3(xy, sqrt(max(0.0, 1.0 - dot(xy, xy)))); }
 
-    float edgeAt(vec2 uv, vec4 c, vec2 o) {
+    // how strongly there's a line between this pixel and a neighbour (0..1)
+    float edgeAt(vec2 uv, vec4 c, vec3 nc, vec2 o) {
       vec4 s = texture2D(tND, uv + o);
       bool bgA = c.a <= 0.0, bgB = s.a <= 0.0;
-      if (bgA != bgB) return 1.0;
+      if (bgA != bgB) return 1.0;            // silhouette against the sky
       if (bgA) return 0.0;
-      float dz = abs(s.a - c.a) / c.a;
-      float dn = 1.0 - dot(c.rgb * 2.0 - 1.0, s.rgb * 2.0 - 1.0);
-      return max(step(0.035, dz), step(0.3, dn));
+      vec3 ns = normalOf(s);
+      // depth step, with more tolerance on surfaces seen at a glancing angle
+      float graze = max(min(nc.z, ns.z), 0.12);
+      float dz = abs(s.a - c.a) / min(s.a, c.a);
+      float depthLine = smoothstep(0.018, 0.05, dz * graze);
+      float creaseLine = smoothstep(0.16, 0.38, 1.0 - dot(nc, ns)) * 0.75;
+      float idLine = abs(s.b - c.b) > 0.0005 ? 0.6 : 0.0;
+      return max(depthLine, max(creaseLine, idLine));
     }
 
     void main() {
@@ -165,22 +206,26 @@ const compositeMaterial = new THREE.ShaderMaterial({
       vec2 j = vec2(noise(vUv * vec2(18.0, 12.0) + seed), noise(vUv * vec2(12.0, 18.0) + seed + 9.0)) - 0.5;
       vec2 uv = vUv + j * wobble * 2.5 * px;
       vec4 c = texture2D(tND, uv);
+      vec3 nc = normalOf(c);
       float t = thickness;
-      float e = 0.0;
-      e = max(e, edgeAt(uv, c, vec2( t, 0.0) * px));
-      e = max(e, edgeAt(uv, c, vec2(-t, 0.0) * px));
-      e = max(e, edgeAt(uv, c, vec2(0.0,  t) * px));
-      e = max(e, edgeAt(uv, c, vec2(0.0, -t) * px));
-      // lines fade out with the town into the paper; the horizon beyond
-      // (mountains, clouds) is drawn crisp again, like a backdrop
-      // nearest surface around this pixel (so silhouettes against the sky fade too)
+      // eight directions at the line's width, and a lighter ring just outside
+      // it: lines come out even in every direction, with soft edges
+      float e = 0.0, rim = 0.0;
       float d = c.a > 0.0 ? c.a : 1e6;
-      for (int i = 0; i < 4; i++) {
-        vec2 o = vec2(i == 0 ? t : i == 1 ? -t : 0.0, i == 2 ? t : i == 3 ? -t : 0.0) * px;
-        float a = texture2D(tND, uv + o).a;
-        if (a > 0.0) d = min(d, a);
+      bool crisp = c.a > 0.0 && c.b >= 0.5;
+      for (int i = 0; i < 8; i++) {
+        float a = float(i) * 0.78539816;
+        vec2 dir = vec2(cos(a), sin(a));
+        e = max(e, edgeAt(uv, c, nc, dir * t * px));
+        rim = max(rim, edgeAt(uv, c, nc, dir * (t + 0.6) * px));
+        vec4 s = texture2D(tND, uv + dir * t * px);
+        if (s.a > 0.0 && s.a < d) { d = s.a; crisp = s.b >= 0.5; }
       }
+      e = max(e, rim * 0.3);
+      // lines fade out with the town into the paper; scenery marked crisp
+      // (mountains, clouds) and the far horizon keep theirs, like a backdrop
       float fade = smoothstep(fogNear, fogFar, d) * (1.0 - smoothstep(fogFar + 60.0, fogFar + 110.0, d));
+      if (crisp) fade = 0.0;
       e *= 1.0 - fade;
       vec3 col = texture2D(tColor, vUv).rgb;
       col = mix(col, ink, e);
@@ -222,7 +267,7 @@ export class InkRenderer {
     this.ndRT.setSize(w * dpr, h * dpr);
     this.colorRT.setSize(w * dpr, h * dpr);
     this.resolution.set(w * dpr, h * dpr);
-    this.thickness = 1.5 * dpr;
+    this.thickness = 1.1 * dpr;
   }
 
   setTheme(theme) {
@@ -254,6 +299,7 @@ export class InkRenderer {
     // see-through things (the lighthouse beam) get no outlines and hide none
     const skipped = this.skipND.filter((o) => o.visible);
     for (const o of skipped) o.visible = false;
+    hookInkIds(scene);
     scene.overrideMaterial = ndMaterial;
     r.setRenderTarget(this.ndRT);
     r.setClearColor(0x000000, 0);
