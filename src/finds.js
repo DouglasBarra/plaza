@@ -8,6 +8,8 @@ import { M, stamp, mesh, box, cyl } from './kit.js';
 import { makeFigure, poseFigure } from './folks.js';
 import { createStore } from './store.js';
 import { isNight, nightOnly } from './life.js';
+import { lineArtCanvas, LINE_ART_SIZE as S } from './textures.js';
+import { GULL, parts, meshBird, fold, ball, merge, beak } from './birds.js';
 
 const dark = toon('#3a3a3a');
 const store = createStore('plaza.finds.v1', { found: {} });
@@ -40,22 +42,85 @@ function sleepingCat() {
   return g;
 }
 
+// The perched birds. Each stands with its feet at y = 0, facing +x.
 function bird({ gull = false, owl = false, rooster = false } = {}) {
+  if (owl) return perchedOwl();
+  if (rooster) return perchedRooster();
+  // the gull: the same bird that soars round the lighthouse, wings folded,
+  // a little smaller, standing on the cap beside the vane's pole
   const g = new THREE.Group();
-  const body = owl ? new THREE.CapsuleGeometry(0.14, 0.14, 4, 8) : new THREE.BoxGeometry(0.3, 0.16, 0.14);
-  mesh(body, owl ? dark : M.white, 0, owl ? 0.2 : 0.12, 0, g);
-  mesh(new THREE.BoxGeometry(0.12, 0.12, 0.12), owl ? dark : M.white, owl ? 0 : 0.17, owl ? 0.42 : 0.24, 0, g);
-  if (owl) {
-    for (const ex of [-0.04, 0.04]) mesh(new THREE.SphereGeometry(0.035, 8, 6), new THREE.MeshBasicMaterial({ color: '#ffe38a' }), ex, 0.44, 0.06, g);
-    for (const ex of [-0.04, 0.04]) mesh(new THREE.ConeGeometry(0.025, 0.06, 4), dark, ex, 0.51, 0, g);
-  } else {
-    mesh(new THREE.BoxGeometry(0.07, 0.03, 0.04), gull ? M.white : dark, 0.26, 0.23, 0, g);
-    box(g, 0.02, 0.1, 0.02, dark, -0.02, 0.0, 0.03);
-  }
-  if (rooster) {
-    for (let i = 0; i < 3; i++) box(g, 0.03, 0.06, 0.04, stamp.todo, 0.14 + i * 0.03, 0.33, 0);
-    for (let i = 0; i < 3; i++) box(g, 0.03, 0.2, 0.12, dark, -0.16 - i * 0.03, 0.22 + i * 0.03, 0).rotation.z = 0.5 + i * 0.2;
-  }
+  const sk = meshBird(GULL);
+  fold(sk, GULL);
+  sk.body.position.y = parts(GULL).legLen + 0.055;
+  sk.body.rotation.z = 0.12;
+  sk.head.rotation.z = -0.12;
+  sk.root.scale.setScalar(0.8);
+  sk.root.position.set(0, gull ? -0.075 : 0, gull ? 0.1 : 0);
+  g.add(sk.root);
+  return g;
+}
+
+// Upright and round-headed, with a pale face, ear tufts and eyes that glow;
+// its breast streaked, talons round the lamp's top.
+const owlGray = toon('#d2d2d2', lineArtCanvas((g) => {
+  g.lineWidth = 12;
+  g.beginPath(); g.moveTo(S * 0.3, S * 0.4); g.lineTo(S * 0.5, S * 0.62); g.lineTo(S * 0.7, S * 0.4); g.stroke();
+}));
+owlGray.map.repeat.set(9, 5);
+const owlPlain = toon('#d2d2d2');
+const owlEyes = new THREE.MeshBasicMaterial({ color: '#ffe38a' });
+function perchedOwl() {
+  const g = new THREE.Group();
+  mesh(new THREE.SphereGeometry(0.11, 12, 10).scale(0.9, 1.22, 0.95), owlGray, 0, 0.15, 0, g);
+  mesh(merge([
+    ball(0.095, 0.0, 0.335, 0, 1, 0.88, 1.05, 12, 10),
+    ...[-1, 1].map((s) => new THREE.ConeGeometry(0.024, 0.075, 5).rotateX(-s * 0.35).rotateZ(-0.2).translate(0.015, 0.42, s * 0.055)),
+  ]), owlPlain, 0, 0, 0, g);
+  // folded wings down its sides, and a short tail
+  mesh(merge([
+    ...[-1, 1].map((s) => ball(0.1, -0.015, 0.16, s * 0.085, 0.75, 1.25, 0.32).rotateX(s * 0.08)),
+    ball(0.05, -0.1, 0.04, 0, 0.9, 0.35, 1),
+  ]), M.white, 0, 0, 0, g);
+  // the facial disc, the eyes, the hooked beak and the talons
+  mesh(merge([-1, 1].map((s) => ball(0.05, 0.066, 0.34, s * 0.037, 0.4, 1, 1, 10, 8))), M.white, 0, 0, 0, g);
+  mesh(merge([-1, 1].map((s) => ball(0.02, 0.083, 0.348, s * 0.036, 0.6, 1, 1))), owlEyes, 0, 0, 0, g);
+  mesh(merge([
+    ...[-1, 1].map((s) => ball(0.008, 0.094, 0.35, s * 0.036, 0.6, 1, 1, 6, 4)),
+    beak(0.011, 0.04, 0.085, 0.32, 1.1),
+    ...[-1, 1].flatMap((s) => [-0.5, 0, 0.5].map((a) => new THREE.ConeGeometry(0.008, 0.045, 4).rotateZ(-Math.PI / 2 - 0.5)
+      .translate(0.022, -0.012, 0).rotateY(a).translate(0.03, 0.025, s * 0.04))),
+  ]), dark, 0, 0, 0, g);
+  return g;
+}
+
+// Chest out on the ridge: a red comb and wattle (the one stamp of color), a
+// tall arch of dark sickle feathers for a tail, spurred legs.
+function perchedRooster() {
+  const g = new THREE.Group();
+  mesh(merge([
+    ball(0.12, 0, 0, 0, 1.25, 0.95, 0.85, 12, 10).rotateZ(0.3).translate(0, 0.25, 0),
+    new THREE.CylinderGeometry(0.045, 0.075, 0.17, 8).rotateZ(-0.4).translate(0.11, 0.35, 0),
+    ball(0.047, 0.15, 0.44, 0, 1.1, 1, 0.9, 10, 8),
+    ...[-1, 1].map((s) => ball(0.05, 0.01, 0.15, s * 0.045, 1, 1.25, 0.9)),
+  ]), M.white, 0, 0, 0, g);
+  mesh(merge([-1, 1].map((s) => ball(0.1, -0.03, 0.25, s * 0.08, 1.4, 0.72, 0.3).rotateZ(0.25))), M.white, 0, 0, 0, g);
+  mesh(merge([
+    ...[0.135, 0.16, 0.185, 0.205].map((x, i) => ball(0.022 - i * 0.002, x, 0.488 - i * 0.006, 0, 1, 1.2, 0.35, 8, 6)),
+    ...[-1, 1].map((s) => ball(0.016, 0.19, 0.4, s * 0.008, 0.7, 1.3, 0.4, 6, 4)),
+  ]), stamp.todo, 0, 0, 0, g);
+  const sickle = (R, arc, z, tilt) => new THREE.TorusGeometry(R, 0.013, 4, 14, arc).scale(1, 1, 0.5)
+    .translate(-R, 0, 0).rotateY(tilt).translate(-0.11, 0.3, z);
+  mesh(merge([
+    beak(0.013, 0.04, 0.195, 0.44, 0.25),
+    ...[-1, 1].map((s) => ball(0.008, 0.18, 0.455, s * 0.033, 1, 1, 0.6, 6, 4)),
+    sickle(0.09, 2.7, 0.0, 0), sickle(0.11, 2.8, 0.02, 0.15), sickle(0.13, 2.9, -0.02, -0.15), sickle(0.15, 2.6, 0.0, 0.05), sickle(0.07, 2.5, 0.03, 0.3),
+    ...[-1, 1].flatMap((s) => [
+      new THREE.CylinderGeometry(0.01, 0.008, 0.12, 5).translate(0, 0.06, s * 0.045),
+      ...[-0.5, 0, 0.5].map((a) => new THREE.BoxGeometry(0.06, 0.008, 0.01).translate(0.03, 0.004, 0).rotateY(a).translate(0, 0, s * 0.045)),
+      new THREE.BoxGeometry(0.03, 0.008, 0.01).translate(-0.015, 0.004, s * 0.045),
+      new THREE.ConeGeometry(0.006, 0.025, 4).rotateZ(Math.PI / 2).translate(-0.015, 0.05, s * 0.045),   // the spur
+    ]),
+  ]), dark, 0, 0, 0, g);
   return g;
 }
 
