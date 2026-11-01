@@ -47,7 +47,11 @@ export function finance(db, ports) {
       status: pick(c, 'status', 'executionStatus'),
       reconnectUrl: pick(c, 'reconnect_url', 'reconnectUrl'),
     })).filter((i) => i.id && i.id !== 'undefined');
-    const addUrl = pick(res, 'add_connection_url', 'addConnectionUrl', 'connect_url', 'url');
+    // With no bank connected yet, Banco answers in words, with your own
+    // link to connect one (the line for "Banco MCP", else any connect link).
+    const addUrl = typeof res === 'string'
+      ? (res.match(/Banco MCP:\s*(https:\/\/\S+)/) || res.match(/(https:\/\/\S*\/connect\/\S+)/))?.[1]
+      : pick(res, 'add_connection_url', 'addConnectionUrl', 'connect_url', 'url');
 
     const accounts = [];
     for (const item of items) {
