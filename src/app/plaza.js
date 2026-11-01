@@ -1,6 +1,6 @@
 // The plaza you walk around on: its buildings, the town around it, and you.
 import { buildPlaza, PLAZA, PLAZA_HALF } from '../plaza/index.js';
-import { buildTown } from '../town.js';
+import { buildTown } from '../town/index.js';
 import { Avatar } from '../avatar.js';
 import { plazaScene, camera, controls, ink } from './engine.js';
 import { game } from './state.js';

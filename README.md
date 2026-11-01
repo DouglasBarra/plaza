@@ -54,7 +54,7 @@ Three.js with Vite, no framework yet.
 | `src/ui/` | Everything drawn in HTML over the scene: the card that districts open in (`card.js`), the town hall's note and typewriter cards (`hall-cards.js`), the finds list, building signs, speech bubbles and the Day/Night and Wobbly lines buttons |
 | `src/plaza/` | The plaza: its layout (`index.js`), buildings, props, and animals |
 | `src/interiors/` | The rooms inside each building: the bank, library and workshop, and the two-story town hall (`townhall/`: the house itself, each floor's furnishings, task boards and calendar, fireplace and lamps, and the dimensions it shares inside and out) |
-| `src/town.js` | Everything outside: the endless town, mountains, clouds, birds |
+| `src/town/` | Everything outside the plaza: the streets, houses and trees (`streets.js`), the mountains (`mountains.js`), clouds and birds (`sky.js`) |
 | `src/ink.js` | The ink look: stepped gray shading and the hand-drawn outline pass |
 | `src/textures.js` | Line-art textures (bricks, shingles, paving…) drawn on canvas at load |
 | `src/kit.js`, `src/details.js`, `src/decor.js` | Building blocks: materials and shapes, windows, doors and signs, furniture |
