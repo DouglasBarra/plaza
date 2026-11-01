@@ -1,11 +1,56 @@
-// The town around the plaza: the ground, the street grid, and houses and
-// trees on lots between the streets. Repeated things are instanced.
+// The town around the plaza: the ground, the streets (streetscape.js), the
+// blocks of houses with their gardens, a park and a church (houses.js), the
+// windows you can see into (windows.js), trees, and what moves: traffic and
+// people (traffic.js), smoke and washing (motion.js).
+// Everything that stands still is merged into a few meshes per material;
+// everything repeated and moving is instanced.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { toon } from '../ink.js';
 import { tex } from '../textures.js';
-import { boxGeo } from '../kit.js';
-import { PLAZA } from '../plaza/index.js';
-import { ROAD_PITCH, ROAD_W, EXTENT, GROUND_Y, rand, distToRoad, houseGeo, pineGeo, roundTreeGeo, instanced } from './common.js';
+import { isNight } from '../life.js';
+import { EXTENT, GROUND_Y, roundTreeGeo, pineGeo, instanced, strip } from './common.js';
+import { buildHouses, BAGS } from './houses.js';
+import { buildStreetscape } from './streetscape.js';
+import { art, signAtlas } from './art.js';
+import { windowMaterial, setWindowsNight, animateWindows } from './windows.js';
+import { buildTraffic } from './traffic.js';
+import { buildMotion } from './motion.js';
+
+// A tall narrow tree for gardens and the park.
+function poplarGeo() {
+  return mergeGeometries(strip([
+    new THREE.CylinderGeometry(0.13, 0.2, 1.4, 6).translate(0, 0.7, 0),
+    new THREE.IcosahedronGeometry(1.1, 0).scale(1, 2.6, 1).translate(0, 3.9, 0),
+  ]));
+}
+
+// A street tree: a tall clean trunk (so people and cars pass under it) and
+// a crown of a few lumps.
+function streetTreeGeo() {
+  return mergeGeometries(strip([
+    new THREE.CylinderGeometry(0.11, 0.17, 3.2, 6).translate(0, 1.6, 0),
+    new THREE.IcosahedronGeometry(1.45, 0).translate(0, 4.3, 0),
+    new THREE.IcosahedronGeometry(1.05, 0).translate(0.8, 5.1, 0.35),
+    new THREE.IcosahedronGeometry(0.95, 0).rotateY(0.6).translate(-0.85, 4.9, -0.3),
+  ]));
+}
+
+function materials() {
+  const lined = (t) => toon('#ffffff', t);
+  const M = {
+    stucco: lined(art.stucco()), bricks: lined(art.bricks()), shutters: lined(art.shutters()), plinth: lined(art.plinth()),
+    plain: toon(), tiles: lined(tex.roofTiles()), slate: lined(tex.shingles()), flat: lined(tex.dirt()),
+    door: lined(art.door()), win: windowMaterial(), awning: lined(art.awning()), sign: lined(signAtlas()),
+    railing: lined(art.railing()), fence: lined(tex.planks()), paving: lined(tex.paving()), hedge: lined(art.hedge()),
+    gravel: lined(tex.dirt()), stone: lined(tex.stone()), water: lined(tex.water()),
+  };
+  M.door.vertexColors = true;
+  M.awning.vertexColors = true;
+  M.railing.side = THREE.DoubleSide;
+  M.paving.map.repeat.set(1, 1);
+  return M;
+}
 
 export function buildStreets(town) {
   // ground
@@ -18,69 +63,36 @@ export function buildStreets(town) {
   ground.receiveShadow = true;
   town.add(ground);
 
-  // roads
-  const rz = tex.roadZ(); rz.repeat.set(1 / ROAD_W, 0.25);
-  const rx = tex.roadX(); rx.repeat.set(0.25, 1 / ROAD_W);
-  const roadZ = toon('#ffffff', rz), roadX = toon('#ffffff', rx);
-  const roadSeg = (alongZ, c, from, to) => {
-    const len = to - from, mid = (from + to) / 2;
-    const g = alongZ ? boxGeo(ROAD_W, 0.06, len) : boxGeo(len, 0.06, ROAD_W);
-    const m = new THREE.Mesh(g, alongZ ? roadZ : roadX);
-    m.position.set(alongZ ? c : mid, GROUND_Y + (alongZ ? 0.03 : 0.025), alongZ ? mid : c);
-    m.receiveShadow = true;
-    town.add(m);
-  };
-  for (let c = -EXTENT + 16; c <= EXTENT; c += ROAD_PITCH) {
-    const k = Math.round(c / ROAD_PITCH) * ROAD_PITCH;
-    for (const alongZ of [true, false]) {
-      // the two streets through the plaza stop at its edges (a road along z
-      // meets the north and south sides, one along x the east and west)
-      const edge = alongZ ? PLAZA.hz : PLAZA.hx;
-      if (k === 0) { roadSeg(alongZ, 0, -EXTENT * 1.4, -edge); roadSeg(alongZ, 0, edge, EXTENT * 1.4); }
-      else roadSeg(alongZ, k, -EXTENT * 1.4, EXTENT * 1.4);
+  // the houses, merged a material at a time: near ones cast shadows
+  const T = buildHouses();
+  const M = materials();
+  for (const [set, shadows] of [[T.near, true], [T.far, false]]) {
+    for (const name of BAGS) {
+      const m = set[name].mesh(M[name], { shadows: shadows && name !== 'win' });
+      if (m) town.add(m);
     }
   }
 
-  // houses and trees on a 9m lot grid, skipping roads and the plaza
-  const facadeMat = toon('#ffffff', tex.facade());
-  const roofMat = toon('#ffffff', tex.shingles());
-  const variants = [houseGeo(4, 3, 4, 1.6), houseGeo(4, 6, 4, 1.8), houseGeo(7, 3.5, 4, 1.8), houseGeo(4, 9, 4, 0, true)];
-  const houses = variants.map(() => []);
-  const pines = [], rounds = [];
-  const LOT = 9;
-  for (let cx = -EXTENT; cx <= EXTENT; cx += LOT) {
-    for (let cz = -EXTENT; cz <= EXTENT; cz += LOT) {
-      const x = cx + (rand() - 0.5) * 2, z = cz + (rand() - 0.5) * 2;
-      const dist = Math.hypot(x, z);
-      if ((Math.abs(x) < PLAZA.hx + 6 && Math.abs(z) < PLAZA.hz + 6) || dist > EXTENT) continue;
-      const dx = distToRoad(x), dz = distToRoad(z);
-      if (dx < 6 || dz < 6) {
-        if ((dx > 3.4 || dz > 3.4) && Math.min(dx, dz) > 3.2 && rand() > 0.55) rounds.push({ x, z, s: 0.5 + rand() * 0.3, rot: rand() * 6 });
-        continue;
-      }
-      const r = rand();
-      const town = dist < 120 ? 0.66 : 0.25;
-      if (r < town) {
-        // face the nearest road
-        const rot = dx < dz ? (((x % ROAD_PITCH) + ROAD_PITCH) % ROAD_PITCH > ROAD_PITCH / 2 ? Math.PI / 2 : -Math.PI / 2)
-          : (((z % ROAD_PITCH) + ROAD_PITCH) % ROAD_PITCH > ROAD_PITCH / 2 ? 0 : Math.PI);
-        const v = dist < 60 ? Math.floor(rand() * 3) : Math.floor(rand() * 4);
-        houses[v].push({ x, z, rot, sy: 0.9 + rand() * 0.35 });
-      } else if (r < town + 0.2) {
-        for (let i = 0; i < 3; i++) pines.push({ x: x + (rand() - 0.5) * 5, z: z + (rand() - 0.5) * 5, s: 0.7 + rand() * 0.6, rot: rand() * 6 });
-      } else if (r < town + 0.3) {
-        rounds.push({ x, z, s: 0.8 + rand() * 0.4, rot: rand() * 6 });
-      }
+  const street = buildStreetscape(town, T.blocks, T.parkLamps);
+
+  // trees: in the gardens, the park and along the avenues
+  town.add(instanced(roundTreeGeo(), toon(), T.trees.round));
+  town.add(instanced(streetTreeGeo(), toon(), street.streetTrees));
+  town.add(instanced(poplarGeo(), toon(), T.trees.poplar));
+  if (T.trees.pine.length) town.add(instanced(pineGeo(), toon(), T.trees.pine));
+
+  const animateTraffic = buildTraffic(town);
+  const animateMotion = buildMotion(town, T.chimneys, T.laundry);
+
+  let night = null;
+  return function animateStreets(time) {
+    if (isNight() !== night) {
+      night = isNight();
+      setWindowsNight(night);
+      street.lamps.setNight(night);
     }
-  }
-  // a ring of trees just outside the plaza
-  for (let i = 0; i < 28; i++) {
-    const a = (i / 28) * Math.PI * 2, rr = 1.15 + rand() * 0.08;
-    const x = Math.cos(a) * (PLAZA.hx + 3.5) * rr, z = Math.sin(a) * (PLAZA.hz + 3.5) * rr;
-    if (distToRoad(x) < 4 || distToRoad(z) < 4) continue;
-    (i % 3 ? pines : rounds).push({ x, z, s: 0.7 + rand() * 0.5, rot: rand() * 6 });
-  }
-  variants.forEach((g, i) => town.add(instanced(g, [facadeMat, roofMat], houses[i])));
-  town.add(instanced(pineGeo(), toon(), pines));
-  town.add(instanced(roundTreeGeo(), toon(), rounds));
+    animateWindows(time);
+    animateTraffic(time);
+    animateMotion(time);
+  };
 }
