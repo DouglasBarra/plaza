@@ -1,6 +1,6 @@
-// Small motions that make the plaza feel lived in: fountain water, smoke
-// and steam, swaying trees, falling leaves, a swinging sign, and the night
-// lights (lamps, pools of light, lit windows).
+// Small motions that make the plaza feel lived in: smoke and steam, swaying
+// trees, falling leaves, a swinging sign, and the night lights (lamps, pools
+// of light, lit windows).
 import * as THREE from 'three';
 import { M, mesh } from './kit.js';
 
@@ -12,7 +12,6 @@ export const nightOnly = [];
 const puffs = [];
 const swayers = [];
 const swings = [];
-const fountains = [];
 const leafList = [];
 const lamps = [];
 const panes = [];
@@ -30,34 +29,6 @@ export function smoke(p, x, y, z, { n = 4, rise = 1.8, size = 0.2, speed = 0.22,
   }
 }
 export const steam = (p, x, y, z) => smoke(p, x, y, z, { n: 3, rise: 0.5, size: 0.04, speed: 0.5, drift: 0.05 });
-
-// ---------- the fountain's water ----------
-export function fountainWater(p) {
-  const arcs = [];
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * Math.PI * 2;
-    const at = (r, y) => new THREE.Vector3(Math.cos(a) * r, y, Math.sin(a) * r);
-    const curve = new THREE.CatmullRomCurve3([at(0.85, 2.08), at(1.15, 2.3), at(1.5, 1.6), at(1.75, 0.56)]);
-    mesh(new THREE.TubeGeometry(curve, 20, 0.045, 6), M.white, 0, 0, 0, p).castShadow = false;
-    arcs.push(curve);
-  }
-  const jet = new THREE.CatmullRomCurve3([new THREE.Vector3(0, 2.45, 0), new THREE.Vector3(0, 3.0, 0), new THREE.Vector3(0.05, 3.1, 0)]);
-  mesh(new THREE.TubeGeometry(jet, 8, 0.04, 6), M.white, 0, 0, 0, p).castShadow = false;
-  const drops = [];
-  for (let i = 0; i < 16; i++) {
-    const d = mesh(new THREE.SphereGeometry(0.05, 6, 4), M.white, 0, 0, 0, p);
-    d.castShadow = false;
-    drops.push({ d, curve: arcs[i % 8], k: i / 16 });
-  }
-  const ripples = [];
-  for (let i = 0; i < 3; i++) {
-    const r = mesh(new THREE.TorusGeometry(1, 0.018, 4, 40), M.white, 0, 0.545, 0, p);
-    r.rotation.x = Math.PI / 2;
-    r.castShadow = false;
-    ripples.push({ r, k: i / 3 });
-  }
-  fountains.push({ drops, ripples });
-}
 
 // ---------- trees, leaves, signs ----------
 export function sway(g, amount = 0.025) {
@@ -135,13 +106,6 @@ export function animateLife(time) {
   }
   for (const s of spinners) s.obj.rotation[s.axis] = time * s.speed;
   for (const s of swings) s.pivot.rotation[s.axis] = Math.sin(time * s.speed + s.phase) * s.amount;
-  for (const f of fountains) {
-    for (const d of f.drops) d.d.position.copy(d.curve.getPoint((time * 0.7 + d.k) % 1));
-    for (const r of f.ripples) {
-      const u = (time * 0.35 + r.k) % 1;
-      r.r.scale.setScalar(0.4 + u * 1.45);
-    }
-  }
   for (const l of leafList) {
     const u = (time * l.speed + l.k) % 1;
     l.m.position.set(l.x + Math.sin(u * 9 + l.ph) * 0.7 + u * 2.5, 7 * (1 - u) + 0.02, l.z + Math.cos(u * 7 + l.ph) * 0.5);

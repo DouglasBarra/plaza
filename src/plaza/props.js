@@ -2,9 +2,9 @@
 // most can be swapped for a hand-made model of the same name (models.js).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { M, stamp, mesh, box, cyl, cylGeo } from '../kit.js';
+import { M, stamp, mesh, cylGeo } from '../kit.js';
 import { swapModel } from '../models.js';
-import { fountainWater, steam, sway, swingSign, lampLight } from '../life.js';
+import { sway, lampLight } from '../life.js';
 import { signBoard } from '../details.js';
 import { boxGeo, prismGeo } from '../kit.js';
 import { toon } from '../ink.js';
@@ -293,18 +293,6 @@ export function lamp(p, x, z) {
   }));
 }
 
-export function fountain(p) {
-  const g = new THREE.Group();
-  cyl(g, 2.3, 2.4, 0.6, M.stone, 0, 0.3, 0, 24);
-  cyl(g, 2.0, 2.0, 0.05, M.water, 0, 0.5, 0, 24);
-  cyl(g, 0.3, 0.4, 1.5, M.stone, 0, 1.2, 0, 10);
-  cyl(g, 0.9, 0.45, 0.3, M.white, 0, 2.0, 0, 16);
-  mesh(new THREE.SphereGeometry(0.22, 10, 8), M.white, 0, 2.35, 0, g);
-  fountainWater(g);
-  p.add(g);
-  return g;
-}
-
 export function bollard(p, x, z) {
   mesh(bollardGeo(), M.white, x, 0, z, p);
 }
@@ -349,41 +337,6 @@ export function planter(p, x, z, flowers = 'white') {
   P.into(g);
   g.position.set(x, 0, z);
   p.add(swapModel(g, 'planter'));
-}
-
-export function cafe(p, x, z) {
-  for (const [tx, tz] of [[-1.3, -0.8], [1.3, 0.6]]) {
-    const g = new THREE.Group();
-    cyl(g, 0.5, 0.5, 0.06, M.white, 0, 0.75, 0, 14);
-    cyl(g, 0.05, 0.05, 0.72, M.white, 0, 0.37, 0, 6);
-    cyl(g, 0.03, 0.03, 1.6, M.white, 0, 1.5, 0, 4);
-    mesh(new THREE.ConeGeometry(1.1, 0.5, 8), M.stripes, 0, 2.35, 0, g);
-    for (const a of [0, Math.PI]) box(g, 0.4, 0.45, 0.4, M.planks, Math.cos(a) * 0.85, 0.22, Math.sin(a) * 0.85);
-    mesh(new THREE.CylinderGeometry(0.07, 0.06, 0.12, 8), M.white, 0.15, 0.84, 0, g);
-    steam(g, 0.15, 0.93, 0);
-    g.position.set(x + tx, 0, z + tz);
-    p.add(swapModel(g, 'cafe-table'));
-  }
-}
-
-export function stall(p, x, z, rotY) {
-  const g = new THREE.Group();
-  box(g, 3, 0.9, 1.2, M.planks, 0, 0.45, 0);
-  for (const sx of [-1.4, 1.4]) for (const sz of [-0.5, 0.5]) cyl(g, 0.05, 0.05, 2.2, M.white, sx, 1.1, sz, 5);
-  const roof = box(g, 3.4, 0.08, 1.8, M.stripes, 0, 2.25, 0.1);
-  roof.rotation.x = 0.18;
-  for (let i = 0; i < 5; i++) box(g, 0.45, 0.3, 0.45, M.planks, -1.1 + i * 0.55, 1.05, 0.2);
-  for (let i = 0; i < 9; i++) mesh(new THREE.SphereGeometry(0.1, 6, 5), M.white, -1.2 + (i % 5) * 0.55, 1.28, 0.1 + (i > 4 ? 0.18 : 0), g);
-  // a sign swinging from the front of the awning
-  const pivot = new THREE.Group();
-  pivot.position.set(0, 2.05, 0.95);
-  for (const s of [-0.45, 0.45]) cyl(pivot, 0.012, 0.012, 0.3, M.white, s, -0.15, 0, 3);
-  signBoard(pivot, 0, -0.45, 0, 1.3, 0.34, 'Fresh fruit');
-  pivot.userData.keep = true;
-  g.add(pivot);
-  swingSign(pivot);
-  g.position.set(x, 0, z); g.rotation.y = rotY;
-  p.add(swapModel(g, 'stall'));
 }
 
 export function bike(p, x, z, rotY) {

@@ -22,8 +22,12 @@ Every name has a starter, blocked out from the shapes Plaza draws in code, at th
 | `bench` | Benches around the fountain, by the library and the notice board | Folks sit on the seat at 0.5 m (8 px) |
 | `lamp` | Street lamps on the plaza | Name the part that should light up at night **`glow`**; the pool of light stays |
 | `planter` | Flower planters | |
-| `cafe-table` | The two café tables with umbrellas and stools | The steam over the cup stays |
-| `stall` | The fruit stall | The swinging "Fresh fruit" sign stays |
+| `food-truck` | The food truck in the south-west corner | The swinging sign and the steam stay |
+| `bistro-table` | The food truck's little round tables and chairs | The steam over the cup stays |
+| `picnic-table` | The food truck's picnic tables | |
+| `chalk-sign` | The chalkboard menu by the food truck | |
+| `light-post`, `planter-barrel` | The posts holding the string lights, and the barrel planters | |
+| `bin` | The litter bins | |
 | `bike` | Bikes by the trees | |
 | `noticeboard` | The notice board on the plaza | |
 | `mailbox` | The mailbox | |

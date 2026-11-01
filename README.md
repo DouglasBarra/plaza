@@ -52,9 +52,9 @@ Three.js with Vite, no framework yet.
 | `src/main.js` | Starts the app and runs the frame loop |
 | `src/app/` | The game shell: renderer and camera (`engine.js`, `camera.js`), going in and out of buildings (`rooms.js`), the plaza through the windows (`window-view.js`), what's under the pointer (`picking.js`), what E does (`actions.js`), mouse and keys (`input.js`), shared state (`state.js`) and the dev console handle (`devtools.js`) |
 | `src/ui/` | Everything drawn in HTML over the scene: the card that districts open in (`card.js`), the town hall's note and typewriter cards (`hall-cards.js`), the finds list, building signs, speech bubbles and the Day/Night and Wobbly lines buttons |
-| `src/plaza/` | The plaza: its layout (`index.js`), buildings, props, and animals |
+| `src/plaza/` | The plaza: its layout (`index.js`), buildings, props, the fountain (`fountain.js`), the food truck corner (`foodtruck.js`), and animals (`critters.js`) |
 | `src/interiors/` | The rooms inside each building: the bank, library and workshop, and the two-story town hall (`townhall/`: the house itself, each floor's furnishings, task boards and calendar, fireplace and lamps, and the dimensions it shares inside and out) |
-| `src/town/` | Everything outside the plaza: the streets, houses and trees (`streets.js`), the mountains (`mountains.js`), clouds and birds (`sky.js`) |
+| `src/town/` | Everything outside the plaza: the streets (`streets.js`, `streetscape.js`), the houses (`houses.js`) with windows you can see into (`windows.js`) and their line art (`art.js`), merged geometry (`bag.js`), chimney smoke and washing (`motion.js`), cars, trams and walkers (`traffic.js`), the mountains (`mountains.js`), clouds and birds (`sky.js`) |
 | `src/ink.js` | The ink look: stepped gray shading and the hand-drawn outline pass |
 | `src/textures.js` | Line-art textures (bricks, shingles, paving…) drawn on canvas at load |
 | `src/kit.js`, `src/details.js`, `src/decor.js` | Building blocks: materials and shapes, windows, doors and signs, furniture |

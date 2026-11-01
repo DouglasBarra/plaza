@@ -6,9 +6,10 @@ import { leaves, animateLife } from '../life.js';
 import { addFolk, animateFigures } from '../folks.js';
 import { updateClocks, animateCranes } from '../details.js';
 import { beams, HALL_SIZE, townHall, bank, library, lighthouse, works, postOffice } from './buildings.js';
-import { roundTree, bench, lamp, fountain, bollards, planter, bike, noticeboard, mailbox } from './props.js';
+import { roundTree, bench, lamp, bollards, planter, bike, noticeboard, mailbox } from './props.js';
 import { TRUCK, truckFrame, foodTruck, chalkSign, stringLights, lightPool, barrelPlanter, bistroTable, picnicTable, chairSpot, benchSpot, litterBin } from './foodtruck.js';
 import { cat, pigeon, animateCritters } from './critters.js';
+import { fountain, animateFountain, FOUNTAIN } from './fountain.js';
 import { LAMP_TOP, TREE_LOW_BRANCH, KIOSK, bin, drinkingFountain, bikeRack, kiosk, signpost, streetClock, phoneBox, mapBoard, bunting, treeGrate, chalkDrawing, pottedShrub, shrubPlanter } from './props.js';
 import { DISTRICTS } from '../districts/index.js';
 import { piece, placeable } from '../layout.js';
@@ -29,7 +30,6 @@ export const PLAZA = { hx: 36, hz: 37 };
 export const PLAZA_HALF = PLAZA.hx; // the larger half, for anything that needs one number
 const ROAD_CLEAR = 3.0;      // half the width kept clear where a street comes in
 const FZ = 0;                // the fountain's z: the middle of the square
-const FS = 1.8, FSY = 1.25;  // the fountain's scale (wide, not much taller)
 const RING = 9.6;            // the stone ring around the fountain
 const deg = THREE.MathUtils.degToRad;
 // Where each district's building stands. Every building faces the middle of
@@ -116,8 +116,7 @@ export function buildPlaza(scene) {
   // ---- the fountain, and the bench ring around it; each bench brings the folks on it
   const fountainGroup = fountain(world);
   fountainGroup.position.z = FZ;
-  fountainGroup.scale.set(FS, FSY, FS);
-  placeable(fountainGroup, 'plaza.fountain', [col(0, FZ, 2.9 * FS)]);
+  placeable(fountainGroup, 'plaza.fountain', [col(0, FZ, FOUNTAIN.step)]);
   const BR = 8.3;
   const onBench = (i, side = 0) => {
     const a = (i / 4) * Math.PI * 2 + Math.PI / 4, rot = a + Math.PI;
@@ -276,7 +275,7 @@ export function buildPlaza(scene) {
   const MAP = { x: 4.6, z: 32.3 };
   const NAMES = { todo: 'Town Hall', finance: 'Bank', study: 'Library', ideas: 'Lighthouse', projects: 'Works', people: 'Post Office' };
   const plan = {
-    hx, hz, ring: RING, basin: 2.4 * FS,
+    hx, hz, ring: RING, basin: FOUNTAIN.rim,
     walks: [[0, hz, 0, FZ + RING, 3.2], [hx, 0, RING, 0, 3.2], [-hx, 0, -RING, 0, 3.2], [0, FZ - RING, 0, hallSteps - 0.2, 3.2],
       ...doors.filter(({ b }) => !b.userData.hall).map(({ door }) => {
         const a = Math.atan2(door.x, door.z - FZ);
@@ -342,7 +341,7 @@ export function buildPlaza(scene) {
 
   // ---- folks, each busy with something (the ones at a bench, the food truck,
   // its tables or the notice board belong to that piece, above)
-  addFolk(world, { x: 0, z: FZ + 2.35 * FS, rot: 0, seat: 0.6 * FSY, pose: 'music', look: { hat: 'cap', item: 'guitar' } });
+  addFolk(world, { x: 0, z: FZ + FOUNTAIN.seatR, rot: 0, seat: FOUNTAIN.seat, pose: 'music', look: { hat: 'cap', item: 'guitar' } });
   addFolk(world, { x: -7.8, z: FZ - 3.0, rot: 2.14, pose: 'feed', look: { hair: 'bun', dress: true, height: 0.95 } });
   addFolk(world, { x: 13.0, z: 15.0, rot: 0.93, pose: 'chat', look: { hair: 'long', scarf: true } });
   addFolk(world, { x: 13.8, z: 15.6, rot: 0.93 + Math.PI, pose: 'idle', look: { hat: 'cone', backpack: true } });
@@ -367,6 +366,7 @@ export function buildPlaza(scene) {
 export function animatePlaza(time, player = null, dt = 1 / 60) {
   animateFigures(time);
   animateLife(time);
+  animateFountain(time);
   animateFinds(time);
   updateClocks();
   animateCranes(time);
