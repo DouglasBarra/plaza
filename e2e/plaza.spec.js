@@ -15,18 +15,18 @@ test('the plaza loads with signs, dock and a rendered scene', async ({ plaza: pa
 test('number keys jump to districts and Esc goes back', async ({ plaza: page }) => {
   await page.keyboard.press('2');
   await expect(page.locator('#panel .pz-panel-tag')).toHaveText('Finance');
-  await expect(page.locator('body')).toHaveClass(/in-district/);
+  await expect(page.locator('body')).toHaveClass(/app-open/);
   await expect(page.locator('#dock button.is-active')).toContainText('Finance');
 
   await page.keyboard.press('Escape');
   await expect(page.locator('#overlay')).toBeHidden();
-  await expect(page.locator('body')).not.toHaveClass(/in-district/);
+  await expect(page.locator('body')).not.toHaveClass(/app-open/);
 });
 
-test('the close button returns to the plaza', async ({ plaza: page }) => {
+test('the close button closes the card', async ({ plaza: page }) => {
   const panel = await openDistrict(page, 'Study');
   await expect(panel.locator('.pz-panel-title')).toHaveText('Reading list');
-  await panel.getByRole('button', { name: 'Back to plaza' }).click();
+  await panel.getByRole('button', { name: 'Close' }).click();
   await expect(page.locator('#overlay')).toBeHidden();
 });
 

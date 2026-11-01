@@ -29,7 +29,8 @@ refreshFinds();
 // dates roll over at midnight; refresh the signs every minute
 setInterval(refreshSigns, 60_000);
 
-if (import.meta.env.DEV) installDevtools();
+// the dev handle exists in development and in the end-to-end tests' build (--mode test)
+if (import.meta.env.DEV || import.meta.env.MODE === 'test') installDevtools();
 
 const clock = new THREE.Clock();
 renderer.setAnimationLoop((now) => {

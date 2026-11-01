@@ -10,7 +10,7 @@ export default defineConfig({
   // each worker software-renders a WebGL scene, which is CPU heavy
   workers: 1,
   // software-rendered WebGL is slow; give the UI room to catch up
-  timeout: 60_000,
+  timeout: 90_000,
   expect: { timeout: 15_000 },
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: {
@@ -29,9 +29,10 @@ export default defineConfig({
       },
     },
   ],
-  // tests run against the production build, the same thing users get
+  // tests run against a production build, the same code users get
   webServer: {
-    command: `npm run build && npm run preview -- --port ${PORT} --strictPort`,
+    // --mode test keeps the window.__plaza handle, so tests can put you at a door
+    command: `npm run build -- --mode test && npm run preview -- --port ${PORT} --strictPort`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

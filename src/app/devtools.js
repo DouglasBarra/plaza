@@ -1,10 +1,11 @@
 // A handle for testing from the browser console: window.__plaza. main.js
-// installs it in development only, so it's left out of builds.
+// installs it in development and in the end-to-end tests' build only, so
+// it's left out of real builds.
 import * as THREE from 'three';
 import * as finds from '../finds.js';
 import { camera, controls, canvas } from './engine.js';
 import { game } from './state.js';
-import { me } from './plaza.js';
+import { me, buildingFor } from './plaza.js';
 import { setView, look } from './camera.js';
 import { enterBuilding, exitBuilding, currentScene } from './rooms.js';
 import { ray, setPointer, tryFind, shownInScene } from './picking.js';
@@ -18,6 +19,8 @@ export function installDevtools() {
     room: () => game.room,
     look,                                   // first-person gaze, for taking screenshots
     eye: () => camera.position.toArray(),
+    // where you stand to go into a building (or to visit a lot)
+    door: (id) => buildingFor(id).userData.door.toArray(),
     // screen position of an object, after settling the camera
     screenPos(obj) {
       if (game.view === 'third') controls.update();

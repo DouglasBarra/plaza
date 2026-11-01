@@ -17,6 +17,7 @@ export const test = base.extend({
     void pageErrors;
     await page.goto('/?lowpower');
     await expect(page.locator('#dock button')).toHaveCount(6);
+    await page.waitForFunction(() => window.__plaza);
     // the first frames compile every shader, which is slow without a GPU;
     // let them finish so the test's timings start from a running plaza
     await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
@@ -33,3 +34,11 @@ export async function openDistrict(page, name) {
   await expect(panel.locator('.pz-panel-tag')).toHaveText(name);
   return panel;
 }
+
+// Put you somewhere (x, y, z in meters), as if you'd walked there.
+export async function standAt(page, [x, y, z]) {
+  await page.evaluate(([x, y, z]) => { const me = window.__plaza.me; me.goal = null; me.position.set(x, y, z); }, [x, y, z]);
+}
+
+// The "E …" prompt over your head, once you stand somewhere it applies.
+export const prompt = (page) => page.locator('#labels .prompt:not(.is-hidden)');
