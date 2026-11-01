@@ -20,6 +20,34 @@ Each step: do it, check it, commit, push. Stop and report if a step fails twice.
 
 Don't run several browsers at once: the machine overloads and crashes. Keep the ink style: white/gray surfaces, black lines, color only as tiny accents.
 
+## 0b. Practical tips (lessons from the last session)
+
+- **Never use `pkill -f <pattern>`.** It matches your own shell command and kills it. Stop servers by port instead: `fuser -k 5173/tcp`.
+- **The dev server** runs with `npx vite --port 5180 --strictPort &`. Always open `http://localhost:5180/?lowpower`: rendering is software-only here, and `lowpower` keeps it bearable.
+- **The dev handle `window.__plaza`** (`src/app/devtools.js`) has `me.position.set(x,0,z)`, `setView('first'|'third')`, `look(yaw, pitch)` (yaw 0 looks north, which is −z), `door(id)`, `enterBuilding(id)`, `state()`, `piece(id)` and `finds`. The test build (`--mode test`) has it too; real builds don't.
+- **Screenshot script** (save as `shot.cjs` outside the repo and run `node shot.cjs out.png "<js>"`):
+  ```js
+  const { chromium } = require('playwright');
+  const [out, js = ''] = process.argv.slice(2);
+  (async () => {
+    const b = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+    const p = await b.newPage({ viewport: { width: 1280, height: 720 } });
+    p.on('pageerror', (e) => console.log('PAGE ERROR', e.message));
+    await p.goto('http://localhost:5180/?lowpower');
+    await p.waitForFunction(() => window.__plaza);
+    if (js) await p.evaluate(js);
+    await p.waitForTimeout(3000);
+    await p.screenshot({ path: out, timeout: 120000 });
+    await b.close();
+  })();
+  ```
+  Look at every screenshot you take before calling something done.
+- **Performance:** a frame takes 0.6–2 s in software rendering. Merge or instance repeated geometry, and never add real lights (`PointLight`). Watch the mesh count: the plaza had about 2,300 before the WIP branches.
+- **Tests are slow** (about 6 min) and flaky under load. Run them alone, with nothing else rendering. A failure on a brief "burst" means a frame swallowed it; `expectReward` in `e2e/fixtures.js` already handles that.
+- **Movable pieces:** anything on the plaza goes through `piece()` / `placeable()` from `src/layout.js` with a collider passed as a follower. Keep the ids stable: `src/layout.json` refers to them.
+- **Commit messages:** a short title, then a plain-English body saying what changed and why.
+- **Where things live:** the plaza layout is in `src/plaza/index.js`; the buildings in `src/plaza/buildings.js`; the town, mountains and sky in `src/town/`; the game shell in `src/app/`; the HTML overlays in `src/ui/`; the interiors in `src/interiors/`. The README's "How it's built" table has the full map.
+
 ## 1. Last commits on `main` not covered by a test run
 
 These were checked in the browser but the end-to-end suite (`npm run test:e2e`) was not run after them:
