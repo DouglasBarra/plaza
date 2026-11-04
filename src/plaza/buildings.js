@@ -14,7 +14,7 @@ import { bench, crate, bike, lamp } from './props.js';
 
 export const beams = [];
 
-const TILE = 0.4; // height of each building's raised ground tile
+export const TILE = 0.4; // height of each building's raised ground tile
 
 // The raised yard a building stands on, w x d meters.
 function groundTile(p, w, d, top) {
@@ -83,10 +83,11 @@ export function townHall() {
   clockFace(tw / 2 + 0.05, tz, -Math.PI / 2, 0, Math.PI / 2);
   clockFace(-tw / 2 - 0.05, tz, Math.PI / 2, 0, -Math.PI / 2);
 
-  // front: the door, its awning and the name; same size as the inside doorway
+  // Front: the door, its awning and the name; same size as the inside
+  // doorway. The plinth's front edge is the hall's step up from the square;
+  // the walk from the fountain ends in a landing against it (plaza/index.js).
   const frontZ = OD / 2;
   door(g, 0, T0, frontZ - 0.06, DOOR.w, DOOR.h, M.planks, { step: true });
-  box(g, DOOR.w + 2.2, 0.16, 0.7, M.stone, 0, T0 + 0.08, frontZ + 0.7);  // a second, wider step
   const awning = box(g, DOOR.w + 1.4, 0.1, 1.1, stamp.todo, 0, T0 + DOOR.h + 0.55, frontZ + 0.5);
   awning.rotation.x = 0.32;
   for (const sx of [-1, 1]) box(g, 0.06, 0.55, 0.06, M.white, sx * (DOOR.w / 2 + 0.55), T0 + DOOR.h + 0.2, frontZ + 0.95); // awning posts
@@ -127,7 +128,10 @@ export function bank() {
   const PZ = frontZ + 2.4;                           // the portico's columns
   const stepsZ = PZ + 0.9;                           // where the podium ends and the steps begin
   const back = -OD / 2 - 0.7, yardFront = stepsZ + 3 * 0.45 + 0.3;
-  slab(g, OW + 2.6, T, yardFront - back + 0.4, M.paving, M.stone, 0, T / 2, (back + yardFront) / 2 - 0.2);
+  // The yard: paving a little wider than the podium, and no wider, or it
+  // would run into the walks that pass on either side (plaza/index.js).
+  const YW = OW + 1.4;
+  slab(g, YW, T, yardFront - back + 0.4, M.paving, M.stone, 0, T / 2, (back + yardFront) / 2 - 0.2);
   slab(g, OW + 1.0, P, stepsZ - back, M.paving, M.stone, 0, T + P / 2, (back + stepsZ) / 2);
   for (let i = 0; i < 3; i++) {                      // three steps down to the plaza
     const h = P * (3 - i) / 3;
@@ -183,13 +187,14 @@ export function bank() {
   yard.position.y = T;
   g.add(yard);
   for (const sx of [-1, 1]) lamp(yard, sx * 5.4, yardFront - 0.9);
-  statue(g, -OW / 2 - 0.4, T, yardFront - 1.2, 0.4);
-  const cz = (back + yardFront) / 2, hd = (yardFront - back) / 2;
+  statue(g, -OW / 2, T, yardFront - 1.2, 0.4);
+  // the yard the player bumps into is the paving that is really there
+  const cz = (back - 0.4 + yardFront) / 2, hd = (yardFront - back + 0.4) / 2;
   g.userData = {
     district: 'finance', labelY: dy + 6.4,
     // the yard reaches further in front than behind: its box sits forward of the origin
-    yard: { cz, hw: (OW + 2.6) / 2, hd, doorDist: yardFront + 0.8 },
-    footprint: { w: OW + 2.6, d: yardFront - back },
+    yard: { cz, hw: YW / 2, hd, doorDist: yardFront + 0.8 },
+    footprint: { w: YW, d: yardFront - back + 0.4 },
   };
   return g;
 }

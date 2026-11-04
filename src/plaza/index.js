@@ -1,11 +1,11 @@
 // The plaza: lays out the buildings, props, folks and animals.
 import * as THREE from 'three';
-import { M, box, cyl, slab } from '../kit.js';
+import { M, box, cyl, mesh, slab } from '../kit.js';
 import { placeFinds, animateFinds } from '../finds.js';
 import { leaves, animateLife } from '../life.js';
 import { addFolk, animateFigures } from '../folks.js';
 import { updateClocks, animateCranes } from '../details.js';
-import { beams, HALL_SIZE, townHall, bank, library, lighthouse, works, postOffice } from './buildings.js';
+import { beams, HALL_SIZE, TILE, townHall, bank, library, lighthouse, works, postOffice } from './buildings.js';
 import { roundTree, bench, lamp, bollards, planter, bike, noticeboard, mailbox } from './props.js';
 import { TRUCK, truckFrame, foodTruck, chalkSign, stringLights, lightPool, barrelPlanter, bistroTable, picnicTable, chairSpot, benchSpot, litterBin } from './foodtruck.js';
 import { cat, pigeon, animateCritters } from './critters.js';
@@ -32,12 +32,18 @@ const movers = [];
 //
 // Streets enter at the middle of the south, east and west sides (x = 0 or
 // z = 0), 5 m wide; the north street ends at the town hall's back. Stone
-// walks run from the ring around the fountain to every door.
+// walks run from the ring around the fountain to every door: each starts on
+// the ring, at the ring's own height, and ends on the building's ground tile,
+// with a landing where it steps up onto it.
 export const PLAZA = { hx: 36, hz: 37 };
 export const PLAZA_HALF = PLAZA.hx; // the larger half, for anything that needs one number
 const ROAD_CLEAR = 3.0;      // half the width kept clear where a street comes in
 const FZ = 0;                // the fountain's z: the middle of the square
 const RING = 9.6;            // the stone ring around the fountain
+const RING_SEG = 192;        // how finely the ring and the paving in it are drawn
+const WALK_H = 0.1;          // a walk is as thick as the ring, so their tops are flush
+// the town hall's plinth, half a meter wider than its walls all round (buildings.js)
+const HALL_PLINTH = { w: HALL_SIZE.w + 1, d: HALL_SIZE.d + 1 };
 const deg = THREE.MathUtils.degToRad;
 // Where each district's building stands. Every building faces the middle of
 // the fountain.
@@ -48,6 +54,39 @@ const SPOTS = {
 };
 const facingFountain = (x, z) => Math.atan2(-x, -(z - FZ));
 
+const ARC = 24;              // how finely a walk's end follows the ring's circle
+
+// One walk's slab, built in its own frame (x across it, z out from the middle
+// of the fountain): a strip `w` wide and `h` thick, from radius `r0` out to
+// `r1`. The end at r0 is cut to the circle it stands on, the ring's edge, so
+// the two meet along one line instead of leaving a wedge of bare paving at
+// each corner; it has no face there, since the ring's own kerb closes it.
+// UVs are in meters, like the kit's shapes.
+function walkGeo(w, r0, r1, h) {
+  const pos = [], uv = [], idx = [];
+  const face = (vs, us) => {
+    const i = pos.length / 3;
+    for (let k = 0; k < 4; k++) { pos.push(...vs[k]); uv.push(...us[k]); }
+    idx.push(i, i + 1, i + 2, i, i + 2, i + 3);
+  };
+  const arc = (x) => Math.sqrt(Math.max(0, r0 * r0 - x * x));   // the circle, across the walk
+  for (let i = 0; i < ARC; i++) {
+    const x0 = w * (i / ARC - 0.5), x1 = w * ((i + 1) / ARC - 0.5), z0 = arc(x0), z1 = arc(x1);
+    face([[x0, h, z0], [x0, h, r1], [x1, h, r1], [x1, h, z1]], [[x0, z0], [x0, r1], [x1, r1], [x1, z1]]);
+    face([[x0, 0, r1], [x0, 0, z0], [x1, 0, z1], [x1, 0, r1]], [[x0, r1], [x0, z0], [x1, z1], [x1, r1]]);
+  }
+  const xl = -w / 2, xr = w / 2, zl = arc(xl), zr = arc(xr);
+  face([[xl, 0, zl], [xl, 0, r1], [xl, h, r1], [xl, h, zl]], [[zl, 0], [r1, 0], [r1, h], [zl, h]]);
+  face([[xr, 0, r1], [xr, 0, zr], [xr, h, zr], [xr, h, r1]], [[r1, 0], [zr, 0], [zr, h], [r1, h]]);
+  face([[xl, 0, r1], [xr, 0, r1], [xr, h, r1], [xl, h, r1]], [[xl, 0], [xr, 0], [xr, h], [xl, h]]);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
 export function buildPlaza(scene) {
   const world = new THREE.Group();
   scene.add(world);
@@ -55,14 +94,32 @@ export function buildPlaza(scene) {
 
   // the plaza floor: a raised slab with a stone curb, and the fountain's ring
   slab(world, hx * 2, 0.4, hz * 2, M.paving, M.stone, 0, -0.2, 0);
-  cyl(world, RING, RING, 0.1, M.stone, 0, 0.05, FZ, 64);
-  cyl(world, RING - 0.6, RING - 0.6, 0.16, M.paving, 0, 0.08, FZ, 64);
+  cyl(world, RING, RING, WALK_H, M.stone, 0, WALK_H / 2, FZ, RING_SEG);
+  cyl(world, RING - 0.6, RING - 0.6, 0.16, M.paving, 0, 0.08, FZ, RING_SEG);
   let walkId = 5e5;
-  // a stone walk from (x1, z1) to (x2, z2), 2.6 m wide (3.2 from a street)
+  const walkLines = [];      // every walk laid, so the map board draws what's there
+  // A stone walk between (x1, z1) and (x2, z2), 2.6 m wide (3.2 from a
+  // street). It runs straight out from the middle of the fountain, and its
+  // top is flush with the ring's: no step up where the two meet.
   const walk = (x1, z1, x2, z2, w = 2.6) => {
-    const len = Math.hypot(x2 - x1, z2 - z1);
-    const b = box(world, w, 0.04, len, M.stone, (x1 + x2) / 2, 0.02, (z1 + z2) / 2);
-    b.rotation.y = Math.atan2(x2 - x1, z2 - z1);
+    walkLines.push([x1, z1, x2, z2, w]);
+    const r1 = Math.hypot(x1, z1 - FZ), r2 = Math.hypot(x2, z2 - FZ);
+    const [ox, oz] = r2 > r1 ? [x2, z2] : [x1, z1];     // the end away from the fountain
+    const b = mesh(walkGeo(w, Math.min(r1, r2), Math.max(r1, r2), WALK_H), M.stone, 0, 0, FZ, world);
+    b.rotation.y = Math.atan2(ox, oz - FZ);
+    b.name = 'walk';
+    b.userData.inkId = walkId++;
+    return b;
+  };
+  // Where a walk arrives at a building, a stone landing takes it up onto the
+  // raised ground the building stands on: half a step from the walk, half a
+  // step to the tile, instead of a 0.4 m kerb. `r` is how far out the tile's
+  // front edge is; the landing is the walk's last 0.4 m.
+  const landing = (a, r, w) => {
+    const h = (WALK_H + TILE) / 2, c = r - 0.2;
+    const b = box(world, w, h, 0.4, M.stone, Math.sin(a) * c, h / 2, FZ + Math.cos(a) * c);
+    b.rotation.y = a;
+    b.name = 'walk-landing';
     b.userData.inkId = walkId++;
     return b;
   };
@@ -78,8 +135,9 @@ export function buildPlaza(scene) {
     const front = new THREE.Vector3(Math.sin(rotY), 0, Math.cos(rotY));
     let collider;
     if (b.userData.hall) {
-      // the town hall is as big as its inside: a box around its walls
-      collider = { x, z, hw: HALL_SIZE.w / 2, hd: HALL_SIZE.d / 2 + 0.05, rot: rotY };
+      // the town hall is as big as the plinth it stands on, so you stop at
+      // the foot of its steps
+      collider = { x, z, hw: HALL_PLINTH.w / 2, hd: HALL_PLINTH.d / 2, rot: rotY };
       b.userData.door = new THREE.Vector3(x, 0, z).addScaledVector(front, b.userData.doorDist);
     } else if (b.userData.yard) {
       // a building as big as its inside, with a yard reaching out in front (the bank)
@@ -106,24 +164,32 @@ export function buildPlaza(scene) {
   });
 
   // ---- the buildings
-  const HALL = { x: 0, z: -hz + (HALL_SIZE.d + 1) / 2 + 0.6 };
+  const HALL = { x: 0, z: -hz + HALL_PLINTH.d / 2 + 0.6 };
   place(townHall(), HALL.x, HALL.z, 0);
   const builders = { people: postOffice, projects: works, study: library, finance: bank, ideas: lighthouse };
   for (const [id, [x, z]] of Object.entries(SPOTS)) place(builders[id](), x, z, facingFountain(x, z));
-  const hallSteps = HALL.z + HALL_SIZE.d / 2 + 1.6;              // the foot of the town hall's steps
+  const hallSteps = HALL.z + HALL_SIZE.d / 2 + 1.6;              // out in front of the town hall's steps
+  const hallFront = -(HALL.z + HALL_PLINTH.d / 2);               // how far its plinth reaches out
 
-  // ---- walks: the streets to the fountain, and the ring to every door
-  walk(0, hz, 0, FZ + RING, 3.2);                                // from the south street
-  walk(hx, 0, RING, 0, 3.2);                                     // from the east
-  walk(-hx, 0, -RING, 0, 3.2);                                   // from the west
-  walk(0, FZ - RING, 0, hallSteps - 0.2, 3.2);                   // up to the hall's steps
-  const walkAngles = [0, Math.PI / 2, Math.PI, -Math.PI / 2];   // as seen from the fountain: south, east, north, west
+  // ---- walks: the streets to the fountain, and the ring to every door.
+  // Each is a line straight out from the middle of the fountain, so it is an
+  // angle and how far out it reaches. The ones to a door reach the front edge
+  // of the building's ground tile and step up onto it.
+  const walkAngles = [];   // as seen from the fountain, for the lamps
+  const spoke = (a, r, w = 2.6, step = true) => {
+    walk(Math.sin(a) * RING, FZ + Math.cos(a) * RING, Math.sin(a) * r, FZ + Math.cos(a) * r, w);
+    if (step) landing(a, r, w + 0.3);
+    walkAngles.push(a);
+  };
+  spoke(0, hz, 3.2, false);                                      // in from the south street
+  spoke(Math.PI / 2, hx, 3.2, false);                            // from the east
+  spoke(-Math.PI / 2, hx, 3.2, false);                           // from the west
+  spoke(Math.PI, hallFront, 3.2);                                // up to the hall's steps
   for (const b of buildings) {
     if (b.userData.hall) continue;
+    // every door stands 0.8 m out from the front of its ground tile
     const d = b.userData.door;
-    const a = Math.atan2(d.x, d.z - FZ);
-    walk(Math.sin(a) * RING, FZ + Math.cos(a) * RING, d.x, d.z);
-    walkAngles.push(a);
+    spoke(Math.atan2(d.x, d.z - FZ), Math.hypot(d.x, d.z - FZ) + 0.8);
   }
 
   // ---- the fountain, and the bench ring around it; each bench brings the folks on it
@@ -289,11 +355,7 @@ export function buildPlaza(scene) {
   const NAMES = { todo: 'Town Hall', finance: 'Bank', study: 'Library', ideas: 'Lighthouse', projects: 'Works', people: 'Post Office' };
   const plan = {
     hx, hz, ring: RING, basin: FOUNTAIN.rim,
-    walks: [[0, hz, 0, FZ + RING, 3.2], [hx, 0, RING, 0, 3.2], [-hx, 0, -RING, 0, 3.2], [0, FZ - RING, 0, hallSteps - 0.2, 3.2],
-      ...doors.filter(({ b }) => !b.userData.hall).map(({ door }) => {
-        const a = Math.atan2(door.x, door.z - FZ);
-        return [Math.sin(a) * RING, FZ + Math.cos(a) * RING, door.x, door.z, 2.6];
-      })],
+    walks: walkLines,
     places: doors.map(({ id, b }, i) => ({
       n: i + 1, label: NAMES[id], district: DISTRICTS[id].name, x: b.position.x, z: b.position.z, rot: b.rotation.y,
       ...(b.userData.hall ? { w: HALL_SIZE.w, d: HALL_SIZE.d } : b.userData.footprint),
