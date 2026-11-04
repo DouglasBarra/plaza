@@ -10,17 +10,19 @@ every room was verified by arithmetic or by a script driving the dev server, but
 nobody has stood in them and looked. These are the specific places where a
 number can be right and the picture still wrong.
 
-- **The fountain's terrace.** The walks now meet the stone ring dead flush (both
+- **The fountain's terrace.** The walks meet the stone ring dead flush (both
   tops at 0.10), but there is still a 6 cm rise from the ring band onto the
-  paving inside it, at r = 9.0, all the way round. If "the walks don't reach the
-  fountain floor" meant that paving, the step is still there and the fix is to
-  make the terrace one level — which needs the ring rebuilt as an annulus, since
-  two coplanar discs at 0.10 would z-fight over 254 m².
-- **Folks walking on the walks.** A walk's surface went from 0.04 to 0.10, and
-  figures stand at y = 0 (the plaza has no ground-height lookup; `heightAt` is
-  only used in rooms). So anyone walking along a walk is 10 cm into the stone
-  instead of 4. Worth watching the folk whose path runs down the south walk and
-  the dog-walker who circles.
+  paving inside it, at r = 9.0, all the way round. You now *walk* up it smoothly,
+  since `plaza/ground.js` puts you on whatever is under you, so this is only a
+  line you can see, not a lip you catch on. Making the terrace one level would
+  need the ring rebuilt as an annulus: two coplanar discs at 0.10 would z-fight
+  over 254 m².
+- **Folks standing on the walks.** You stand on the paving now
+  (`plaza/ground.js`, merged from main), but the folks don't: they are placed at
+  y = 0, so anyone walking a 0.10 walk is 10 cm into the stone, and the four
+  fountain benches and the pigeons have the same trouble on the 0.16 terrace.
+  Giving `folks.js` the same `groundAt` the avatar uses would settle all of it.
+  Watch the folk whose path runs down the south walk and the dog-walker.
 - **The bank's clearances.** 24 cm from the east street walk and 30 cm from the
   lighthouse walk, at its two front corners. Look from the east street mouth.
   Moving `SPOTS.finance` from `[27, 12.5]` to `[27.45, 12.7]` takes them to

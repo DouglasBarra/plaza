@@ -2,7 +2,9 @@
 // click the ground. You can't leave the plaza; buildings and props block you.
 import * as THREE from 'three';
 import { makeFigure, poseFigure } from './folks.js';
-import { skipND } from './life.js';
+import { FootRing } from './footring.js';
+
+const flat = () => 0;
 
 const WALK = 3.2;   // m/s, an unhurried stroll
 const RUN = 6.0;    // with Shift held
@@ -34,18 +36,10 @@ export class Avatar {
     const g = new THREE.Group();
     this.figure = makeFigure({ hat: 'beanie', scarf: true, backpack: true, height: 1.05 });
     g.add(this.figure);
-    // a little ink ring under your feet so you can always find yourself: drawn
-    // over everything (raised paving, a curb, a wall in the way), and kept out
-    // of the outline pass so it neither gets outlined nor hides anything
-    const ring = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.68, 28), new THREE.MeshBasicMaterial({ color: '#111111', depthTest: false, depthWrite: false }));
-    ring.rotation.x = -Math.PI / 2;
-    ring.position.y = 0.02;
-    ring.renderOrder = 10;
-    skipND.push(ring);
-    g.add(ring);
-    // and you're drawn after it, so it goes round your feet, not over them
-    this.figure.traverse((o) => { o.renderOrder = 11; });
-    this.ring = ring;
+    // the watercolor ring under your feet, painted onto the floor (footring.js)
+    this.ring = new FootRing();
+    scene.add(this.ring.mesh);
+    this.groundAt = null;  // (x, z) -> the plaza floor's height, set once the plaza is built
     this.body = g;
     g.position.set(0, 0, -10.6); // between the town hall and the fountain, facing the fountain
     g.rotation.y = 0;
@@ -57,9 +51,11 @@ export class Avatar {
   // Move to another place (the plaza or a room), standing at `pos` facing `rotY`.
   setWorld(scene, colliders, bounds, pos, rotY, heightAt = null) {
     scene.add(this.body);
+    scene.add(this.ring.mesh);
     this.colliders = colliders;
     this.bounds = bounds;
     this.heightAt = heightAt;
+    this.roomFloor = heightAt && ((x, z) => heightAt(x, z, this.level).y);
     this.level = 0;
     this.body.position.copy(pos);
     this.body.rotation.set(0, rotY, 0);
@@ -78,7 +74,7 @@ export class Avatar {
     this.onArrive = onArrive;
   }
 
-  setInkColor(c) { this.ring.material.color.set(c); }
+  setInkColor(c) { this.ring.setColor(c); }
 
   update(dt, time, camera) {
     const dir = new THREE.Vector3();
@@ -167,7 +163,20 @@ export class Avatar {
     const torso = this.figure.userData.parts.body;
     torso.rotation.x += this.lean;
     torso.rotation.z += this.bank;
-    if (!this.heightAt) p.y = 0;
+    // on the plaza, stand on the floor under you (paving, a curb, a raised
+    // ring), stepping up and down quickly rather than snapping
+    if (!this.heightAt) {
+      const floor = this.groundAt ? this.groundAt(p.x, p.z) : 0;
+      p.y += (floor - p.y) * Math.min(1, dt * 20);
+    }
+    this.placeRing();
+  }
+
+  placeRing() {
+    const p = this.position;
+    const floorAt = this.heightAt ? this.roomFloor : this.groundAt || flat;
+    this.ring.mesh.visible = this.body.visible;
+    this.ring.place(p.x, p.z, floorAt);
   }
 
   collide() {
