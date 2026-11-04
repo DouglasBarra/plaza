@@ -25,12 +25,12 @@ export function buildSky(town) {
       parts.push(new THREE.IcosahedronGeometry(s, 1).scale(1, 0.62, 1).translate(k * 6 - n * 3 + rand() * 2, rand() * 2.5, (rand() - 0.5) * 5));
     }
     const c = new THREE.Mesh(mergeGeometries(strip(parts)), cloudMat);
-    c.userData.inkCrisp = true;
     const a = rand() * Math.PI * 2, d = 290 + rand() * 130;
     c.position.set(Math.cos(a) * d, 40 + rand() * 45, Math.sin(a) * d);
     c.scale.setScalar(1.6);
     c.rotation.y = rand() * 6;
-    c.userData = { a, d, speed: 0.004 + rand() * 0.004 };
+    // where it drifts, and inkCrisp so its outline keeps its weight that far off
+    c.userData = { a, d, speed: 0.004 + rand() * 0.004, inkCrisp: true };
     town.add(c);
     clouds.push(c);
   }

@@ -131,8 +131,7 @@ export function buildStreetscape(town, blocks, parkLamps) {
   mk(zebra, toon('#ffffff', art.zebra()));
   mk(paving, toon('#ffffff', tex.paving()));
   mk(curb, toon('#ffffff', tex.stone()));
-  const railTex = art.rails(); railTex.repeat.set(1, 1);
-  mk(rails, toon('#ffffff', railTex));
+  mk(rails, toon('#ffffff', art.rails()));
   mk(wire, toon('#3a3a3a'));
   mk(furniture, toon());
 

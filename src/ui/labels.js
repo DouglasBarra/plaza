@@ -76,6 +76,9 @@ export function placeLabels() {
     it.el.classList.toggle('is-hidden', it.hidden);
   }
   prompt.classList.toggle('is-hidden', !action);
+  // Faded out it is still a button: inert takes it out of the way, so an
+  // invisible prompt can't eat a click meant for the ground, or the Tab key.
+  prompt.inert = !action;
   prompt.classList.toggle('is-center', view === 'first');
   if (!action) return;
   prompt.innerHTML = `<kbd>E</kbd> ${action.label}`;

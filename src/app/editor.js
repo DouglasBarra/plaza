@@ -26,6 +26,7 @@ let helper = null;     // the box drawn around it
 let drag = null;       // { plane, offset } while dragging
 let dirty = false;     // moved since the last save
 let status = '';
+let ticking = false;   // the frame loop that keeps the box on the piece is running
 
 let panel, button;      // made by installEditor, so real builds leave the editor out
 
@@ -57,7 +58,7 @@ function toggle(on = !game.editing) {
     if (game.appOpen) closeApp();
     if (game.view === 'first') setView('third');
     status = 'Click a piece to move it.';
-    requestAnimationFrame(tick);
+    if (!ticking) { ticking = true; requestAnimationFrame(tick); }
   } else {
     select(null);
   }
@@ -125,7 +126,8 @@ function onUp(e) {
 // ---------- keys ----------
 function onKey(e) {
   if (e.target.closest?.('input, textarea, select')) return;
-  if (e.key === '`') { e.preventDefault(); return toggle(); }
+  // holding ` would flicker the editor on and off
+  if (e.key === '`') { e.preventDefault(); if (!e.repeat) toggle(); return; }
   if (!game.editing) return;
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') { e.preventDefault(); return save(); }
   if (e.key === 'Escape') return selected ? select(null) : toggle(false);
@@ -193,7 +195,7 @@ function render() {
 }
 
 function tick() {
-  if (!game.editing) return;
+  if (!game.editing) { ticking = false; return; }
   if (helper) {
     // keep the box on the piece (and in the scene you're looking at)
     if (helper.parent !== currentScene()) currentScene().add(helper);

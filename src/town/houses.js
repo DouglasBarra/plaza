@@ -259,7 +259,7 @@ function roof(T, B, b, top, detail) {
 // ring round the plaza and the three streets out of it).
 function busy(axisCoord) { return axisCoord === 0 || Math.abs(axisCoord) === ROAD_PITCH; }
 
-function plotSpec(T, b, dist, opts = {}) {
+function plotSpec(b, dist, opts = {}) {
   const base = dist < 70 ? 3 : dist < 100 ? 2 : dist < 135 ? 1 + (chance(0.5) ? 1 : 0) : 1;
   b.floors = Math.min(4, base + (opts.corner && dist < 110 ? 1 : 0) + (dist < 70 && chance(0.2) ? 1 : 0) - (chance(0.15) ? 1 : 0));
   b.floors = Math.max(1, b.floors);
@@ -330,7 +330,7 @@ function perimeterBlock(T, bi, bj, x0, x1, z0, z1, dist) {
   }
   for (const p of plots) {
     const d = Math.hypot((p.x0 + p.x1) / 2, (p.z0 + p.z1) / 2);
-    house(T, plotSpec(T, p, d, { corner: p.corner }));
+    house(T, plotSpec(p, d, { corner: p.corner }));
   }
   courtyard(T, x0 + C, x1 - C, z0 + C, z1 - C, dist);
 }
@@ -400,9 +400,8 @@ function suburbBlock(T, x0, x1, z0, z1) {
         : { z0: a, z1: a + w, x0: key === 'e' ? x1 - set - D : x0 + set, x1: key === 'e' ? x1 - set : x0 + set + D };
       if (Math.hypot((fp.x0 + fp.x1) / 2, (fp.z0 + fp.z1) / 2) < EXTENT) {
         const sides = { s: 'back', n: 'back', e: 'back', w: 'back', [key]: 'street' };
-        const b = plotSpec(T, { ...fp, sides, main: key, shops: {} }, 150);
+        const b = plotSpec({ ...fp, sides, main: key, shops: {} }, 150);
         b.roof = chance(0.6) ? 'gable' : 'hip';
-        b.panes = false;
         house(T, b);
         // a front fence or hedge along the garden
         const [F] = sideFrame(fp, key);
@@ -471,7 +470,9 @@ function park(T, x0, x1, z0, z1) {
 // A church on a paved square: nave, tower and spire, tall windows.
 function churchSquare(T, x0, x1, z0, z1) {
   const B = T.far;
-  B.paving.floor(x0 - LINE + ROAD_W / 2 + 0.01, x1 + SIDEWALK - 0.01, z0 - SIDEWALK + 0.01, z1 + SIDEWALK - 0.01, Y0 + 0.15, 1);
+  // the square is paved level with the sidewalks round it, and stops where
+  // they start: buildStreetscape already paves the ring over every block.
+  B.paving.floor(x0, x1, z0, z1, Y0 + 0.15, 1);
   const cx = (x0 + x1) / 2;
   const nx0 = cx - 6, nx1 = cx + 6, nz0 = z0 + 4, nz1 = z1 - 9, wallH = 10;
   const top = Y0 + wallH;
@@ -506,9 +507,11 @@ function churchSquare(T, x0, x1, z0, z1) {
     frameBox(B.stone, F, -0.2, L + 0.2, tTop - 0.4, tTop, 0, 0.3);
     frameBox(B.stone, F, 1.9, 4.5, tTop - 5.8, tTop - 5.5, 0, 0.2);
   });
-  hipRoof(B.slate, B.stone, tx0, tx1, tz0, tz1, tTop, 1.35, 0.25);
-  B.plain.box(cx - 0.05, cx + 0.05, tTop + 10.5, tTop + 13, tz0 + 3.15, tz0 + 3.25);
-  B.plain.box(cx - 0.6, cx + 0.6, tTop + 12, tTop + 12.1, tz0 + 3.15, tz0 + 3.25);
+  // the spire comes to a point; the cross stands clear above it, its foot
+  // sunk just far enough into the slate to be held by it
+  const point = hipRoof(B.slate, B.stone, tx0, tx1, tz0, tz1, tTop, 1.35, 0.25);
+  B.plain.box(cx - 0.05, cx + 0.05, point - 0.35, point + 2.45, tz0 + 3.15, tz0 + 3.25);
+  B.plain.box(cx - 0.6, cx + 0.6, point + 1.5, point + 1.6, tz0 + 3.15, tz0 + 3.25);
   // trees on the square
   for (const [dx, dz] of [[-11, -10], [11, -10], [-11, 4], [11, 4], [-11, 12], [11, 12]]) T.trees.round.push({ x: cx + dx, z: (z0 + z1) / 2 + dz, s: 1.0, rot: rand() * 6 });
 }

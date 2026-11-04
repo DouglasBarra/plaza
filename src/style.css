@@ -46,7 +46,7 @@ body { background: var(--ground); color: var(--ink); font-family: var(--font-bod
 .hud-top { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); padding: var(--space-6) max(var(--space-6), env(safe-area-inset-right)) 0 max(var(--space-6), env(safe-area-inset-left)); pointer-events: none; }
 .hud-top > * { pointer-events: auto; }
 .greeting h1 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 56px; line-height: 56px; letter-spacing: 0.02em; }
-.greeting p { margin: var(--space-1) 0 0 2px; font-family: var(--font-hand); font-size: 20px; color: var(--ink-muted); }
+.greeting p { margin: var(--space-1) 0 0 2px; font-family: var(--font-hand); font-size: 20px; }
 .hud-actions { display: flex; gap: var(--space-3); flex-wrap: wrap; justify-content: flex-end; pointer-events: none; }   /* the gaps let clicks through to the scene */
 .hud-actions > * { pointer-events: auto; }
 
@@ -84,7 +84,7 @@ body { background: var(--ground); color: var(--ink); font-family: var(--font-bod
 .pz-panel-body { padding: var(--space-4) var(--space-6) var(--space-6); overflow-y: auto; }
 .pz-panel-note { margin: var(--space-4) 0 0; font-family: var(--font-hand); font-size: 18px; color: var(--ink-muted); }
 
-.row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 2px dashed var(--line); font-size: 16px; line-height: 24px; }
+.row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 2px dashed var(--line); font-size: 16px; line-height: 24px; }
 .row:last-child { border-bottom: 0; }
 .row .box { width: 24px; height: 24px; flex: none; border: var(--stroke-ink) solid var(--ink); border-radius: var(--radius-s); box-sizing: border-box; background: var(--surface); cursor: pointer; padding: 0; }
 .row .box.done { background: var(--pz-a); }
@@ -95,7 +95,7 @@ body { background: var(--ground); color: var(--ink); font-family: var(--font-bod
 
 /* Reward burst */
 .reward { position: fixed; inset: 0; display: grid; place-items: center; pointer-events: none; }
-.reward div { position: relative; font-family: var(--font-display); font-size: 48px; letter-spacing: 0.03em; color: var(--ink); background: var(--surface); border: var(--stroke-ink) solid var(--ink); border-radius: var(--radius-l); box-shadow: var(--lift); padding: 8px 24px; animation: pop 900ms cubic-bezier(.34,1.56,.64,1) forwards; }
+.reward div { position: relative; font-family: var(--font-display); font-size: 48px; letter-spacing: 0.03em; color: var(--ink); background: var(--surface); border: var(--stroke-ink) solid var(--ink); border-radius: var(--radius-l); box-shadow: var(--lift); padding: var(--space-2) var(--space-6); animation: pop 900ms cubic-bezier(.34,1.56,.64,1) forwards; }
 .reward svg { position: absolute; left: 50%; top: 50%; width: 360px; height: 360px; transform: translate(-50%, -50%); overflow: visible; }
 .reward line { stroke: var(--ink); stroke-width: 4; stroke-linecap: round; }
 @keyframes pop { 0% { transform: scale(.4); opacity: 0; } 20% { transform: scale(1.1); opacity: 1; } 35% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; } }
@@ -202,7 +202,7 @@ body { background: var(--ground); color: var(--ink); font-family: var(--font-bod
 .paper-note.is-late .nd { color: var(--alert); }
 .note-actions, .tw-row { display: flex; flex-wrap: wrap; gap: var(--space-3); justify-content: center; }
 .tw-intro { margin: 0 0 var(--space-3); font-family: var(--font-hand); font-size: 20px; color: var(--ink-muted); }
-.tw-input { width: 100%; margin-bottom: var(--space-3); font-family: "DM Mono", ui-monospace, monospace; }
+.tw-input { width: 100%; margin-bottom: var(--space-3); font-family: var(--font-mono); }
 .tw-row .td-date { flex: 1; }
 
 /* keyboard shortcut shown on each top button */
@@ -228,7 +228,7 @@ body.editing .hint, body.editing .prompt { display: none; }
 .pz-panel a.pz-btn { text-decoration: none; }
 .fi-error { margin: 0 0 var(--space-3); padding: var(--space-2) var(--space-3); border: 2px dashed var(--alert); border-radius: var(--radius-m); color: var(--alert); font-size: 14px; overflow-wrap: anywhere; }
 .fi-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); margin: var(--space-3) 0; }
-.fi-card { display: flex; flex-direction: column; gap: 4px; padding: var(--space-3); border: var(--stroke-ink) solid var(--ink); border-radius: var(--radius-m); background: var(--surface); }
+.fi-card { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-3); border: var(--stroke-ink) solid var(--ink); border-radius: var(--radius-m); background: var(--surface); }
 .fi-card span { font-family: var(--font-hand); font-size: 16px; color: var(--ink-muted); }
 .fi-card b { font: 600 17px var(--font-mono); overflow-wrap: anywhere; }
 .fi-amt { flex: none; text-align: right; font: 15px var(--font-mono); white-space: nowrap; }
@@ -256,11 +256,11 @@ body.editing .hint, body.editing .prompt { display: none; }
 .pe-chat { width: 100%; text-align: left; background: none; border-left: 0; border-right: 0; border-top: 0; font: inherit; color: inherit; cursor: pointer; }
 .pe-chat:hover .t { text-decoration: underline; text-decoration-style: wavy; text-decoration-color: var(--line); }
 .pe-chat.unread .t { font-weight: 600; }
-.pe-chat .when { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex: none; }
+.pe-chat .when { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-1); flex: none; }
 .pe-face { position: relative; width: 40px; height: 40px; flex: none; display: grid; place-items: center; border: var(--stroke-ink) solid var(--ink); border-radius: 50%; background: var(--surface); font: 600 14px var(--font-mono); }
-.pe-net { position: absolute; right: -6px; bottom: -4px; min-width: 18px; height: 18px; padding: 0 3px; box-sizing: border-box; display: grid; place-items: center; border: 2px solid var(--ink); border-radius: var(--radius-pill); font: 700 10px/1 var(--font-body); font-style: normal; color: #fff; background: var(--ink); }
+.pe-net { position: absolute; right: -6px; bottom: -4px; min-width: 18px; height: 18px; padding: 0 3px; box-sizing: border-box; display: grid; place-items: center; border: 2px solid var(--ink); border-radius: var(--radius-pill); font: 700 10px/1 var(--font-body); font-style: normal; color: var(--paper); background: var(--ink); }
 .pe-whatsapp { background: #25d366; color: #0b3d20; }
-.pe-linkedin { background: #0a66c2; }
+.pe-linkedin { background: #0a66c2; color: #fff; }   /* its own blue, so its own white, in both themes */
 .pe-count { min-width: 22px; height: 22px; padding: 0 6px; box-sizing: border-box; display: grid; place-items: center; border-radius: var(--radius-pill); background: var(--people); color: #fff; font: 600 12px var(--font-mono); }
 .pe-top { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); }
 .pe-top .pz-btn { height: 36px; font-size: 16px; }
@@ -280,6 +280,7 @@ body.editing .hint, body.editing .prompt { display: none; }
 .speech small { display: block; margin-top: 2px; font: 12px var(--font-mono); color: var(--ink-muted); }
 
 /* ---------- talking with folks (ui/chat.js) ---------- */
+.chat-panel .pz-panel-tag { background: var(--surface); color: var(--ink); }   /* no district speaks here, so the tag is ink on paper */
 .chat-log { display: flex; flex-direction: column; gap: var(--space-2); max-height: 46vh; overflow-y: auto; margin-bottom: var(--space-3); }
 .chat-line { max-width: 85%; padding: var(--space-2) var(--space-3); border: 2px solid var(--ink); border-radius: var(--radius-l); font-size: 16px; line-height: 23px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .chat-line.them { align-self: flex-start; background: var(--surface); font-family: var(--font-hand); font-size: 19px; }
@@ -293,7 +294,8 @@ body.editing .hint, body.editing .prompt { display: none; }
 .greeting #weather-line:hover { text-decoration: underline dotted; }
 
 /* ---------- color washes (ui/washes.js) ---------- */
-#wash { position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0;
+/* under the HUD: the wash tints the drawing, never the chrome or an open card */
+#wash { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0;
   background: radial-gradient(ellipse 115% 100% at 50% 50%, transparent 42%, color-mix(in srgb, var(--wash, transparent) 85%, transparent) 100%);
   /* a blotchy edge, like watercolor on damp paper */
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.6 -0.3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
@@ -307,6 +309,7 @@ body.editing .hint, body.editing .prompt { display: none; }
 .chat-ask[hidden], .chat-form[hidden] { display: none; }
 
 /* ---------- the Sound card ---------- */
+.sound-card .pz-panel-tag { background: var(--surface); color: var(--ink); }   /* no district speaks here, so the tag is ink on paper */
 .sound-card .snd-row { display: grid; gap: var(--space-2); margin-bottom: var(--space-4); font-size: 16px; }
 .sound-card .snd-on { display: flex; align-items: center; gap: var(--space-2); font-family: var(--font-display); font-size: 18px; }
 .sound-card .snd-on input { width: 20px; height: 20px; accent-color: var(--ink); }

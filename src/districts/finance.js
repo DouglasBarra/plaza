@@ -2,13 +2,14 @@
 // syncs them from Banco MCP (Brazilian Open Finance). The page never talks
 // to Banco itself: logging in, the bank consents and the syncing all happen
 // on the server, and this only reads /api/finance.
+import { dateKey } from '../store.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const money = (n, currency = 'BRL') => (n == null ? '—' : new Intl.NumberFormat('pt-BR', { style: 'currency', currency }).format(n));
 const shortDate = (d) => (d ? new Date(`${d}T12:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '');
 const ago = (t) => {
   const m = Math.round((Date.now() - t) / 60e3);
-  return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : shortDate(new Date(t).toISOString().slice(0, 10));
+  return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : shortDate(dateKey(new Date(t)));
 };
 const daysUntil = (d) => Math.round((new Date(`${d}T12:00`) - new Date(new Date().toDateString() + ' 12:00')) / 864e5);
 
@@ -72,7 +73,11 @@ export const finance = {
     const render = () => {
       clearTimeout(poll);
       if (data?.syncing) poll = setTimeout(refresh, 2500);
+      // the tabs are rebuilt on every change, so remember if they had the focus
+      const onTab = document.activeElement?.closest?.('[data-tab]');
+      const hadFocus = !!onTab && el.contains(onTab);
       el.innerHTML = body();
+      if (hadFocus) el.querySelector('[data-tab][aria-selected="true"]')?.focus();
     };
     listeners.add(render);
     render();
@@ -100,11 +105,14 @@ export const finance = {
           ${data.addConnectionUrl ? `<a class="pz-btn pz-btn-primary" href="${esc(data.addConnectionUrl)}" target="_blank" rel="noopener">Connect a bank</a>` : ''}
           <p class="pz-panel-note">Once you've given the consent at your bank, come back and press Sync.</p>${foot}`;
       }
+      // only the selected tab is in the Tab order, and it names the panel below
       const tabs = [['overview', 'Overview'], ['activity', 'Activity'], ['accounts', 'Accounts']]
-        .map(([id, label]) => `<button role="tab" aria-selected="${shown === id}" data-tab="${id}">${label}</button>`).join('');
+        .map(([id, label]) => `<button role="tab" id="fi-tab-${id}" aria-controls="fi-panel" aria-selected="${shown === id}" tabindex="${shown === id ? 0 : -1}" data-tab="${id}">${label}</button>`).join('');
       return `${data.error ? `<p class="fi-error">${esc(data.error)}</p>` : ''}
         <div class="td-tabs" role="tablist">${tabs}</div>
-        ${shown === 'overview' ? overview() : shown === 'activity' ? activity() : accounts()}
+        <div role="tabpanel" id="fi-panel" aria-labelledby="fi-tab-${shown}">
+          ${shown === 'overview' ? overview() : shown === 'activity' ? activity() : accounts()}
+        </div>
         ${foot}`;
     }
 
@@ -188,10 +196,25 @@ export const finance = {
     };
     el.addEventListener('click', onClick);
 
+    // Left and Right move between the tabs and select the one you land on;
+    // render() puts the focus back, since it builds the buttons again.
+    const onKey = (e) => {
+      const step = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0;
+      const from = e.target.closest?.('[data-tab]');
+      if (!step || !from) return;
+      e.preventDefault();
+      const buttons = [...el.querySelectorAll('[data-tab]')];
+      const i = buttons.indexOf(from) + step;
+      shown = buttons[(i + buttons.length) % buttons.length].dataset.tab;
+      render();
+    };
+    el.addEventListener('keydown', onKey);
+
     return () => {
       clearTimeout(poll);
       listeners.delete(render);
       el.removeEventListener('click', onClick);
+      el.removeEventListener('keydown', onKey);
     };
   },
 };

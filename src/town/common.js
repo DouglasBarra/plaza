@@ -1,9 +1,8 @@
 // What the town's parts share: its size and street grid, one seeded random
 // number source (so the town comes out the same every time), and the
-// geometry helpers for houses and trees.
+// geometry helpers for its trees.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { boxGeo, prismGeo } from '../kit.js';
 
 export const ROAD_PITCH = 40;   // a street every 40m, plus the two through the plaza
 export const ROAD_W = 5;
@@ -15,13 +14,6 @@ export const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
 
 export function strip(geos) {
   return geos.map((g) => { const n = g.index ? g.toNonIndexed() : g; n.clearGroups(); return n; });
-}
-
-export function houseGeo(w, h, d, roofH, flat = false) {
-  const body = boxGeo(w, h, d); body.translate(0, h / 2, 0);
-  const roof = flat ? boxGeo(w + 0.3, 0.4, d + 0.3) : prismGeo(w + 0.5, roofH, d + 0.5);
-  roof.translate(0, flat ? h + 0.2 : h, 0);
-  return mergeGeometries(strip([body, roof]), true);
 }
 
 export function pineGeo() {
@@ -52,5 +44,3 @@ export function instanced(geo, mat, items, shadows = true) {
   m.computeBoundingSphere();
   return m;
 }
-
-export const distToRoad = (v) => Math.abs((((v + ROAD_PITCH / 2) % ROAD_PITCH) + ROAD_PITCH) % ROAD_PITCH - ROAD_PITCH / 2);

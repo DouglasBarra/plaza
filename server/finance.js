@@ -33,7 +33,18 @@ function listIn(res) {
 const pick = (o, ...names) => { for (const n of names) if (o?.[n] != null) return o[n]; };
 const num = (v) => (v == null || v === '' ? null : Number(v));
 const day = (d) => (d ? String(d).slice(0, 10) : null);
-const daysAgo = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+// The key a row is saved under: providers spell an id a few ways, and a row
+// with none would overwrite the last one, so it has to be left out instead.
+const idOf = (o, ...names) => { const v = pick(o, 'id', ...names); return v && String(v) !== 'undefined' ? String(v) : null; };
+// Local calendar days as "YYYY-MM-DD", like the rest of Plaza: n days back
+// from today where you are (negative n is ahead). Built from the day's own
+// numbers, so months, years and clock changes come out right.
+const daysAgo = (n) => {
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - n);
+  const p = (v) => String(v).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+};
 
 export function finance(db, ports) {
   const banco = mcpConnection(db, { name: 'banco', url: BANCO_URL, scope: 'mcp:read mcp:execute integrations:read', ports });
@@ -87,7 +98,8 @@ export function finance(db, ports) {
         const got = await ask('openfinance_list_transactions', { account_id: a.id, from, to, page, page_size: PAGE, detail: 'raw' });
         const list = listIn(got);
         for (const t of list) txs.push({ ...t, accountId: t.accountId || a.id });
-        if (list.length < PAGE || page >= (got?.totalPages ?? page)) break;
+        // a short page is the end of the data; totalPages only stops us when the provider sends it
+        if (list.length < PAGE || page >= (got?.totalPages ?? Infinity)) break;
       }
       if (a.type === 'CREDIT') {
         const got = await ask('openfinance_list_credit_card_bills', { account_id: a.id, include_open_bill: true });
@@ -96,13 +108,23 @@ export function finance(db, ports) {
       }
     }
 
+    let noId = 0;
     db.bank.batch(() => {
       db.bank.clear('item'); db.bank.clear('account');
       for (const i of items) db.bank.put('item', i.id, null, null, i);
       for (const a of accounts) db.bank.put('account', a.id, a.itemId, null, a);
-      for (const t of txs) db.bank.put('tx', t.id, t.accountId, day(pick(t, 'date', 'postedDate')), t);
-      for (const b of bills) db.bank.put('bill', b.id, b.accountId, day(pick(b, 'dueDate', 'due_date')), b);
+      for (const t of txs) {
+        const id = idOf(t, 'transaction_id', 'transactionId');
+        if (!id) { noId++; continue; }
+        db.bank.put('tx', id, t.accountId, day(pick(t, 'date', 'postedDate')), t);
+      }
+      for (const b of bills) {
+        const id = idOf(b, 'bill_id', 'billId');
+        if (!id) { noId++; continue; }
+        db.bank.put('bill', id, b.accountId, day(pick(b, 'dueDate', 'due_date')), b);
+      }
     });
+    if (noId) console.warn(`Finance sync: left out ${noId} transactions or bills with no id`);
     setMeta({ lastSync: Date.now(), addUrl: addUrl || meta().addUrl, error: null, history: [...new Set([...known, ...accounts.map((a) => a.id)])] });
     return { items: items.length, accounts: accounts.length, transactions: txs.length, bills: bills.length };
   }
@@ -149,7 +171,7 @@ export function finance(db, ports) {
   // Every transaction since `since`, in one sign (money in positive).
   function transactions(since, flow = flowOf()) {
     return db.bank.all('tx', since).map((t) => ({
-      id: t.id, date: day(pick(t, 'date', 'postedDate')), accountId: t.accountId,
+      id: idOf(t, 'transaction_id', 'transactionId'), date: day(pick(t, 'date', 'postedDate')), accountId: t.accountId,
       description: pick(t, 'descriptionRaw', 'description') || '',
       amount: flow(t), category: pick(t, 'category', 'categoryName') || null,
       pending: t.status === 'PENDING',
@@ -181,7 +203,7 @@ export function finance(db, ports) {
     }
     // the latest bills, newest first (the open one isn't published by every bank)
     const bills = db.bank.all('bill').map((b) => ({
-      id: b.id, accountId: b.accountId, due: day(pick(b, 'dueDate', 'due_date')),
+      id: idOf(b, 'bill_id', 'billId'), accountId: b.accountId, due: day(pick(b, 'dueDate', 'due_date')),
       total: num(pick(b, 'totalAmount', 'total_amount')), minimum: num(pick(b, 'minimumPaymentAmount', 'minimum_payment_amount')),
       currency: pick(b, 'totalAmountCurrencyCode', 'currencyCode') || 'BRL', status: b.payment_status || null,
     })).filter((b) => b.due).slice(0, 6);
@@ -229,7 +251,8 @@ export function finance(db, ports) {
     if (url.pathname === '/api/finance/login' && req.method === 'GET') {
       try {
         const to = await banco.login(serverPort);
-        res.writeHead(302, { location: to || '/' }); res.end();
+        // null: already logged in, so straight back to Finance
+        res.writeHead(302, { location: to || '/?district=finance' }); res.end();
       } catch (e) {
         console.error('Banco login failed:', e);
         page(res, 502, 'Couldn’t reach Banco', esc(e.message || e));

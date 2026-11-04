@@ -15,11 +15,10 @@ export function buildTown(scene) {
   scene.add(town);
   // built in this order, so the seeded random numbers come out the same
   const animateStreets = buildStreets(town);
-  const animateMountains = buildMountains(town);
+  buildMountains(town);   // the mountains stand still
   const animateSky = buildSky(town);
   function animate(time) {
     animateStreets?.(time);
-    animateMountains?.(time);
     animateSky?.(time);
   }
   return { town, animate };

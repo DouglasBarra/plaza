@@ -10,7 +10,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { toon } from '../ink.js';
 import { tex, lineArtCanvas, LINE_ART_SIZE as S } from '../textures.js';
-import { boxGeo, prismGeo, M } from '../kit.js';
+import { boxGeo, prismGeo, M, STAMPS } from '../kit.js';
 import { smoke, nightOnly } from '../life.js';
 import { GROUND_Y, rand as townRand, strip } from './common.js';
 
@@ -586,7 +586,7 @@ export function buildMountains(town) {
   towerParts.push(new THREE.ConeGeometry(3.6, 2.6, 4).rotateY(Math.PI / 4).translate(0, 16.6, 0));
   towerParts.push(part(boxGeo(0.2, 4, 0.2), 0, 19.8, 0));
   tower.add(new THREE.Mesh(mergeGeometries(strip(towerParts)), sceneryMat));
-  const flag = new THREE.Mesh(boxGeo(2.4, 1.4, 0.1), unfogged(toon('#ff6a13')));
+  const flag = new THREE.Mesh(boxGeo(2.4, 1.4, 0.1), unfogged(toon(STAMPS.todo)));
   flag.position.set(1.2, 21, 0);
   tower.add(flag);
   town.add(tower);

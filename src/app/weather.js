@@ -58,6 +58,11 @@ async function outside() {
 
 const AREA = 46, HIGH = 14;     // the box of rain around you: 46 m across, 14 m tall
 
+// The sky is scenery, never something you click: a click and the layout editor
+// raycast the whole scene, and the camera sits inside the ring of clouds, so
+// without this a cloud or a raindrop swallows clicks on a find or a building.
+const sceneryOnly = (o) => { o.raycast = () => {}; };
+
 export function weather() {
   // ---- rain: thin ink strokes, slanting a little
   const dropGeo = new THREE.BoxGeometry(0.035, 1.1, 0.035);
@@ -65,6 +70,7 @@ export function weather() {
   const rain = new THREE.InstancedMesh(dropGeo, dropMat, 900);
   rain.frustumCulled = false;
   rain.count = 0;
+  sceneryOnly(rain);
   plazaScene.add(rain);
   skipND.push(rain);
   const drops = Array.from({ length: 900 }, () => ({ x: Math.random() * AREA - AREA / 2, z: Math.random() * AREA - AREA / 2, y: Math.random() * HIGH, v: 9 + Math.random() * 3 }));
@@ -73,6 +79,7 @@ export function weather() {
   const ripples = new THREE.InstancedMesh(ringGeo, dropMat, 60);
   ripples.frustumCulled = false;
   ripples.count = 0;
+  sceneryOnly(ripples);
   plazaScene.add(ripples);
   skipND.push(ripples);
   const rings = Array.from({ length: 60 }, () => ({ x: 0, z: 0, t0: -9 }));
@@ -88,6 +95,7 @@ export function weather() {
     c.userData = { a, r: 60 + (i % 3) * 25, y: 58 + (i % 4) * 6, speed: 0.01 + (i % 3) * 0.004 };   // high and wide: over the town, not in your face
     c.userData.inkCrisp = true;
     c.scale.setScalar(0.001);
+    sceneryOnly(c);
     plazaScene.add(c);
     clouds.push(c);
   }

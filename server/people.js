@@ -111,7 +111,15 @@ export function people(db, ports) {
     }
     if (m && req.method === 'POST') {
       let body = '';
-      for await (const c of req) { body += c; if (body.length > 64e3) return json(res, 413, { error: 'too long' }), true; }
+      req.setEncoding('utf8'); // decode the whole body at once: an accent can straddle two chunks
+      for await (const c of req) {
+        body += c;
+        if (body.length > 64e3) {
+          json(res, 413, { error: 'too long' });
+          req.destroy(); // stop reading the rest of it
+          return true;
+        }
+      }
       const text = (() => { try { return String(JSON.parse(body).text || '').trim(); } catch { return ''; } })();
       if (!text) return json(res, 400, { error: 'nothing to send' }), true;
       try {

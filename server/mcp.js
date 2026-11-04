@@ -8,10 +8,22 @@ import { randomBytes } from 'node:crypto';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { auth, UnauthorizedError } from '@modelcontextprotocol/sdk/client/auth.js';
+import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
+
+// How long one request may take before Plaza gives up on it. Generous on
+// purpose: a bank call can be slow (a sync asks for a year a page at a time,
+// so this is the ceiling for one page, not for the whole sync). It should only
+// ever trip on a connection that has died, which otherwise leaves Finance's
+// sync waiting for ever and its Sync button stuck until Plaza is restarted.
+const TIMEOUT = 60e3;
 
 export class LoginNeeded extends Error {
   constructor(name) { super(`Log in to ${name} first`); this.loginNeeded = true; }
 }
+
+// Said when a service stops answering, so the page shows something you can
+// act on instead of a bare AbortError. It never names the request's contents.
+const tooSlow = (name) => new Error(`${name} didn’t answer within ${TIMEOUT / 1000} seconds: it may be down. Try again.`);
 
 export function mcpConnection(db, { name, url, scope, ports }) {
   const key = (k) => `mcp.${name}.${k}`;
@@ -90,11 +102,14 @@ export function mcpConnection(db, { name, url, scope, ports }) {
     // fetches a path on the server with the access token, refreshing it once
     // if it ran out. Returns the parsed JSON.
     async fetch(path, { method = 'GET', body } = {}) {
+      // Each try gets its own deadline; a try that runs out is never repeated,
+      // since the server may have done the work already.
       const go = () => fetch(new URL(path, url), {
         method,
         headers: { authorization: `Bearer ${provider.tokens()?.access_token}`, ...(body ? { 'content-type': 'application/json' } : {}) },
         body: body ? JSON.stringify(body) : undefined,
-      });
+        signal: AbortSignal.timeout(TIMEOUT),
+      }).catch((e) => { throw e?.name === 'TimeoutError' ? tooSlow(name) : e; });
       if (!provider.tokens()) throw new LoginNeeded(name);
       let r = await go();
       if (r.status === 401) {
@@ -112,15 +127,20 @@ export function mcpConnection(db, { name, url, scope, ports }) {
     // if the server sends it, else the text parsed as JSON (or the text).
     async call(tool, args = {}) {
       let c = await connect();
+      // The SDK gives each request a deadline of its own (the second argument
+      // is the result shape, which we leave as it is). A call that runs out is
+      // never repeated: the tool may have run on the other side already.
+      const once = () => c.callTool({ name: tool, arguments: args }, undefined, { timeout: TIMEOUT })
+        .catch((e) => { throw e?.code === ErrorCode.RequestTimeout ? tooSlow(name) : e; });
       let res;
       try {
-        res = await c.callTool({ name: tool, arguments: args });
+        res = await once();
       } catch (e) {
         if (e instanceof UnauthorizedError || /401|unauthori[sz]ed|authentication_required/i.test(e.message)) {
           client = null;
           if (!provider.tokens()) throw new LoginNeeded(name);
           c = await connect(); // the SDK refreshed the token: try once more
-          res = await c.callTool({ name: tool, arguments: args });
+          res = await once();
         } else {
           client = null; // a dropped session: start a new one next time
           throw e;

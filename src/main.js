@@ -17,7 +17,7 @@ import { animatePlaza } from './plaza/index.js';
 import { DISTRICTS } from './districts/index.js';
 import { refreshSigns, placeLabels } from './ui/labels.js';
 import { refreshFinds } from './ui/finds-card.js';
-import { showTip } from './ui/hall-cards.js';
+import { showTip, hideTip } from './ui/hall-cards.js';
 import { openApp } from './ui/card.js';
 import { placeSpeech } from './ui/speech.js';
 import './ui/toggles.js';
@@ -69,7 +69,7 @@ renderer.setAnimationLoop((now) => {
   if (room && game.view === 'first' && !game.appOpen) {
     const note = pickNote(true);
     showTip(note, canvas.clientWidth / 2 + 14, canvas.clientHeight / 2 + 14);
-  }
+  } else if (game.appOpen || game.view === 'first') hideTip();   // an open card mustn't be left with a note's tooltip over it
 
   if (room) {
     ink.setFog(1e5, 1e5);

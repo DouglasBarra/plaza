@@ -78,6 +78,12 @@ export function openChat(speaker) {
 
   function propose({ tool, input: args }) {
     const a = ACTIONS[tool];
+    // A change this page doesn't know how to make: say so, change nothing,
+    // and let the talking carry on.
+    if (!a) {
+      log.push({ who: 'note', text: 'This version of Plaza can’t make that change yet, so nothing was changed.' });
+      return;
+    }
     askEl.hidden = false;
     askEl.innerHTML = `<p>${esc(a.ask(args))}</p>
       <button class="pz-btn pz-btn-primary" data-yes>${a.yes}</button>
@@ -91,7 +97,9 @@ export function openChat(speaker) {
       form.hidden = false;
       let result = '';
       if (yes) {
-        try { result = a.run(args); log.push({ who: 'note', text: result.replace(/^./, (c) => c.toUpperCase()) }); } catch (err) { result = `it failed: ${err.message}`; }
+        // either way the user sees what came of it, not only Claude
+        try { result = a.run(args); log.push({ who: 'note', text: result.replace(/^./, (c) => c.toUpperCase()) }); }
+        catch (err) { result = `it failed: ${err.message}`; log.push({ who: 'note', text: `That didn’t work: ${err.message}` }); }
       }
       send({ answer: { approved: !!yes, result } }).then(() => input.focus());
     };

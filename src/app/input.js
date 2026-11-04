@@ -13,7 +13,7 @@ import { interact } from './actions.js';
 import { labels } from '../ui/labels.js';
 import { openApp, closeApp } from '../ui/card.js';
 import { openFinds } from '../ui/finds-card.js';
-import { showTip, openNoteCard } from '../ui/hall-cards.js';
+import { showTip, hideTip, openNoteCard } from '../ui/hall-cards.js';
 import { nearSpeaker } from '../ui/speech.js';
 import { toggleSound } from '../sound/index.js';
 import { openChat } from '../ui/chat.js';
@@ -37,8 +37,17 @@ canvas.addEventListener('pointermove', (e) => {
   if (b) labels.get(b).classList.add('is-hover');
   canvas.classList.toggle('hovering', !!b);
 });
-canvas.addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; });
+// the pointer off the canvas (onto a button, say) leaves nothing hovered
+canvas.addEventListener('pointerleave', () => {
+  hideTip();
+  canvas.classList.remove('hovering');
+});
+canvas.addEventListener('pointerdown', (e) => {
+  if (e.button !== 0) return; // only the left button walks you around
+  downAt = [e.clientX, e.clientY];
+});
 canvas.addEventListener('pointerup', (e) => {
+  if (e.button !== 0) return;
   if (game.editing) return; // the layout editor has the mouse
   if (game.view === 'first') {
     if (game.appOpen) return closeApp();
@@ -65,15 +74,22 @@ canvas.addEventListener('pointerup', (e) => {
   if (p) me.walkTo(p);
 });
 
-const MOVE_KEYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright']);
-// F finds · V view · L wobbly lines · C washes · M sound · N night (shown on the buttons)
+// The walk keys, by the code of the key they sit on. keyup goes by the code,
+// because holding Option on a Mac changes e.key (Option+W is '∑') and the
+// name that went into me.keys would never come out again.
+const MOVE_BY_CODE = {
+  KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd',
+  ArrowUp: 'arrowup', ArrowDown: 'arrowdown', ArrowLeft: 'arrowleft', ArrowRight: 'arrowright',
+};
+const MOVE_KEYS = new Set(Object.values(MOVE_BY_CODE));
+// F finds · V view · L wobbly lines · C washes · N night (shown on the buttons).
+// M is further down: it works with a card open, the others don't.
 const SHORTCUTS = {
-  f: () => (game.appOpen === 'finds' ? closeApp() : openFinds()),
+  f: () => openFinds(),
   v: () => setView(game.view === 'first' ? 'third' : 'first'),
   l: () => document.getElementById('toggle-wobble').click(),
   n: () => document.getElementById('toggle-theme').click(),
   c: () => document.getElementById('toggle-washes').click(),
-  m: () => toggleSound(),
 };
 window.addEventListener('keydown', (e) => {
   if (game.editing) return; // the layout editor has the keys
@@ -82,15 +98,24 @@ window.addEventListener('keydown', (e) => {
   if (k === 'escape' && game.appOpen) return closeApp();
   // typing in a district's app must not walk you around
   if (e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+  // Enter and Space press a focused button (Night, the weather line), and nothing else
+  if ((k === 'enter' || k === ' ') && e.target.closest?.('button, [role="button"]')) return;
   if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.repeat && !MOVE_KEYS.has(k)) return; // holding a key: only walking repeats
+  // 1–6 open a district's app, and switch straight from whatever card is open
+  const id = Object.keys(DISTRICTS).find((key) => DISTRICTS[key].key === e.key);
+  if (id) { if (id !== game.appOpen) openApp(id); return; }
+  // M turns the sound off from anywhere: the Sound card itself says to press it
+  if (k === 'm') return toggleSound();
   if (game.appOpen === 'finds' && k === 'f') return closeApp();
   if (game.appOpen) return;
   if (MOVE_KEYS.has(k)) { me.keys.add(k); e.preventDefault(); return; }
   if (k === 'e' || k === 'enter') return interact();
   if (k === 't' && nearSpeaker?.persona) return openChat(nearSpeaker);
   if (SHORTCUTS[k]) return SHORTCUTS[k]();
-  const id = Object.keys(DISTRICTS).find((key) => DISTRICTS[key].key === e.key);
-  if (id) openApp(id);
 });
-window.addEventListener('keyup', (e) => { me.keys.delete(e.key.toLowerCase()); me.running = e.shiftKey; });
+window.addEventListener('keyup', (e) => {
+  me.keys.delete(MOVE_BY_CODE[e.code] || e.key.toLowerCase());
+  me.running = e.shiftKey;
+});
 window.addEventListener('blur', () => { me.keys.clear(); me.running = false; });

@@ -95,7 +95,7 @@ export const todos = {
         <button class="pz-btn pz-btn-primary" type="submit">Add</button>
       </form>
       <div class="td-tabs" role="tablist"></div>
-      <div class="td-list"></div>`;
+      <div class="td-list" role="tabpanel" id="td-panel"></div>`;
     const form = el.querySelector('.td-add');
     const input = el.querySelector('#td-new');
     const dueInput = el.querySelector('#td-due');
@@ -137,8 +137,13 @@ export const todos = {
       const today = dateKey();
       const g = groups(store.get().tasks, today);
       const counts = { today: g.overdue.length + g.today.length, upcoming: g.upcoming.length + g.anytime.length, done: g.done.length };
+      // the tabs are rebuilt on every change, so remember if they had the focus
+      const hadFocus = tabsEl.contains(document.activeElement);
+      // only the selected tab is in the Tab order, and it names the list below
       tabsEl.innerHTML = [['today', 'Today'], ['upcoming', 'Upcoming'], ['done', 'Done']]
-        .map(([id, label]) => `<button role="tab" aria-selected="${tab === id}" data-tab="${id}">${label}<span>${counts[id]}</span></button>`).join('');
+        .map(([id, label]) => `<button role="tab" id="td-tab-${id}" aria-controls="td-panel" aria-selected="${tab === id}" tabindex="${tab === id ? 0 : -1}" data-tab="${id}">${label}<span>${counts[id]}</span></button>`).join('');
+      list.setAttribute('aria-labelledby', `td-tab-${tab}`);
+      if (hadFocus) tabsEl.querySelector('[aria-selected="true"]')?.focus();
 
       let html = '';
       if (tab === 'today') {
@@ -159,6 +164,19 @@ export const todos = {
     tabsEl.addEventListener('click', (e) => {
       const b = e.target.closest('[data-tab]');
       if (b) { tab = b.dataset.tab; render(); }
+    });
+
+    // Left and Right move between the tabs and select the one you land on;
+    // render() puts the focus back, since it builds the buttons again.
+    tabsEl.addEventListener('keydown', (e) => {
+      const step = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0;
+      const from = e.target.closest('[data-tab]');
+      if (!step || !from) return;
+      e.preventDefault();
+      const buttons = [...tabsEl.querySelectorAll('[data-tab]')];
+      const i = buttons.indexOf(from) + step;
+      tab = buttons[(i + buttons.length) % buttons.length].dataset.tab;
+      render();
     });
 
     list.addEventListener('click', (e) => {
@@ -194,6 +212,7 @@ export const todos = {
     function startEdit(rowEl, id) {
       const span = rowEl.querySelector('.t');
       const task = store.get().tasks.find((t) => t.id === id);
+      if (!task) return; // the row is no longer in the store: nothing to edit
       const field = document.createElement('input');
       field.className = 'td-input td-edit';
       field.value = task.title;

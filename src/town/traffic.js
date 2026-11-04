@@ -77,7 +77,9 @@ function bikeGeo(pose) {
 }
 // A walker, in one of two strides.
 function walkerGeo(pose) {
-  const leg = (side, swing) => new THREE.CapsuleGeometry(0.065, 0.62, 3, 6).translate(0, -0.37, 0).rotateX(swing).translate(side * 0.09, 0.82, 0);
+  // the leg hangs from the hip at 0.82 m and is long enough that at the
+  // stride's 0.32 rad the sole comes down on the pavement
+  const leg = (side, swing) => new THREE.CapsuleGeometry(0.065, 0.73, 3, 6).translate(0, -0.43, 0).rotateX(swing).translate(side * 0.09, 0.82, 0);
   const s = pose ? 0.32 : -0.32;
   return twoTone([
     new THREE.CapsuleGeometry(0.17, 0.42, 3, 8).translate(0, 1.17, 0),
@@ -285,7 +287,9 @@ function buildTram(town) {
   // the pantograph up to the wire
   const arm = (x1, y1, x2, y2) => darkBag.geometry(new THREE.CylinderGeometry(0.03, 0.03, Math.hypot(x2 - x1, y2 - y1), 4)
     .rotateX(Math.atan2(x2 - x1, y2 - y1)).translate(0, (y1 + y2) / 2, (x1 + x2) / 2), new THREE.Matrix4());
-  arm(-1.4, 3.45, 0, 4.7); arm(0, 4.7, -1.2, 6.25); darkBag.box(-0.6, 0.6, 6.25, 6.3, -1.25, -1.15, '');
+  // the collector bar rides under the contact wire: the group sits 0.05 above
+  // GROUND_Y, so local 5.82..5.87 is world 5.47..5.52 and the wire is 5.5..5.54
+  arm(-1.4, 3.45, 0, 4.7); arm(0, 4.7, -1.2, 5.85); darkBag.box(-0.6, 0.6, 5.82, 5.87, -1.25, -1.15, '');
   for (const [b, mat] of [[body, white], [darkBag, dark], [stripe, toon(STAMPS.study)], [glass, windowMaterial()]]) {
     const m = b.mesh(mat, { shadows: b !== glass });
     m.matrixAutoUpdate = true;

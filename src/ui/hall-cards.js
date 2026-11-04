@@ -1,6 +1,7 @@
 // The town hall's own cards: the tooltip over a note on a board, the note
 // itself (tear it off to finish the task), and the clerk's typewriter.
 import { DISTRICTS } from '../districts/index.js';
+import { dateKey } from '../store.js';
 import { game } from '../app/state.js';
 import { showCard, openApp, closeApp, reward } from './card.js';
 
@@ -17,7 +18,8 @@ export function showTip(note, x, y) {
   } else {
     const t = note.userData.task;
     const when = DISTRICTS.todo.api.dueLabel(t.due);
-    tip.innerHTML = `<b>${t.title.replace(/[<>&]/g, '')}</b><small>${t.late ? 'Overdue' : when} · click to open</small>`;
+    tip.innerHTML = `<b></b><small>${t.late ? 'Overdue' : when} · click to open</small>`;
+    tip.querySelector('b').textContent = t.title;
   }
   tip.style.transform = `translate(${x}px, ${y}px)`;
   tip.classList.remove('is-hidden');
@@ -39,7 +41,7 @@ export function openNoteCard(note) {
       </div>`,
   });
   body.querySelector('.nt').textContent = t.title;
-  body.querySelector('[data-act="open"]').addEventListener('click', () => openApp('todo', { tab: note.position.y > 4 || t.due > new Date().toISOString().slice(0, 10) ? 'upcoming' : 'today' }));
+  body.querySelector('[data-act="open"]').addEventListener('click', () => openApp('todo', { tab: note.position.y > 4 || t.due > dateKey() ? 'upcoming' : 'today' }));
   body.querySelector('[data-act="tear"]').addEventListener('click', () => {
     closeApp();
     reward('Task done!');
@@ -67,9 +69,7 @@ export function openTypewriter() {
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     if (!input.value.trim()) return input.focus();
-    const today = new Date();
-    const key = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    DISTRICTS.todo.api.add(input.value, form.querySelector('#tw-due').value || key);
+    DISTRICTS.todo.api.add(input.value, form.querySelector('#tw-due').value || dateKey());
     closeApp();
     reward('Pinned!');
   });

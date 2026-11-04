@@ -119,6 +119,35 @@ test('complete, undo, edit, delete and clear tasks', async ({ plaza: page }) => 
   await expect(page.locator('#labels .label.pz-d-todo')).toContainText('All clear');
 });
 
+test('change a task due date from its row, then clear it', async ({ plaza: page }) => {
+  const panel = await openDistrict(page, 'ToDos');
+  await addTask(panel, 'Fix the gate');
+  await expect(panel.locator('.td-row .td-chip')).toHaveText('Today');
+
+  // the chip opens the date input hidden beside it: a new date moves the task
+  await panel.locator('.td-row .td-date-hidden').fill('2026-03-11');
+  await expect(panel).toContainText('Nothing due today.');
+  await expect(page.locator('#labels .label.pz-d-todo')).toContainText('1 open');
+
+  await panel.getByRole('tab', { name: /Upcoming/ }).click();
+  await expect(panel.locator('.td-section')).toHaveText(['Coming up']);
+  await expect(rows(panel)).toHaveText(['Fix the gate']);
+  await expect(panel.locator('.td-row .td-chip')).toHaveText('Tomorrow');
+
+  // clearing the date makes it an "anytime" task
+  await panel.locator('.td-row .td-date-hidden').fill('');
+  await expect(panel.locator('.td-section')).toHaveText(['Anytime']);
+  await expect(panel.locator('.td-row .td-chip')).toHaveText('Add date');
+});
+
+test('escape leaves the district even from the task field', async ({ plaza: page }) => {
+  const panel = await openDistrict(page, 'ToDos');
+  await expect(panel.getByLabel('New task')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#overlay')).toBeHidden();
+  await expect(page.locator('body')).not.toHaveClass(/app-open/);
+});
+
 test('tasks survive a reload', async ({ plaza: page }) => {
   let panel = await openDistrict(page, 'ToDos');
   await addTask(panel, 'Remember me');
