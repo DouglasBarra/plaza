@@ -26,6 +26,9 @@ const districts = [money, claude(db, money), people(db, ports)];
 // ---------- the API ----------
 const KEY = /^[\w.-]{1,100}$/;
 const LIMIT = 5 * 1024 * 1024;
+// A store is always a plain object. Saving anything else (null, a number, a
+// list) would break the district that reads it on the next load.
+const isStore = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 
 function send(res, status, body) {
   res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
@@ -60,7 +63,9 @@ async function api(req, res) {
     const key = decodeURIComponent(m[1]);
     if (!KEY.test(key)) return send(res, 400, { error: 'bad key' }), true;
     try {
-      db.save(key, await readJson(req));
+      const value = await readJson(req);
+      if (!isStore(value)) return send(res, 400, { error: 'a store must be a JSON object' }), true;
+      db.save(key, value);
       return send(res, 204), true;
     } catch (e) {
       return send(res, 400, { error: String(e.message || e) }), true;

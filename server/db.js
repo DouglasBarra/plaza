@@ -33,7 +33,7 @@ export function openDb(file) {
     );
     CREATE INDEX IF NOT EXISTS bank_by_date ON bank (kind, date);
   `);
-  const all = db.prepare('SELECT key, value FROM stores');
+  const all = db.prepare('SELECT key, value, updated_at FROM stores');
   const put = db.prepare(`
     INSERT INTO stores (key, value, updated_at) VALUES (?, ?, ?)
     ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
@@ -49,8 +49,10 @@ export function openDb(file) {
   const bankSince = db.prepare('SELECT json FROM bank WHERE kind = ? AND date >= ? ORDER BY date DESC');
   const dropBank = db.prepare('DELETE FROM bank WHERE kind = ?');
   return {
-    // every store at once: the page reads them all before it starts
-    stores: () => Object.fromEntries(all.all().map(({ key, value }) => [key, JSON.parse(value)])),
+    // every store at once: the page reads them all before it starts. Each one
+    // comes with when it was last saved, so the page can tell whether its own
+    // copy in the browser is the newer one (src/store.js).
+    stores: () => Object.fromEntries(all.all().map(({ key, value, updated_at: updated }) => [key, { value: JSON.parse(value), updated }])),
     save: (key, value) => put.run(key, JSON.stringify(value), Date.now()),
 
     secret: (key) => { const row = getSecret.get(key); return row ? JSON.parse(row.value) : undefined; },
