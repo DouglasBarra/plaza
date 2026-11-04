@@ -20,6 +20,10 @@ export const HOURS = {
   clerk: [8, 18],
   teller: [9, 17],
   manager: [9.5, 17.5],
+  postmaster: [8, 16],   // behind the post office counter, the postman's own hours
+  foreman: [7.5, 17],    // the Works keeps early hours
+  librarian: [9, 20],    // the library stays open into the evening
+  keeper: [0, 24],       // the lighthouse keeper is always in
 };
 export function atWork(who) {
   const [a, b] = HOURS[who], h = hourNow();

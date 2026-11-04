@@ -12,6 +12,7 @@ import { people } from './people.js';
 function sample({ id, name, key, title, status, count = 0, items = [], note }) {
   return {
     id, name, key, title,
+    items,                      // the sample rows, so the district's room can show them too
     subscribe: () => () => {},
     summary: () => ({ status, count }),
     mount(el) {

@@ -49,6 +49,9 @@ export const people = {
 
   subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); },
 
+  // what the post office's inside needs: the data, and the counter bell
+  api: { data: () => data, refresh },
+
   // what the plaza shows on the post office's sign
   summary() {
     if (!data || data.offline) return { status: 'People', count: 0 };
@@ -60,8 +63,11 @@ export const people = {
     return { status: 'All caught up', count: 0 };
   },
 
-  mount(el) {
-    let tab = null;       // 'waiting' | 'recent' | 'quiet'; picked on first render
+  mount(el, { tab: startTab } = {}) {
+    // 'waiting' | 'recent' | 'quiet': the station you came in by can choose
+    // one (the post office's pigeonholes, its unclaimed shelf), otherwise
+    // it's picked on the first render
+    let tab = ['waiting', 'recent', 'quiet'].includes(startTab) ? startTab : null;
     let only = 'all';     // a network, or 'all'
     let open = null;      // the chat being read
     let thread = null;    // its messages, or null while loading

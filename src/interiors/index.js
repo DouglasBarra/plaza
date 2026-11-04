@@ -7,14 +7,18 @@ import { placeRoomFinds } from '../finds.js';
 import { W, D, lightRoom } from './common.js';
 import { buildTownHall } from './townhall/index.js';
 import { buildBank } from './bank/index.js';
-import { study } from './library.js';
-import { ideas } from './workshop.js';
+import { study } from './library/index.js';
+import { ideas } from './workshop/index.js';
+import { postOffice } from './postoffice/index.js';
+import { works } from './works/index.js';
 
 const INTERIORS = {
   todo: buildTownHall, // the town hall: ToDos (see townhall/)
   finance: buildBank,  // the bank: Finance (see bank/)
-  study,               // the library: Study
-  ideas,               // the lighthouse workshop: Ideas
+  study,               // the library: Study (see library/)
+  ideas,               // the lighthouse workshop: Ideas (see workshop/)
+  people: postOffice,  // the post office: People (see postoffice/)
+  projects: works,     // the Works: Projects (see works/)
 };
 
 export const hasInterior = (id) => id in INTERIORS;

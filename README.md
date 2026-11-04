@@ -15,7 +15,7 @@ npm run dev
 
 Then open http://localhost:5173. This starts Plaza's own small server (`server/`), which serves the page through Vite and keeps your data in `data/plaza.db`, a SQLite file on this Mac. To run the built app instead, use `npm start` (http://localhost:4174). Both need Node 22 or later and only listen on this computer.
 
-Your data is the `data/` folder: back it up or copy it to move Plaza to another Mac. Data saved in the browser before the server existed is moved over the first time the page loads with the server running, and the browser keeps a copy of everything as a fallback. Without the server (for example `vite preview`), Plaza still works from that browser copy.
+Your data is the `data/` folder: back it up or copy it to move Plaza to another Mac. Data saved in the browser before the server existed is moved over the first time the page loads with the server running, and the browser keeps a copy of everything as a fallback. Without the server (for example `vite preview`), Plaza still works from that browser copy, and anything you change there is kept: both copies record when they were last written, and the newer one wins the next time the page loads.
 
 ## Connect your banks
 
@@ -25,7 +25,7 @@ The Finance district (the bank) reads your Brazilian bank accounts through [Banc
 2. **Log in to Banco** takes you to mcp.ai, then back to Plaza.
 3. **Connect a bank** opens Banco's page, where you give each bank its Open Finance consent. Then press **Sync**.
 
-Plaza's server does the talking (`server/finance.js`, through `server/mcp.js`): the login is kept in `data/plaza.db` and never reaches the page. It syncs accounts, a year of transactions and card bills into the same file when you press Sync. Every Banco call counts against your mcp.ai plan (the free one has 10 questions), so it doesn't sync on its own; set `FINANCE_SYNC_HOURS` to sync on a timer. Set `BANCO_MCP_URL` to use another Banco address.
+Plaza's server does the talking (`server/finance.js`, through `server/mcp.js`): the login is kept in `data/plaza.db` and never reaches the page. It syncs accounts, a year of transactions and card bills into the same file when you press Sync. Every Banco call counts against your mcp.ai plan (the free one has 10 questions), so it syncs once right after you log in and then only when you press **Sync**; set `FINANCE_SYNC_HOURS` to also sync on a timer. Set `BANCO_MCP_URL` to use another Banco address.
 
 ## Talk to the folks
 
@@ -50,7 +50,7 @@ Beeper has to stay open. Plaza's server does the talking (`server/people.js`, th
 
 ## Test it
 
-End-to-end tests drive the real app in Chromium with [Playwright](https://playwright.dev). They build the app, serve it with `vite preview`, and play it: the dock and shortcuts, walking into the town hall, the clerk's typewriter, tearing a note off the board, an empty lot, and the ToDos app itself. They open the page with `?lowpower`, which draws the scene 12 times a second with smaller shadows; rendering WebGL without a GPU is what makes them heavy.
+End-to-end tests drive the real app in Chromium with [Playwright](https://playwright.dev). They build the app, serve it with `vite preview`, and play it: the dock and shortcuts, the walks that join the fountain to every door, walking into each building and using the rooms inside, the clerk's typewriter, tearing a note off the board, and the ToDos app itself. They open the page with `?lowpower`, which draws the scene 12 times a second with smaller shadows; rendering WebGL without a GPU is what makes them heavy.
 
 ```bash
 npx playwright install chromium   # once
@@ -73,13 +73,26 @@ A piece is anything registered with `piece()` or `placeable()` from `src/layout.
 - **WASD / arrow keys** or **click the ground** to walk
 - **Click a building**, or stand at its door and press **E**, to walk inside
 - Inside, walk up to the room's board, counter or table and press **E** to open that district's app; stand on the doormat and press **E** to leave
-- **1–6** open a district's app right away, **Esc** closes it
+- **1–6** open a district's app right away, and switch between them with one already open; **Esc** closes it
 - **Drag** to look around, **scroll** to zoom out over the town
-- In the **town hall** (ToDos): hover a note on the board to read it, click it to open it, and tear it off to finish it. Ask the clerk at the desk to type a new task. Take the stairs up for the calendar, what's coming up and the archive
 - **T** talks to someone standing near you (see above)
 - **C** turns the color washes on and off: a faint watercolor tint at the screen's edges in the color of the district you're in or near
 - **M** turns the sound on and off; the **Sound** button opens its volume sliders (ambience and effects)
+- **F** opens the finds: the little things hidden around the town, and which ones you've spotted
+- **L** turns the wobbly lines on and off: the hand-drawn jitter in the outlines
+- **N** turns night on and off
 - **V** switches to first person: the mouse looks around (click to capture it, **Esc** frees it), and a click does what **E** does
+
+## Walk inside
+
+Every building is a room you can walk into, and each one shows that district's data as things rather than lists. Each has a station or two — a board, a counter, a bench — that opens the district's app, and most have someone to talk to who keeps their own hours.
+
+- **The town hall** (ToDos): hover a note on the board to read it, click it to open it, and tear it off to finish it. Ask the clerk at the desk to type a new task. The stairs go up to the calendar, what's coming up and the archive.
+- **The bank** (Finance): a banking hall two stories high. The vault stands open with as much gold as you have cash, the split-flap board over it shows your cards, a dial per card reads its limit, the ticker prints your latest transactions, and the courier's pneumatic tube fetches news from your banks. Upstairs, a ledger per account and a drawer of statements for every month.
+- **The library** (Study): your reading list is the furniture. Each thing you're reading sits on the long table as its own object — a book open at the page you reached with a ribbon on it, a tray holding one card for every flashcard left, a closed book with a slip saying the day it's wanted — and the same list is filed in the card catalogue. The librarian paces the stacks from 9 to 8 and names whatever you left half finished. Press the date stamp at the counter for a slip, or spin the globe by the window.
+- **The post office** (People): a sorting office. A hole in the rack on the back wall belongs to everyone you talk to, with their name on the shelf under it, and a letter stands in every hole somebody is waiting in. The scale on the counter weighs the day's post, the wire trays hold what's come in and what's been dealt with, and a dusty shelf in the corner keeps a tied bundle for every chat gone quiet. The postmaster is behind the grille from 8 to 4 and tells you who wrote; the bell at the parcels end asks Beeper for the post again. Without the server the office is simply shut, and the chalk board says why.
+- **The lighthouse workshop** (Ideas): the keeper's hut, with the tower built into its corner. Every idea is a note on the wall in its own words and dated, string running from pin to pin, the newest still curling off the cork. The bench has a lighthouse half built on it, and the chalkboard can be rubbed out and drawn again. The spiral stair climbs the tower to the lamp room, where the lens turns on its pedestal, the keeper's log holds the same ideas written up in order, and the clockwork's weight sinks down the well until you wind it back up. The keeper is always in.
+- **The Works** (Projects): a brick shop floor under three sawtooth teeth of glass, which drop their north light in bands across the concrete as the day goes by. There's a bay for every project in the order your card lists them, each at its own stage — clamped and half built, or under a dust sheet with the finished piece set aside on the done shelf — and a slate by the door with the lot chalked up. Behind the bays a lathe, a grindstone and a flywheel run off one line shaft, with a lever to throw them in and out of gear, and the forge feeds the smokestack you see from the square. The foreman keeps early hours, 7.30 to 5.
 
 ## The plaza lives
 
@@ -100,7 +113,7 @@ Three.js with Vite, no framework yet.
 | `src/app/` | The game shell: renderer and camera (`engine.js`, `camera.js`), going in and out of buildings (`rooms.js`), the plaza through the windows (`window-view.js`), what's under the pointer (`picking.js`), what E does (`actions.js`), mouse and keys (`input.js`), shared state (`state.js`), the weather (`weather.js`) and the dev console handle (`devtools.js`) |
 | `src/ui/` | Everything drawn in HTML over the scene: the card that districts open in (`card.js`), the town hall's note and typewriter cards (`hall-cards.js`), the finds list, building signs, speech bubbles, talking with folks (`chat.js`), the color washes (`washes.js`) and the Day/Night and Wobbly lines buttons |
 | `src/plaza/` | The plaza: its layout (`index.js`), buildings, props, the fountain (`fountain.js`), the food truck corner (`foodtruck.js`), animals (`critters.js`, `animals.js`), the lamplighter (`lamplighter.js`) and the folks who keep hours (`routines.js`) |
-| `src/interiors/` | The rooms inside each building: the library and workshop, the two-story bank (`bank/`: a banking hall with a gallery, where the vault, boards, dials, ticker and ledgers show your Finance data and the courier runs Sync), and the two-story town hall (`townhall/`: the house itself, each floor's furnishings, task boards and calendar, fireplace and lamps, and the dimensions it shares inside and out) |
+| `src/interiors/` | The rooms inside each building, one folder each, with what they share in `common.js`: the two-story town hall (`townhall/`: the house itself, each floor's furnishings, task boards and calendar, fireplace and lamps, and the dimensions it shares inside and out), the two-story bank (`bank/`: a banking hall with a gallery, where the vault, boards, dials, ticker and ledgers show your Finance data and the courier runs Sync), the library (`library/`: the stacks, the catalogue and your reading list as objects on the table), the post office (`postoffice/`: the counter, the pigeonhole rack and the trays your chats fill), the Works (`works/`: the sawtooth roof's light, a bay per project and the line shaft), and the lighthouse workshop (`workshop/`: the idea wall, and the stair up to the lamp room in `lamproom.js`) |
 | `src/town/` | Everything outside the plaza: the streets (`streets.js`, `streetscape.js`), the houses (`houses.js`) with windows you can see into (`windows.js`) and their line art (`art.js`), merged geometry (`bag.js`), chimney smoke and washing (`motion.js`), cars, trams and walkers (`traffic.js`), the mountains (`mountains.js`), clouds and birds (`sky.js`) |
 | `src/ink.js` | The ink look: stepped gray shading and the hand-drawn outline pass |
 | `src/textures.js` | Line-art textures (bricks, shingles, paving…) drawn on canvas at load |
